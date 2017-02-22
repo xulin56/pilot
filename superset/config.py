@@ -75,7 +75,7 @@ APP_ICON = "/static/assets/images/superset-logo@2x.png"
 # tz.tzutc() : Using utc timezone
 # tz.tzlocal() : Using local timezone
 # other tz can be overridden by providing a local_config
-DRUID_IS_ACTIVE = True
+DRUID_IS_ACTIVE = False
 DRUID_TZ = tz.tzutc()
 DRUID_ANALYSIS_TYPES = ['cardinality']
 
