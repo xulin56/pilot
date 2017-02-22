@@ -17,6 +17,7 @@ from superset import db, models, utils, appbuilder, sm, jinja_context, sql_lab
 from superset.views import DatabaseView
 
 from .base_tests import SupersetTestCase
+import logging
 
 
 class CoreTests(SupersetTestCase):
@@ -58,15 +59,19 @@ class CoreTests(SupersetTestCase):
             '/superset/slice/{}/?standalone=true'.format(slc.id))
         assert 'List Roles' not in resp
 
-    def test_endpoints_for_a_slice(self):
+    def test_slice_json_endpoint(self):
+        self.login(username='admin')
+        slc = self.get_slice("Girls", db.session)
+
+        resp = self.get_resp(slc.viz.json_endpoint)
+        assert '"Jennifer"' in resp
+
+    def test_slice_csv_endpoint(self):
         self.login(username='admin')
         slc = self.get_slice("Girls", db.session)
 
         resp = self.get_resp(slc.viz.csv_endpoint)
         assert 'Jennifer,' in resp
-
-        resp = self.get_resp(slc.viz.json_endpoint)
-        assert '"Jennifer"' in resp
 
     def test_admin_only_permissions(self):
         def assert_admin_permission_in(role_name, assert_func):
@@ -121,6 +126,25 @@ class CoreTests(SupersetTestCase):
         assert 'Energy' in self.get_resp(
             url.format(tbl_id, slice_id, copy_name, 'overwrite'))
 
+    def test_filter_endpoint(self):
+        self.login(username='admin')
+        slice_name = "Energy Sankey"
+        slice_id = self.get_slice(slice_name, db.session).id
+        db.session.commit()
+        tbl_id = self.table_ids.get('energy_usage')
+        table = db.session.query(models.SqlaTable).filter(models.SqlaTable.id == tbl_id)
+        table.filter_select_enabled = True
+        url = (
+            "/superset/filter/table/{}/target/?viz_type=sankey&groupby=source"
+            "&metric=sum__value&flt_col_0=source&flt_op_0=in&flt_eq_0=&"
+            "slice_id={}&datasource_name=energy_usage&"
+            "datasource_id=1&datasource_type=table")
+
+        # Changing name
+        resp = self.get_resp(url.format(tbl_id, slice_id))
+        assert len(resp) > 0
+        assert 'Carbon Dioxide' in resp
+
     def test_slices(self):
         # Testing by hitting the two supported end points for all slices
         self.login(username='admin')
@@ -134,8 +158,29 @@ class CoreTests(SupersetTestCase):
                 (slc.slice_name, 'slice_id_url', slc.slice_id_url),
             ]
         for name, method, url in urls:
-            print("[{name}]/[{method}]: {url}".format(**locals()))
+            logging.info("[{name}]/[{method}]: {url}".format(**locals()))
             self.client.get(url)
+
+    def test_slices_V2(self):
+        # Add explore-v2-beta role to admin user
+        # Test all slice urls as user with with explore-v2-beta role
+        sm.add_role('explore-v2-beta')
+
+        appbuilder.sm.add_user(
+            'explore_beta', 'explore_beta', ' user', 'explore_beta@airbnb.com',
+            appbuilder.sm.find_role('explore-v2-beta'),
+            password='general')
+        self.login(username='explore_beta', password='general')
+
+        Slc = models.Slice
+        urls = []
+        for slc in db.session.query(Slc).all():
+            urls += [
+                (slc.slice_name, 'slice_url', slc.slice_url),
+            ]
+        for name, method, url in urls:
+            print("[{name}]/[{method}]: {url}".format(**locals()))
+            response = self.client.get(url)
 
     def test_dashboard(self):
         self.login(username='admin')
@@ -188,10 +233,11 @@ class CoreTests(SupersetTestCase):
         self.assertEqual(sqlalchemy_uri_decrypted, database.sqlalchemy_uri_decrypted)
 
     def test_warm_up_cache(self):
-        slice = db.session.query(models.Slice).first()
+        slc = self.get_slice("Girls", db.session)
         data = self.get_json_resp(
-            '/superset/warm_up_cache?slice_id={}'.format(slice.id))
-        assert data == [{'slice_id': slice.id, 'slice_name': slice.slice_name}]
+            '/superset/warm_up_cache?slice_id={}'.format(slc.id))
+
+        assert data == [{'slice_id': slc.id, 'slice_name': slc.slice_name}]
 
         data = self.get_json_resp(
             '/superset/warm_up_cache?table_name=energy_usage&db_name=main')
@@ -424,6 +470,7 @@ class CoreTests(SupersetTestCase):
 
     def test_table_metadata(self):
         maindb = self.get_main_database(db.session)
+        backend = maindb.backend
         data = self.get_json_resp(
             "/superset/table/{}/ab_user/null/".format(maindb.id))
         self.assertEqual(data['name'], 'ab_user')
@@ -431,7 +478,6 @@ class CoreTests(SupersetTestCase):
         assert data.get('selectStar').startswith('SELECT')
 
         # Engine specific tests
-        backend = maindb.backend
         if backend in ('mysql', 'postgresql'):
             self.assertEqual(data.get('primaryKey').get('type'), 'pk')
             self.assertEqual(
@@ -444,10 +490,19 @@ class CoreTests(SupersetTestCase):
 
     def test_fetch_datasource_metadata(self):
         self.login(username='admin')
-        url = '/superset/fetch_datasource_metadata?datasource_type=table&' \
-              'datasource_id=1'
-        resp = json.loads(self.get_resp(url))
-        self.assertEqual(len(resp['field_options']), 21)
+        url = (
+            '/superset/fetch_datasource_metadata?'
+            'datasource_type=table&'
+            'datasource_id=1'
+        )
+        resp = self.get_json_resp(url)
+        keys = [
+            'name', 'filterable_cols', 'gb_cols', 'type', 'all_cols',
+            'order_by_choices', 'metrics_combo', 'granularity_sqla',
+            'time_grain_sqla', 'id',
+        ]
+        for k in keys:
+            self.assertIn(k, resp.keys())
 
     def test_fetch_all_tables(self):
         self.login(username='admin')

@@ -11,8 +11,8 @@
       </button>
       <a class="navbar-brand" href="/superset/profile/{{ current_user.username }}/">
         <img
-          width="126" src="/static/assets/images/superset-logo@2x.png"
-          alt="Superset"
+          width="126" src="{{ appbuilder.app_icon }}"
+          alt="{{ appbuilder.app_name }}"
         />
       </a>
     </div>
@@ -21,6 +21,11 @@
         {% include 'appbuilder/navbar_menu.html' %}
       </ul>
       <ul class="nav navbar-nav navbar-right">
+        <li>
+          <a href="/static/assets/version_info.json" title="Version info">
+            <i class="fa fa-code-fork"></i> &nbsp;
+          </a>
+        </li>
         <li>
           <a href="https://github.com/airbnb/superset" title="Superset's Github">
             <i class="fa fa-github"></i> &nbsp;

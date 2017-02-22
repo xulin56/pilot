@@ -57,7 +57,6 @@ function nvd3Vis(slice) {
   let chart;
   let colorKey = 'key';
 
-
   const render = function () {
     d3.json(slice.jsonEndpoint(), function (error, payload) {
       slice.container.html('');
@@ -125,6 +124,11 @@ function nvd3Vis(slice) {
             chart.xAxis
             .showMaxMin(fd.x_axis_showminmax)
             .staggerLabels(false);
+            break;
+
+          case 'dual_line':
+            chart = nv.models.multiChart();
+            chart.interpolate('linear');
             break;
 
           case 'bar':
@@ -310,7 +314,7 @@ function nvd3Vis(slice) {
           chart.yAxis.tickFormat(d3.format('.3s'));
         }
 
-        if (fd.y_axis_format) {
+        if (fd.y_axis_format && chart.yAxis) {
           chart.yAxis.tickFormat(d3.format(fd.y_axis_format));
           if (chart.y2Axis !== undefined) {
             chart.y2Axis.tickFormat(d3.format(fd.y_axis_format));
@@ -348,7 +352,12 @@ function nvd3Vis(slice) {
         if (svg.empty()) {
           svg = d3.select(slice.selector).append('svg');
         }
-
+        if (vizType === 'dual_line') {
+          chart.yAxis1.tickFormat(d3.format(fd.y_axis_format));
+          chart.yAxis2.tickFormat(d3.format(fd.y_axis_2_format));
+          chart.showLegend(true);
+          chart.margin({ right: 50 });
+        }
         svg
         .datum(payload.data)
         .transition().duration(500)
@@ -373,6 +382,8 @@ function nvd3Vis(slice) {
 
   const update = function () {
     if (chart && chart.update) {
+      chart.height(slice.height());
+      chart.width(slice.width());
       chart.update();
     }
   };

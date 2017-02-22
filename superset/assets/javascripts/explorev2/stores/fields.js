@@ -1,16 +1,7 @@
 import { formatSelectOptionsForRange, formatSelectOptions } from '../../modules/utils';
 import visTypes from './visTypes';
+import * as v from '../validators';
 
-export const fieldTypes = [
-  'CheckboxField',
-  'FreeFormSelectField',
-  'IntegerField',
-  'SelectCustomMultiField',
-  'SelectField',
-  'SelectMultipleSortableField',
-  'TextAreaFeild',
-  'TextField',
-];
 const D3_FORMAT_DOCS = 'D3 format syntax: https://github.com/d3/d3-format';
 
 // input choices & options
@@ -35,45 +26,79 @@ const TIME_STAMP_OPTIONS = [
   ['%H:%M:%S', '%H:%M:%S | 01:32:10'],
 ];
 
+const MAP_DATASOURCE_TYPE_TO_EDIT_URL = {
+  table: '/tablemodelview/edit',
+  druid: '/druiddatasourcemodelview/edit',
+};
+
 export const fields = {
   datasource: {
     type: 'SelectField',
     label: 'Datasource',
+    clearable: false,
     default: null,
-    choices: [],
+    mapStateToProps: (state) => ({
+      choices: state.datasources || [],
+      editUrl: MAP_DATASOURCE_TYPE_TO_EDIT_URL[state.datasource_type],
+    }),
     description: '',
   },
 
   viz_type: {
     type: 'SelectField',
-    label: 'Viz',
+    label: 'Visualization Type',
+    clearable: false,
     default: 'table',
-    choices: formatSelectOptions(Object.keys(visTypes)),
+    choices: Object.keys(visTypes).map(vt => [
+      vt,
+      visTypes[vt].label,
+      `/static/assets/images/viz_thumbnails/${vt}.png`,
+    ]),
     description: 'The type of visualization to display',
   },
 
   metrics: {
-    type: 'SelectMultipleSortableField',
+    type: 'SelectField',
+    multi: true,
     label: 'Metrics',
-    choices: [],
+    validators: [v.nonEmpty],
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.metrics_combo : [],
+    }),
     default: [],
     description: 'One or many metrics to display',
   },
 
   order_by_cols: {
-    type: 'SelectMultipleSortableField',
+    type: 'SelectField',
+    multi: true,
     label: 'Ordering',
-    choices: [],
     default: [],
     description: 'One or many metrics to display',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.order_by_choices : [],
+    }),
   },
 
   metric: {
     type: 'SelectField',
     label: 'Metric',
-    choices: [],
     default: null,
     description: 'Choose the metric',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.metrics_combo : [],
+    }),
+  },
+
+  metric_2: {
+    type: 'SelectField',
+    label: 'Right Axis Metric',
+    choices: [],
+    default: [],
+    description: 'Choose a metric for right axis',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.metrics_combo : [],
+    }),
   },
 
   stacked_style: {
@@ -215,9 +240,11 @@ export const fields = {
   secondary_metric: {
     type: 'SelectField',
     label: 'Color Metric',
-    choices: [],
     default: null,
     description: 'A metric to use for color',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.metrics_combo : [],
+    }),
   },
 
   country_fieldtype: {
@@ -235,15 +262,19 @@ export const fields = {
   },
 
   groupby: {
-    type: 'SelectMultipleSortableField',
+    type: 'SelectField',
+    multi: true,
     label: 'Group by',
-    choices: [],
     default: [],
     description: 'One or many fields to group by',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.gb_cols : [],
+    }),
   },
 
   columns: {
-    type: 'SelectMultipleSortableField',
+    type: 'SelectField',
+    multi: true,
     label: 'Columns',
     choices: [],
     default: [],
@@ -251,31 +282,39 @@ export const fields = {
   },
 
   all_columns: {
-    type: 'SelectMultipleSortableField',
+    type: 'SelectField',
+    multi: true,
     label: 'Columns',
-    choices: [],
     default: [],
     description: 'Columns to display',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.all_cols : [],
+    }),
   },
 
   all_columns_x: {
     type: 'SelectField',
     label: 'X',
-    choices: [],
     default: null,
     description: 'Columns to display',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.all_cols : [],
+    }),
   },
 
   all_columns_y: {
     type: 'SelectField',
     label: 'Y',
-    choices: [],
     default: null,
     description: 'Columns to display',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.all_cols : [],
+    }),
   },
 
   druid_time_origin: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Origin',
     choices: [
       ['', 'default'],
@@ -287,7 +326,8 @@ export const fields = {
   },
 
   bottom_margin: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Bottom Margin',
     choices: formatSelectOptions(['auto', 50, 75, 100, 125, 150, 200]),
     default: 'auto',
@@ -295,7 +335,8 @@ export const fields = {
   },
 
   granularity: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Time Granularity',
     default: 'one day',
     choices: formatSelectOptions([
@@ -336,7 +377,8 @@ export const fields = {
   },
 
   link_length: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Link Length',
     default: '200',
     choices: formatSelectOptions(['10', '25', '50', '75', '100', '150', '200', '250']),
@@ -344,7 +386,8 @@ export const fields = {
   },
 
   charge: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Charge',
     default: '-500',
     choices: formatSelectOptions([
@@ -366,28 +409,33 @@ export const fields = {
     type: 'SelectField',
     label: 'Time Column',
     default: null,
-    choices: [],
     description: 'The time column for the visualization. Note that you ' +
                  'can define arbitrary expression that return a DATETIME ' +
                  'column in the table or. Also note that the ' +
                  'filter below is applied against this column or ' +
                  'expression',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.all_cols : [],
+    }),
   },
 
   time_grain_sqla: {
     type: 'SelectField',
     label: 'Time Grain',
-    choices: [],
     default: 'Time Column',
     description: 'The time granularity for the visualization. This ' +
                  'applies a date transformation to alter ' +
                  'your time column and defines a new time granularity. ' +
                  'The options here are defined on a per database ' +
                  'engine basis in the Superset source code.',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.time_grain_sqla : [],
+    }),
   },
 
   resample_rule: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Resample Rule',
     default: null,
     choices: formatSelectOptions(['', '1T', '1H', '1D', '7D', '1M', '1AS']),
@@ -395,7 +443,8 @@ export const fields = {
   },
 
   resample_how: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Resample How',
     default: null,
     choices: formatSelectOptions(['', 'mean', 'sum', 'median']),
@@ -403,7 +452,8 @@ export const fields = {
   },
 
   resample_fillmethod: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Resample Fill Method',
     default: null,
     choices: formatSelectOptions(['', 'ffill', 'bfill']),
@@ -411,7 +461,8 @@ export const fields = {
   },
 
   since: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Since',
     default: '7 days ago',
     choices: formatSelectOptions([
@@ -429,7 +480,8 @@ export const fields = {
   },
 
   until: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Until',
     default: 'now',
     choices: formatSelectOptions([
@@ -443,14 +495,16 @@ export const fields = {
   },
 
   max_bubble_size: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Max Bubble Size',
     default: '25',
     choices: formatSelectOptions(['5', '10', '15', '25', '50', '75', '100']),
   },
 
   whisker_options: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Whisker/outlier options',
     default: 'Tukey',
     description: 'Determines how whiskers and outliers are calculated.',
@@ -463,14 +517,16 @@ export const fields = {
   },
 
   treemap_ratio: {
-    type: 'IntegerField',
+    type: 'TextField',
     label: 'Ratio',
+    isFloat: true,
     default: 0.5 * (1 + Math.sqrt(5)),  // d3 default, golden ratio
     description: 'Target aspect ratio for treemap tiles.',
   },
 
   number_format: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Number format',
     default: D3_TIME_FORMAT_OPTIONS[0],
     choices: D3_TIME_FORMAT_OPTIONS,
@@ -478,14 +534,16 @@ export const fields = {
   },
 
   row_limit: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Row limit',
     default: null,
     choices: formatSelectOptions(ROW_LIMIT_OPTIONS),
   },
 
   limit: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Series limit',
     choices: formatSelectOptions(SERIES_LIMITS),
     default: 50,
@@ -495,9 +553,11 @@ export const fields = {
   timeseries_limit_metric: {
     type: 'SelectField',
     label: 'Sort By',
-    choices: [],
     default: null,
     description: 'Metric used to define the top series',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.metrics_combo : [],
+    }),
   },
 
   rolling_type: {
@@ -510,9 +570,9 @@ export const fields = {
   },
 
   rolling_periods: {
-    type: 'IntegerField',
+    type: 'TextField',
     label: 'Periods',
-    validators: [],
+    isInt: true,
     description: 'Defines the size of the rolling window function, ' +
                  'relative to the time granularity selected',
   },
@@ -520,42 +580,52 @@ export const fields = {
   series: {
     type: 'SelectField',
     label: 'Series',
-    choices: [],
     default: null,
     description: 'Defines the grouping of entities. ' +
                  'Each series is shown as a specific color on the chart and ' +
                  'has a legend toggle',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.gb_cols : [],
+    }),
   },
 
   entity: {
     type: 'SelectField',
     label: 'Entity',
-    choices: [],
     default: null,
     description: 'This define the element to be plotted on the chart',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.gb_cols : [],
+    }),
   },
 
   x: {
     type: 'SelectField',
     label: 'X Axis',
-    choices: [],
     default: null,
     description: 'Metric assigned to the [X] axis',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.gb_cols : [],
+    }),
   },
 
   y: {
     type: 'SelectField',
     label: 'Y Axis',
-    choices: [],
     default: null,
     description: 'Metric assigned to the [Y] axis',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.metrics_combo : [],
+    }),
   },
 
   size: {
     type: 'SelectField',
     label: 'Bubble Size',
     default: null,
-    choices: [],
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.metrics_combo : [],
+    }),
   },
 
   url: {
@@ -601,6 +671,7 @@ export const fields = {
   compare_lag: {
     type: 'TextField',
     label: 'Comparison Period Lag',
+    isInt: true,
     description: 'Based on granularity, number of time periods to compare against',
   },
 
@@ -611,7 +682,8 @@ export const fields = {
   },
 
   table_timestamp_format: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Table Timestamp Format',
     default: 'smart_date',
     choices: TIME_STAMP_OPTIONS,
@@ -619,7 +691,8 @@ export const fields = {
   },
 
   series_height: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Series Height',
     default: '25',
     choices: formatSelectOptions(['10', '25', '40', '50', '75', '100', '150', '200']),
@@ -627,7 +700,8 @@ export const fields = {
   },
 
   page_length: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Page Length',
     default: 0,
     choices: formatSelectOptions([0, 10, 25, 40, 50, 75, 100, 150, 200]),
@@ -635,7 +709,8 @@ export const fields = {
   },
 
   x_axis_format: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'X axis format',
     default: 'smart_date',
     choices: TIME_STAMP_OPTIONS,
@@ -643,8 +718,18 @@ export const fields = {
   },
 
   y_axis_format: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Y axis format',
+    default: '.3s',
+    choices: D3_TIME_FORMAT_OPTIONS,
+    description: D3_FORMAT_DOCS,
+  },
+
+  y_axis_2_format: {
+    type: 'SelectField',
+    freeForm: true,
+    label: 'Right axis format',
     default: '.3s',
     choices: D3_TIME_FORMAT_OPTIONS,
     description: D3_FORMAT_DOCS,
@@ -713,6 +798,7 @@ export const fields = {
 
   size_from: {
     type: 'TextField',
+    isInt: true,
     label: 'Font Size From',
     default: '20',
     description: 'Font size for the smallest value in the list',
@@ -720,6 +806,7 @@ export const fields = {
 
   size_to: {
     type: 'TextField',
+    isInt: true,
     label: 'Font Size To',
     default: '150',
     description: 'Font size for the biggest value in the list',
@@ -832,10 +919,10 @@ export const fields = {
   },
 
   num_period_compare: {
-    type: 'IntegerField',
+    type: 'TextField',
     label: 'Period Ratio',
     default: '',
-    validators: [],
+    isInt: true,
     description: '[integer] Number of period to compare against, ' +
                  'this is relative to the granularity selected',
   },
@@ -852,6 +939,7 @@ export const fields = {
   time_compare: {
     type: 'TextField',
     label: 'Time Shift',
+    isInt: true,
     default: null,
     description: 'Overlay a timeseries from a ' +
                  'relative time period. Expects relative time delta ' +
@@ -866,14 +954,17 @@ export const fields = {
   },
 
   mapbox_label: {
-    type: 'SelectMultipleSortableField',
+    type: 'SelectField',
+    multi: true,
     label: 'label',
-    choices: [],
     default: [],
     description: '`count` is COUNT(*) if a group by is used. ' +
                  'Numerical columns will be aggregated with the aggregator. ' +
                  'Non-numerical columns will be used to label points. ' +
                  'Leave empty to get a count of points in each cluster.',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.all_cols : [],
+    }),
   },
 
   mapbox_style: {
@@ -892,7 +983,8 @@ export const fields = {
   },
 
   clustering_radius: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'Clustering Radius',
     default: '60',
     choices: formatSelectOptions([
@@ -915,10 +1007,12 @@ export const fields = {
     type: 'SelectField',
     label: 'Point Radius',
     default: null,
-    choices: [],
     description: 'The radius of individual points (ones that are not in a cluster). ' +
                  'Either a numerical column or `Auto`, which scales the point based ' +
                  'on the largest cluster',
+    mapStateToProps: (state) => ({
+      choices: state.fields.point_radius.choices,
+    }),
   },
 
   point_radius_unit: {
@@ -930,34 +1024,37 @@ export const fields = {
   },
 
   global_opacity: {
-    type: 'IntegerField',
+    type: 'TextField',
     label: 'Opacity',
     default: 1,
+    isFloat: true,
     description: 'Opacity of all clusters, points, and labels. ' +
                  'Between 0 and 1.',
   },
 
   viewport_zoom: {
-    type: 'IntegerField',
+    type: 'TextField',
     label: 'Zoom',
+    isFloat: true,
     default: 11,
-    validators: [],
     description: 'Zoom level of the map',
     places: 8,
   },
 
   viewport_latitude: {
-    type: 'IntegerField',
+    type: 'TextField',
     label: 'Default latitude',
     default: 37.772123,
+    isFloat: true,
     description: 'Latitude of default viewport',
     places: 8,
   },
 
   viewport_longitude: {
-    type: 'IntegerField',
+    type: 'TextField',
     label: 'Default longitude',
     default: -122.405293,
+    isFloat: true,
     description: 'Longitude of default viewport',
     places: 8,
   },
@@ -970,7 +1067,8 @@ export const fields = {
   },
 
   mapbox_color: {
-    type: 'FreeFormSelectField',
+    type: 'SelectField',
+    freeForm: true,
     label: 'RGB Color',
     default: 'rgb(0, 122, 135)',
     choices: [

@@ -4,7 +4,7 @@ import d3 from 'd3';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import MapGL from 'react-map-gl';
-import ScatterPlotOverlay from 'react-map-gl/src/overlays/scatterplot.react.js';
+import ScatterPlotOverlay from 'react-map-gl/dist/overlays/scatterplot.react.js';
 import Immutable from 'immutable';
 import supercluster from 'supercluster';
 import ViewportMercator from 'viewport-mercator-project';
@@ -276,10 +276,10 @@ MapboxViz.propTypes = {
 function mapbox(slice) {
   const DEFAULT_POINT_RADIUS = 60;
   const DEFAULT_MAX_ZOOM = 16;
-  const div = d3.select(slice.selector);
   let clusterer;
 
   const render = function () {
+    const div = d3.select(slice.selector);
     d3.json(slice.jsonEndpoint(), function (error, json) {
       if (error !== null) {
         slice.error(error.responseText);

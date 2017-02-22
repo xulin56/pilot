@@ -673,6 +673,15 @@ def load_birth_names():
                 viz_type="line", groupby=['name'],
                 granularity='ds', rich_tooltip='y', show_legend='y')),
         Slice(
+            slice_name="Average and Sum Trends",
+            viz_type='dual_line',
+            datasource_type='table',
+            datasource_id=tbl.id,
+            params=get_slice_json(
+                defaults,
+                viz_type="dual_line", metric='avg__num', metric_2='sum__num',
+                granularity='ds')),
+        Slice(
             slice_name="Title",
             viz_type='markup',
             datasource_type='table',
@@ -998,7 +1007,7 @@ def load_long_lat_data():
         "datasource_type": "table",
         "granularity": "day",
         "since": "2014-01-01",
-        "until": "2016-12-12",
+        "until": "now",
         "where": "",
         "viz_type": "mapbox",
         "all_columns_x": "LON",

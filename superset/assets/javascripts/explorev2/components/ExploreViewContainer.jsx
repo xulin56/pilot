@@ -14,6 +14,8 @@ const propTypes = {
   form_data: React.PropTypes.object.isRequired,
   actions: React.PropTypes.object.isRequired,
   datasource_type: React.PropTypes.string.isRequired,
+  chartStatus: React.PropTypes.string.isRequired,
+  fields: React.PropTypes.object.isRequired,
 };
 
 
@@ -28,7 +30,6 @@ class ExploreViewContainer extends React.Component {
 
   componentDidMount() {
     window.addEventListener('resize', this.handleResize.bind(this));
-    this.props.actions.updateChartStatus('success');
   }
 
   componentWillReceiveProps(nextProps) {
@@ -63,11 +64,36 @@ class ExploreViewContainer extends React.Component {
   }
 
   handleResize() {
-    this.setState({ height: this.getHeight() });
+    clearTimeout(this.resizeTimer);
+    this.resizeTimer = setTimeout(() => {
+      this.setState({ height: this.getHeight() });
+    }, 250);
   }
 
   toggleModal() {
     this.setState({ showModal: !this.state.showModal });
+  }
+  renderErrorMessage() {
+    // Returns an error message as a node if any errors are in the store
+    const errors = [];
+    for (const fieldName in this.props.fields) {
+      const field = this.props.fields[fieldName];
+      if (field.validationErrors && field.validationErrors.length > 0) {
+        errors.push(
+          <div key={fieldName}>
+            <strong>{`[ ${field.label} ] `}</strong>
+            {field.validationErrors.join('. ')}
+          </div>
+        );
+      }
+    }
+    let errorMessage;
+    if (errors.length > 0) {
+      errorMessage = (
+        <div style={{ textAlign: 'left' }}>{errors}</div>
+      );
+    }
+    return errorMessage;
   }
 
   render() {
@@ -94,8 +120,10 @@ class ExploreViewContainer extends React.Component {
               canAdd="True"
               onQuery={this.onQuery.bind(this, this.props.form_data)}
               onSave={this.toggleModal.bind(this)}
+              disabled={this.props.chartStatus === 'loading'}
+              errorMessage={this.renderErrorMessage()}
             />
-            <br /><br />
+            <br />
             <ControlPanelsContainer
               actions={this.props.actions}
               form_data={this.props.form_data}
@@ -121,6 +149,8 @@ function mapStateToProps(state) {
   return {
     datasource_type: state.datasource_type,
     form_data: state.viz.form_data,
+    chartStatus: state.chartStatus,
+    fields: state.fields,
   };
 }
 
