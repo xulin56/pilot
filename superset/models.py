@@ -774,7 +774,8 @@ class Database(Model, AuditMixinNullable):
     def get_df(self, sql, schema):
         sql = sql.strip().strip(';')
         eng = self.get_sqla_engine(schema=schema)
-        cur = eng.execute(sql, schema=schema)
+        #cur = eng.execute(sql, schema=schema)
+        cur = eng.execute(sql)
         cols = [col[0] for col in cur.cursor.description]
         df = pd.DataFrame(cur.fetchall(), columns=cols)
         return df
