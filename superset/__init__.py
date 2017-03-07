@@ -15,7 +15,7 @@ from flask_cache import Cache
 from flask_migrate import Migrate
 from superset.source_registry import SourceRegistry
 from werkzeug.contrib.fixers import ProxyFix
-from superset import utils
+from superset import utils, config
 
 
 APP_DIR = os.path.dirname(__file__)
