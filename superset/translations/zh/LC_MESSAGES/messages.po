@@ -1199,7 +1199,7 @@ msgstr "Druid数据源"
 
 #: superset/views.py:378 superset/views.py:435
 msgid "Database"
-msgstr "数据库"
+msgstr "连接"
 
 #: superset/views.py:379
 msgid "SQL link"
@@ -1207,7 +1207,7 @@ msgstr "SQL查询"
 
 #: superset/views.py:380 superset/views.py:534 superset/views.py:610
 msgid "Creator"
-msgstr "作者"
+msgstr "创建者"
 
 #: superset/views.py:381 superset/views.py:436
 msgid "Last Changed"
@@ -1224,7 +1224,7 @@ msgstr "缓存时间"
 
 #: superset/views.py:384
 msgid "Extra"
-msgstr "扩展"
+msgstr "参数"
 
 #: superset/views.py:434
 msgid "Changed By"
@@ -1232,7 +1232,7 @@ msgstr "修改人"
 
 #: superset/views.py:437
 msgid "SQL Editor"
-msgstr "SQL查询"
+msgstr "SQL编辑器"
 
 #: superset/views.py:438 superset/views.py:693
 msgid "Is Featured"
@@ -1240,7 +1240,13 @@ msgstr "是否突出"
 
 #: superset/views.py:439
 msgid "Schema"
-msgstr "模式"
+msgstr "数据库"
+
+msgid "Schema, as used only in some databases like Postgres, Redshift and DB2"
+msgstr "连接中存在的数据库"
+
+msgid "Name of the table that exists in the source database"
+msgstr "数据库中存在的表名"
 
 #: superset/views.py:440 superset/views.py:695
 msgid "Default Endpoint"
@@ -1288,11 +1294,11 @@ msgstr "当单击“保存”或“覆盖”按钮时，这些参数会在视图
 
 #: superset/views.py:527
 msgid "Duration (in seconds) of the caching timeout for this slice."
-msgstr "切片数据过期时间(秒)"
+msgstr "图表数据过期时间(秒)"
 
 #: superset/templates/superset/welcome.html:26 superset/views.py:535
 msgid "Dashboards"
-msgstr "看板"
+msgstr "仪表板"
 
 #: superset/views.py:538
 msgid "Last Modified"
@@ -1308,7 +1314,7 @@ msgstr "参数"
 
 #: superset/views.py:541 superset/views.py:569
 msgid "Slice"
-msgstr "切片"
+msgstr "图表"
 
 #: superset/views.py:542
 msgid "Name"
@@ -1329,7 +1335,7 @@ msgstr "这个JSON对象描述了部件在看板中的位置。它是动态生�
 msgid ""
 "The css for individual dashboards can be altered here, or in the "
 "dashboard view where changes are immediately visible"
-msgstr "可以在这里或者在看板视图修改单个看板的CSS样式"
+msgstr "可以在这里或者在仪表板视图修改单个看板的CSS样式"
 
 #: superset/views.py:595
 msgid "To get a readable URL for your dashboard"
@@ -1360,7 +1366,7 @@ msgstr ""
 
 #: superset/views.py:608
 msgid "Slices"
-msgstr "切片"
+msgstr "图表"
 
 #: superset/views.py:611
 msgid "Modified"
@@ -1724,7 +1730,7 @@ msgstr "查询"
 #: superset/templates/superset/explore.html:43
 #: superset/templates/superset/explore.html:306
 msgid "Save"
-msgstr ""
+msgstr "保存"
 
 #: superset/templates/superset/explore.html:72
 msgid "Force refresh"
@@ -1763,7 +1769,7 @@ msgid "query"
 msgstr "查询"
 
 #: superset/templates/superset/explore.html:150
-msgid "Filters are defined using comma delimited strings as in 'US,FR,Other'"
+msgid "Filters are defined using comma delimited strings as in <US,FR,Other>"
 msgstr "使用逗号分隔多个过滤条件，如'US,FR,Other'"
 
 #: superset/templates/superset/explore.html:168
@@ -1781,7 +1787,7 @@ msgstr "数据源描述"
 
 #: superset/templates/superset/explore.html:277
 msgid "Save a Slice"
-msgstr ""
+msgstr "保存图表"
 
 #: superset/templates/superset/explore.html:309
 msgid "Save & go to dashboard"
@@ -1789,7 +1795,7 @@ msgstr ""
 
 #: superset/templates/superset/explore.html:312
 msgid "Cancel"
-msgstr ""
+msgstr "取消"
 
 #: superset/templates/superset/sql.html:12
 msgid "Run!"
@@ -1808,33 +1814,240 @@ msgstr "欢迎！"
 msgid "Test Connection"
 msgstr "测试连接"
 
-#~ msgid "Databases"
-#~ msgstr ""
+msgid "Databases"
+msgstr "连接"
 
-#~ msgid "Sources"
-#~ msgstr ""
+msgid "Sources"
+msgstr "数据源"
 
-#~ msgid "Tables"
-#~ msgstr ""
+msgid "Tables"
+msgstr "表"
 
-#~ msgid "Druid Clusters"
-#~ msgstr ""
+msgid "Action Log"
+msgstr "访问日志"
 
-#~ msgid "Action Log"
-#~ msgstr ""
+msgid "Security"
+msgstr "安全"
 
-#~ msgid "Security"
-#~ msgstr ""
+msgid "Documentation"
+msgstr "文档"
 
-#~ msgid "Druid Datasources"
-#~ msgstr ""
+msgid "Standalone version, use to embed anywhere"
+msgstr ""
 
-#~ msgid "CSS Templates"
-#~ msgstr ""
+msgid "Access requests"
+msgstr "访问请求"
 
-#~ msgid "Documentation"
-#~ msgstr ""
+msgid "List Datasource Access Request"
+msgstr "数据源访问请求"
 
-#~ msgid "Standalone version, use to embed anywhere"
-#~ msgstr ""
+msgid "Access Log"
+msgstr "访问日志"
+
+msgid "Manage"
+msgstr "管理"
+
+msgid "Import Dashboards"
+msgstr "导入仪表板"
+
+msgid "Import the dashboards"
+msgstr "导入仪表板"
+
+msgid "Upload"
+msgstr "上传"
+
+msgid "Queries"
+msgstr "查询"
+
+msgid "List Query"
+msgstr "查询列表"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "Start Time"
+msgstr "开始时间"
+
+msgid "End Time"
+msgstr "结束时间"
+
+msgid "CSS Templates"
+msgstr "CSS模板"
+
+msgid "List Database"
+msgstr "连接列表"
+
+msgid "Backend"
+msgstr "数据库"
+
+msgid "Allow DML"
+msgstr "允许DML"
+
+msgid "Edit Database"
+msgstr "编辑连接"
+
+msgid "Expose in SQL Lab"
+msgstr "在SQL Lab使用"
+
+msgid "Expose this DB in SQL Lab"
+msgstr "允许在SQL Lab中使用该数据库"
+
+msgid "Allow Run Sync"
+msgstr "允许同步运行"
+
+msgid ""
+"Allow users to run synchronous queries, this is the default and should work well "
+"for queries that can be executed within a web request scope (<~1 minute)"
+msgstr ""
+
+msgid "Allow Run Async"
+msgstr "允许异步运行"
+
+msgid "Allow users to run non-SELECT statements (UPDATE, DELETE, CREATE, ...) in SQL Lab"
+msgstr "允许用户在SQL Lab中执行更新，删除和创建操作"
+
+msgid "Show Database"
+msgstr ""
+
+msgid "Created By"
+msgstr "创建者"
+
+msgid "Created On"
+msgstr "创建日期"
+
+msgid "Changed By"
+msgstr "修改者"
+
+msgid "Changed On"
+msgstr "修改日期"
+
+msgid "List Sqla Table"
+msgstr "已创建的表"
+
+msgid "Delete"
+msgstr "删除"
+
+msgid "Show Sqla Table"
+msgstr "表的详细信息"
+
+msgid "Detail"
+msgstr "详细信息"
+
+msgid "Table Name"
+msgstr "表名"
+
+msgid "Enable Filter Select"
+msgstr ""
+
+msgid "Description"
+msgstr "描述"
+
+msgid "Main Dttm Col"
+msgstr ""
+
+msgid "Default Endpoint"
+msgstr ""
+
+msgid "Perm"
+msgstr ""
+
+msgid "List Table Column"
+msgstr "列"
+
+msgid "Add Table Column"
+msgstr "添加列"
+
+msgid "Type"
+msgstr "数据类型"
+
+msgid "List Sql Metric"
+msgstr "SQL度量列表"
+
+msgid "Add Sql Metric"
+msgstr "添加SQL度量"
+
+msgid "D3Format"
+msgstr "D3格式"
+
+msgid "Is Restricted"
+msgstr "权限限制"
+
+msgid "List Slice"
+msgstr "图表列表"
+
+msgid "Click on a table link to create a Slice"
+msgstr "点击表名创建图表"
+
+msgid "Datasource Id"
+msgstr "表ID"
+
+msgid "Edit Slice"
+msgstr "编辑图表"
+
+msgid "Save as"
+msgstr "保存为"
+
+msgid "Datasource & Chart Type"
+msgstr "表 & 图表类型"
+
+msgid "Edit/configure datasource"
+msgstr "修改表"
+
+msgid "List Dashboard"
+msgstr "仪表板列表"
+
+msgid "Export"
+msgstr "导出"
+
+msgid "Show Dashboard"
+msgstr "仪表板信息"
+
+msgid "Edit Dashboard"
+msgstr "编辑仪表板"
+
+msgid "Add Dashboard"
+msgstr "添加仪表板"
+
+msgid "Select Value"
+msgstr "点击选择"
+
+msgid "Query Search"
+msgstr "SQL执行记录"
+
+msgid "Untitled Query"
+msgstr "未命名查询"
+
+msgid "Run Query"
+msgstr "查询"
+
+msgid "Results"
+msgstr "查询结果"
+
+msgid "Query Hisroty"
+msgstr "查询记录"
+
+msgid "state"
+msgstr "状态"
+
+msgid "started"
+msgstr "开始时间"
+
+msgid "duration"
+msgstr "用时"
+
+msgid "progress"
+msgstr "进度"
+
+msgid "rows"
+msgstr "行数"
+
+msgid "sql"
+msgstr "sql"
+
+msgid "output"
+msgstr ""
+
+msgid "actions"
+msgstr "行为"
+
 
