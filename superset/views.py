@@ -522,12 +522,14 @@ appbuilder.add_view_no_menu(DruidMetricInlineView)
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Database)
     list_columns = [
-        'database_name', 'backend', 'allow_run_sync', 'allow_run_async',
+        #'database_name', 'backend', 'allow_run_sync', 'allow_run_async',
+        'database_name', 'backend',
         'allow_dml', 'creator', 'changed_on_']
     add_columns = [
         'database_name', 'sqlalchemy_uri', 'cache_timeout', 'extra',
-        'expose_in_sqllab', 'allow_run_sync', 'allow_run_async',
-        'allow_ctas', 'allow_dml', 'force_ctas_schema']
+        #'expose_in_sqllab', 'allow_run_sync', 'allow_run_async',
+        #'allow_ctas', 'allow_dml', 'force_ctas_schema']
+        'expose_in_sqllab', 'allow_dml']
     search_exclude_columns = ('password',)
     edit_columns = add_columns
     show_columns = [
@@ -553,22 +555,22 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             "database-urls) "
             "for more information on how to structure your URI.", True),
         'expose_in_sqllab': _("Expose this DB in SQL Lab"),
-        'allow_run_sync': _(
-            "Allow users to run synchronous queries, this is the default "
-            "and should work well for queries that can be executed "
-            "within a web request scope (<~1 minute)"),
-        'allow_run_async': _(
-            "Allow users to run queries, against an async backend. "
-            "This assumes that you have a Celery worker setup as well "
-            "as a results backend."),
-        'allow_ctas': _("Allow CREATE TABLE AS option in SQL Lab"),
+        # 'allow_run_sync': _(
+        #     "Allow users to run synchronous queries, this is the default "
+        #     "and should work well for queries that can be executed "
+        #     "within a web request scope (<~1 minute)"),
+        # 'allow_run_async': _(
+        #     "Allow users to run queries, against an async backend. "
+        #     "This assumes that you have a Celery worker setup as well "
+        #     "as a results backend."),
+        # 'allow_ctas': _("Allow CREATE TABLE AS option in SQL Lab"),
         'allow_dml': _(
             "Allow users to run non-SELECT statements "
             "(UPDATE, DELETE, CREATE, ...) "
             "in SQL Lab"),
-        'force_ctas_schema': _(
-            "When allowing CREATE TABLE AS option in SQL Lab, "
-            "this option forces the table to be created in this schema"),
+        # 'force_ctas_schema': _(
+        #     "When allowing CREATE TABLE AS option in SQL Lab, "
+        #     "this option forces the table to be created in this schema"),
         'extra': utils.markdown(
             "JSON string containing extra configuration elements. "
             "The ``engine_params`` object gets unpacked into the "
@@ -581,9 +583,9 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     }
     label_columns = {
         'expose_in_sqllab': _("Expose in SQL Lab"),
-        'allow_ctas': _("Allow CREATE TABLE AS"),
+        #'allow_ctas': _("Allow CREATE TABLE AS"),
         'allow_dml': _("Allow DML"),
-        'force_ctas_schema': _("CTAS Schema"),
+        #'force_ctas_schema': _("CTAS Schema"),
         'database_name': _("Database"),
         'creator': _("Creator"),
         'changed_on_': _("Last Changed"),
