@@ -1,4 +1,4 @@
-# Chinese translations for PROJECT.
+/home/jiajie/project/superset/mySuperset/superset/static/assets# Chinese translations for PROJECT.
 # Copyright (C) 2016 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2016.
@@ -1139,19 +1139,19 @@ msgstr "表"
 
 #: superset/views.py:236 superset/views.py:264
 msgid "Count Distinct"
-msgstr "计数"
+msgstr "可计数"
 
 #: superset/views.py:237 superset/views.py:265
 msgid "Sum"
-msgstr "求和"
+msgstr "可求和"
 
 #: superset/views.py:238 superset/views.py:266
 msgid "Min"
-msgstr "最小值"
+msgstr "可求最小值"
 
 #: superset/views.py:239 superset/views.py:267
 msgid "Max"
-msgstr "最大值"
+msgstr "可求最大值"
 
 #: superset/views.py:240
 msgid "Expression"
@@ -1159,7 +1159,7 @@ msgstr "表达式"
 
 #: superset/views.py:241
 msgid "Is temporal"
-msgstr "表示时间"
+msgstr "可表示时间"
 
 #: superset/views.py:242
 msgid "Datetime Format"
@@ -1215,7 +1215,7 @@ msgstr "更新时间"
 
 #: superset/views.py:382
 msgid "SQLAlchemy URI"
-msgstr ""
+msgstr "SQLAlchemy连接串"
 
 #: superset/views.py:383 superset/views.py:442 superset/views.py:533
 #: superset/views.py:697
@@ -1228,7 +1228,7 @@ msgstr "参数"
 
 #: superset/views.py:434
 msgid "Changed By"
-msgstr "修改人"
+msgstr "修改者"
 
 #: superset/views.py:437
 msgid "SQL Editor"
@@ -1241,6 +1241,11 @@ msgstr "是否突出"
 #: superset/views.py:439
 msgid "Schema"
 msgstr "数据库"
+
+msgid ""
+"This fields acts a Superset view, meaning that Superset will "
+"run a query against this string as a subquery."
+msgstr "针对该表的查询将作为该Sql的子查询"
 
 msgid "Schema, as used only in some databases like Postgres, Redshift and DB2"
 msgstr "连接中存在的数据库"
@@ -1370,7 +1375,7 @@ msgstr "图表"
 
 #: superset/views.py:611
 msgid "Modified"
-msgstr "已修改"
+msgstr "修改时间"
 
 #: superset/views.py:612
 msgid "Position JSON"
@@ -1398,7 +1403,7 @@ msgstr "操作"
 
 #: superset/views.py:655
 msgid "dttm"
-msgstr "DTTM"
+msgstr "时间"
 
 #: superset/views.py:683
 msgid "Timezone offset (in hours) for this datasource"
@@ -1712,7 +1717,7 @@ msgstr "按照一个或多个字段分组。必须指定经度和纬度。"
 
 #: superset/templates/appbuilder/navbar_right.html:36
 msgid "Profile"
-msgstr "策略"
+msgstr "个人信息"
 
 #: superset/templates/appbuilder/navbar_right.html:37
 msgid "Logout"
@@ -1937,16 +1942,10 @@ msgid "Table Name"
 msgstr "表名"
 
 msgid "Enable Filter Select"
-msgstr ""
-
-msgid "Description"
-msgstr "描述"
+msgstr "允许筛选该列"
 
 msgid "Main Dttm Col"
-msgstr ""
-
-msgid "Default Endpoint"
-msgstr ""
+msgstr "主时间列"
 
 msgid "Perm"
 msgstr ""
@@ -1956,9 +1955,6 @@ msgstr "列"
 
 msgid "Add Table Column"
 msgstr "添加列"
-
-msgid "Type"
-msgstr "数据类型"
 
 msgid "List Sql Metric"
 msgstr "SQL度量列表"

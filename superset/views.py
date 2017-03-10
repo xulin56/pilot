@@ -356,7 +356,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'python_date_format': utils.markdown(Markup(
             "The pattern of timestamp format, use "
             "<a href='https://docs.python.org/2/library/"
-            "datetime.html#strftime-strptime-behavior'>"
+            "datetime.html#strftime-strptime-behavior' target='_blank'>"
             "python datetime string pattern</a> "
             "expression. If time is stored in epoch "
             "format, put `epoch_s` or `epoch_ms`. Leave `Database Expression` "
@@ -376,6 +376,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'column_name': _("Column"),
         'verbose_name': _("Verbose Name"),
         'description': _("Description"),
+        'type': _("Type"),
         'groupby': _("Groupable"),
         'filterable': _("Filterable"),
         'table': _("Table"),
@@ -522,28 +523,16 @@ appbuilder.add_view_no_menu(DruidMetricInlineView)
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Database)
     list_columns = [
-        #'database_name', 'backend', 'allow_run_sync', 'allow_run_async',
         'database_name', 'backend',
         'allow_dml', 'creator', 'changed_on_']
     add_columns = [
         'database_name', 'sqlalchemy_uri', 'cache_timeout', 'extra',
-        #'expose_in_sqllab', 'allow_run_sync', 'allow_run_async',
-        #'allow_ctas', 'allow_dml', 'force_ctas_schema']
         'expose_in_sqllab', 'allow_dml']
     search_exclude_columns = ('password',)
     edit_columns = add_columns
     show_columns = [
-        'tables',
-        'cache_timeout',
-        'extra',
-        'database_name',
-        'sqlalchemy_uri',
-        'perm',
-        'created_by',
-        'created_on',
-        'changed_by',
-        'changed_on',
-    ]
+        'tables', 'cache_timeout', 'extra', 'database_name', 'sqlalchemy_uri',
+        'perm', 'created_by', 'created_on', 'changed_by', 'changed_on']
     add_template = "superset/models/database/add.html"
     edit_template = "superset/models/database/edit.html"
     base_order = ('changed_on', 'desc')
@@ -555,22 +544,10 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             "database-urls) "
             "for more information on how to structure your URI.", True),
         'expose_in_sqllab': _("Expose this DB in SQL Lab"),
-        # 'allow_run_sync': _(
-        #     "Allow users to run synchronous queries, this is the default "
-        #     "and should work well for queries that can be executed "
-        #     "within a web request scope (<~1 minute)"),
-        # 'allow_run_async': _(
-        #     "Allow users to run queries, against an async backend. "
-        #     "This assumes that you have a Celery worker setup as well "
-        #     "as a results backend."),
-        # 'allow_ctas': _("Allow CREATE TABLE AS option in SQL Lab"),
         'allow_dml': _(
             "Allow users to run non-SELECT statements "
             "(UPDATE, DELETE, CREATE, ...) "
             "in SQL Lab"),
-        # 'force_ctas_schema': _(
-        #     "When allowing CREATE TABLE AS option in SQL Lab, "
-        #     "this option forces the table to be created in this schema"),
         'extra': utils.markdown(
             "JSON string containing extra configuration elements. "
             "The ``engine_params`` object gets unpacked into the "
@@ -582,16 +559,21 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             "#sqlalchemy.schema.MetaData) call. ", True),
     }
     label_columns = {
+        'tables': _("Tables"),
         'expose_in_sqllab': _("Expose in SQL Lab"),
-        #'allow_ctas': _("Allow CREATE TABLE AS"),
         'allow_dml': _("Allow DML"),
-        #'force_ctas_schema': _("CTAS Schema"),
         'database_name': _("Database"),
         'creator': _("Creator"),
         'changed_on_': _("Last Changed"),
         'sqlalchemy_uri': _("SQLAlchemy URI"),
         'cache_timeout': _("Cache Timeout"),
         'extra': _("Extra"),
+        'backend': _("Backend"),
+        'perm': _("Perm"),
+        'created_by': _("Created By"),
+        'created_on': _("Created On"),
+        'changed_by': _("Changed By"),
+        'changed_on': _("Changed On"),
     }
 
     def pre_add(self, db):
@@ -665,7 +647,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
             "Schema, as used only in some databases like Postgres, Redshift "
             "and DB2"),
         'description': Markup(
-            "Supports <a href='https://daringfireball.net/projects/markdown/'>"
+            "Supports <a href='https://daringfireball.net/projects/markdown/' target='_blank'>"
             "markdown</a>"),
         'sql': _(
             "This fields acts a Superset view, meaning that Superset will "
@@ -675,12 +657,16 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     base_filters = [['id', DatasourceFilter, lambda: []]]
     label_columns = {
         'link': _("Table"),
+        'table_name': _("Table Name"),
         'changed_by_': _("Changed By"),
         'database': _("Database"),
         'changed_on_': _("Last Changed"),
         'is_featured': _("Is Featured"),
         'filter_select_enabled': _("Enable Filter Select"),
         'schema': _("Schema"),
+        'description': _("Description"),
+        'owner': _("Owner"),
+        'main_dttm_col': _("Main Dttm Col"),
         'default_endpoint': _("Default Endpoint"),
         'offset': _("Offset"),
         'cache_timeout': _("Cache Timeout"),
@@ -807,12 +793,15 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     edit_columns = [
         'slice_name', 'description', 'viz_type', 'owners', 'dashboards',
         'params', 'cache_timeout']
+    show_columns = [
+        'slice_name', 'viz_type', 'params', 'dashboards', 'owners',
+        'created_by', 'created_on', 'changed_by', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
         'description': Markup(
             "The content here can be displayed as widget headers in the "
             "dashboard view. Supports "
-            "<a href='https://daringfireball.net/projects/markdown/'>"
+            "<a href='https://daringfireball.net/projects/markdown/' target='_blank'>"
             "markdown</a>"),
         'params': _(
             "These parameters are generated dynamically when clicking "
@@ -837,6 +826,13 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'slice_name': _("Name"),
         'table': _("Table"),
         'viz_type': _("Visualization Type"),
+        'created_by': _("Created By"),
+        'created_on': _("Created On"),
+        'changed_by': _("Changed By"),
+        'changed_on': _("Changed On"),
+        'datasource_id': _("Datasource Id"),
+        'datasource_name': _("Datasource Name"),
+        'datasource_type': _("Datasource Type"),
     }
 
     def pre_update(self, obj):
@@ -1047,7 +1043,7 @@ class DruidDatasourceModelView(SupersetModelView, DeleteMixin):  # noqa
         'offset': _("Timezone offset (in hours) for this datasource"),
         'description': Markup(
             "Supports <a href='"
-            "https://daringfireball.net/projects/markdown/'>markdown</a>"),
+            "https://daringfireball.net/projects/markdown/' target='_blank'>markdown</a>"),
     }
     base_filters = [['id', DatasourceFilter, lambda: []]]
     label_columns = {
