@@ -587,14 +587,14 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         self.pre_add(db)
 
 
-appbuilder.add_link(
-    'Import Dashboards',
-    label=__("Import Dashboards"),
-    href='/superset/import_dashboards',
-    icon="fa-cloud-upload",
-    category='Manage',
-    category_label=__("Manage"),
-    category_icon='fa-wrench',)
+# appbuilder.add_link(
+#     'Import Dashboards',
+#     label=__("Import Dashboards"),
+#     href='/superset/import_dashboards',
+#     icon="fa-cloud-upload",
+#     category='Manage',
+#     category_label=__("Manage"),
+#     category_icon='fa-wrench',)
 
 
 appbuilder.add_view(
@@ -736,13 +736,13 @@ class AccessRequestsModelView(SupersetModelView, DeleteMixin):
         'created_on': _("Created On"),
     }
 
-appbuilder.add_view(
-    AccessRequestsModelView,
-    "Access requests",
-    label=__("Access requests"),
-    category="Security",
-    category_label=__("Security"),
-    icon='fa-table',)
+# appbuilder.add_view(
+#     AccessRequestsModelView,
+#     "Access requests",
+#     label=__("Access requests"),
+#     category="Security",
+#     category_label=__("Security"),
+#     icon='fa-table',)
 
 
 class DruidClusterModelView(SupersetModelView, DeleteMixin):  # noqa
@@ -794,7 +794,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'slice_name', 'description', 'viz_type', 'owners', 'dashboards',
         'params', 'cache_timeout']
     show_columns = [
-        'slice_name', 'viz_type', 'params', 'dashboards', 'owners',
+        'slice_name', 'description', 'viz_type', 'params', 'dashboards', 'owners',
         'created_by', 'created_on', 'changed_by', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
@@ -891,9 +891,7 @@ appbuilder.add_view_no_menu(SliceAddView)
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Dashboard)
     list_columns = ['dashboard_link', 'creator', 'modified']
-    edit_columns = [
-        'dashboard_title', 'slug', 'slices', 'owners', 'position_json', 'css',
-        'json_metadata']
+    edit_columns = ['dashboard_title', 'description', 'slices', 'owners']
     show_columns = edit_columns + ['table_names']
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
@@ -932,6 +930,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'css': _("CSS"),
         'json_metadata': _("JSON Metadata"),
         'table_names': _("Underlying Tables"),
+        'description': _("Description")
     }
 
     def pre_add(self, obj):
@@ -1001,26 +1000,26 @@ class LogModelView(SupersetModelView):
         'json': _("JSON"),
     }
 
-appbuilder.add_view(
-    LogModelView,
-    "Action Log",
-    label=__("Action Log"),
-    category="Security",
-    category_label=__("Security"),
-    icon="fa-list-ol")
+# appbuilder.add_view(
+#     LogModelView,
+#     "Action Log",
+#     label=__("Action Log"),
+#     category="Security",
+#     category_label=__("Security"),
+#     icon="fa-list-ol")
 
 
 class QueryView(SupersetModelView):
     datamodel = SQLAInterface(models.Query)
     list_columns = ['user', 'database', 'status', 'start_time', 'end_time']
 
-appbuilder.add_view(
-    QueryView,
-    "Queries",
-    label=__("Queries"),
-    category="Manage",
-    category_label=__("Manage"),
-    icon="fa-search")
+# appbuilder.add_view(
+#     QueryView,
+#     "Queries",
+#     label=__("Queries"),
+#     category="Manage",
+#     category_label=__("Manage"),
+#     icon="fa-search")
 
 
 class DruidDatasourceModelView(SupersetModelView, DeleteMixin):  # noqa
@@ -2777,14 +2776,14 @@ class CssTemplateAsyncModelView(CssTemplateModelView):
     list_columns = ['template_name', 'css']
 
 appbuilder.add_separator("Sources")
-appbuilder.add_view(
-    CssTemplateModelView,
-    "CSS Templates",
-    label=__("CSS Templates"),
-    icon="fa-css3",
-    category="Manage",
-    category_label=__("Manage"),
-    category_icon='')
+# appbuilder.add_view(
+#     CssTemplateModelView,
+#     "CSS Templates",
+#     label=__("CSS Templates"),
+#     icon="fa-css3",
+#     category="Manage",
+#     category_label=__("Manage"),
+#     category_icon='')
 
 appbuilder.add_view_no_menu(CssTemplateAsyncModelView)
 
