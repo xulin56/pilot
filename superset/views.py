@@ -789,12 +789,13 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_link': 'Datasource',
     }
     list_columns = [
-        'slice_link', 'viz_type', 'datasource_link', 'creator', 'modified']
+        'slice_link', 'description', 'viz_type', 'datasource_link',
+        'department', 'creator', 'modified']
     edit_columns = [
-        'slice_name', 'description', 'viz_type', 'owners', 'dashboards',
-        'params', 'cache_timeout']
+        'slice_name', 'description', 'viz_type', 'department', 'owners',
+        'dashboards',  'params', 'cache_timeout']
     show_columns = [
-        'slice_name', 'description', 'viz_type', 'params', 'dashboards', 'owners',
+        'slice_name', 'description', 'viz_type', 'department', 'params', 'dashboards', 'owners',
         'created_by', 'created_on', 'changed_by', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
@@ -819,6 +820,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'dashboards': _("Dashboards"),
         'datasource_link': _("Datasource"),
         'description': _("Description"),
+        'department': _("Department"),
         'modified': _("Last Modified"),
         'owners': _("Owners"),
         'params': _("Parameters"),
@@ -890,8 +892,8 @@ appbuilder.add_view_no_menu(SliceAddView)
 
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Dashboard)
-    list_columns = ['dashboard_link', 'creator', 'modified']
-    edit_columns = ['dashboard_title', 'description', 'slices', 'owners']
+    list_columns = ['dashboard_link', 'department', 'creator', 'modified']
+    edit_columns = ['dashboard_title', 'description', 'department', 'slices', 'owners']
     show_columns = edit_columns + ['table_names']
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
@@ -930,7 +932,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'css': _("CSS"),
         'json_metadata': _("JSON Metadata"),
         'table_names': _("Underlying Tables"),
-        'description': _("Description")
+        'description': _("Description"),
+        'department': _('Department')
     }
 
     def pre_add(self, obj):

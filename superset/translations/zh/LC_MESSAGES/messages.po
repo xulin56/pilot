@@ -1124,6 +1124,9 @@ msgstr "全称"
 msgid "Description"
 msgstr "描述"
 
+msgid "Department"
+msgstr "部门"
+
 #: superset/views.py:233 superset/views.py:262
 msgid "Groupable"
 msgstr "可分组"
