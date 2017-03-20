@@ -1,0 +1,19 @@
+{% extends "superset/basic.html" %}
+
+{% block title %}
+  {{ _('Statistics') }}
+{% endblock %}
+
+{% block body %}
+  <div class="statistics">
+    <h2>Basic statistics</h2>
+    {% if number %}
+       <h3>dashboard: {{ number['dashboard'] }}</h3>
+       <h3>slice: {{ number['slice'] }}</h3>
+       <h3>connection: {{ number['connection'] }}</h3>
+       <h3>table: {{ number['table'] }}</h3>
+    {% else %}
+      <h1>No data</h1>
+    {% endif %}
+    </div>
+{% endblock %}

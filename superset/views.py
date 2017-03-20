@@ -389,7 +389,6 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'python_date_format': _("Datetime Format"),
         'database_expression': _("Database Expression")
     }
-appbuilder.add_view_no_menu(TableColumnInlineView)
 
 
 # class DruidColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
@@ -475,8 +474,6 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     def post_update(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
-
-appbuilder.add_view_no_menu(SqlMetricInlineView)
 
 
 # class DruidMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
@@ -596,17 +593,6 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
 #     category_label=__("Manage"),
 #     category_icon='fa-wrench',)
 
-
-appbuilder.add_view(
-    DatabaseView,
-    "Databases",
-    label=__("Databases"),
-    icon="fa-database",
-    category="Sources",
-    category_label=__("Sources"),
-    category_icon='fa-database',)
-
-
 class DatabaseAsync(DatabaseView):
     list_columns = [
         'id', 'database_name',
@@ -614,13 +600,9 @@ class DatabaseAsync(DatabaseView):
         'allow_run_async', 'allow_run_sync', 'allow_dml',
     ]
 
-appbuilder.add_view_no_menu(DatabaseAsync)
-
 
 class DatabaseTablesAsync(DatabaseView):
     list_columns = ['id', 'all_table_names', 'all_schema_names']
-
-appbuilder.add_view_no_menu(DatabaseTablesAsync)
 
 
 class TableModelView(SupersetModelView, DeleteMixin):  # noqa
@@ -708,17 +690,6 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 
     def post_update(self, table):
         self.post_add(table)
-
-appbuilder.add_view(
-    TableModelView,
-    "Tables",
-    label=__("Tables"),
-    category="Sources",
-    category_label=__("Sources"),
-    icon='fa-table',)
-
-appbuilder.add_separator("Sources")
-
 
 # class AccessRequestsModelView(SupersetModelView, DeleteMixin):
 #     datamodel = SQLAInterface(DAR)
@@ -861,14 +832,6 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         redirect_url = "/r/msg/?url={}&msg={}".format(url, msg)
         return redirect(redirect_url)
 
-appbuilder.add_view(
-    SliceModelView,
-    "Slices",
-    label=__("Slices"),
-    icon="fa-bar-chart",
-    category="",
-    category_icon='',)
-
 
 class SliceAsync(SliceModelView):  # noqa
     list_columns = [
@@ -879,20 +842,16 @@ class SliceAsync(SliceModelView):  # noqa
         'slice_link': _('Slice'),
     }
 
-appbuilder.add_view_no_menu(SliceAsync)
-
 
 class SliceAddView(SliceModelView):  # noqa
     list_columns = [
         'id', 'slice_name', 'slice_link', 'viz_type',
         'owners', 'modified', 'changed_on']
 
-appbuilder.add_view_no_menu(SliceAddView)
-
 
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Dashboard)
-    list_columns = ['dashboard_link', 'department', 'creator', 'modified']
+    list_columns = ['dashboard_link', 'description', 'department', 'creator', 'modified']
     edit_columns = ['dashboard_title', 'description', 'department', 'slices', 'owners']
     show_columns = edit_columns + ['table_names']
     add_columns = edit_columns
@@ -973,22 +932,11 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         )
 
 
-appbuilder.add_view(
-    DashboardModelView,
-    "Dashboards",
-    label=__("Dashboards"),
-    icon="fa-dashboard",
-    category='',
-    category_icon='',)
-
-
 class DashboardModelViewAsync(DashboardModelView):  # noqa
     list_columns = ['dashboard_link', 'creator', 'modified', 'dashboard_title']
     label_columns = {
         'dashboard_link': 'Dashboard',
     }
-
-appbuilder.add_view_no_menu(DashboardModelViewAsync)
 
 
 class LogModelView(SupersetModelView):
@@ -1132,8 +1080,6 @@ class R(BaseSupersetView):
         """Redirects to specified url while flash a message"""
         flash(Markup(request.args.get("msg")), "info")
         return redirect(request.args.get("url"))
-
-appbuilder.add_view_no_menu(R)
 
 
 class Superset(BaseSupersetView):
@@ -2755,17 +2701,24 @@ class Superset(BaseSupersetView):
             'superset/sqllab.html',
             bootstrap_data=json.dumps(d, default=utils.json_iso_dttm_ser)
         )
-appbuilder.add_view_no_menu(Superset)
 
-if config['DRUID_IS_ACTIVE']:
-    appbuilder.add_link(
-        "Refresh Druid Metadata",
-        label=__("Refresh Druid Metadata"),
-        href='/superset/refresh_datasources/',
-        category='Sources',
-        category_label=__("Sources"),
-        category_icon='fa-database',
-        icon="fa-cog")
+    @expose("/statistics")
+    def statistics(self):
+        """Personalized welcome page"""
+        if not g.user or not g.user.get_id():
+            return redirect(appbuilder.get_url_for_login)
+        number = {'dashboard': 1, 'slice': 2, 'connection': 3, 'table': 4}
+        return self.render_template('superset/statistics.html', number=number)
+
+# if config['DRUID_IS_ACTIVE']:
+#     appbuilder.add_link(
+#         "Refresh Druid Metadata",
+#         label=__("Refresh Druid Metadata"),
+#         href='/superset/refresh_datasources/',
+#         category='Sources',
+#         category_label=__("Sources"),
+#         category_icon='fa-database',
+#         icon="fa-cog")
 
 
 # class CssTemplateModelView(SupersetModelView, DeleteMixin):
@@ -2790,6 +2743,56 @@ if config['DRUID_IS_ACTIVE']:
 
 # appbuilder.add_view_no_menu(CssTemplateAsyncModelView)
 
+appbuilder.add_view_no_menu(DatabaseAsync)
+appbuilder.add_view_no_menu(DatabaseTablesAsync)
+appbuilder.add_view_no_menu(TableColumnInlineView)
+appbuilder.add_view_no_menu(SqlMetricInlineView)
+appbuilder.add_view_no_menu(SliceAsync)
+appbuilder.add_view_no_menu(SliceAddView)
+appbuilder.add_view_no_menu(DashboardModelViewAsync)
+appbuilder.add_view_no_menu(R)
+appbuilder.add_view_no_menu(Superset)
+
+appbuilder.add_link(
+    'Statistics',
+    href='/superset/statistics',
+    icon="",
+    category_icon="",
+    category='')
+
+appbuilder.add_view(
+    DashboardModelView,
+    "Dashboards",
+    label=__("Dashboards"),
+    icon="fa-dashboard",
+    category='',
+    category_icon='',)
+
+appbuilder.add_view(
+    SliceModelView,
+    "Slices",
+    label=__("Slices"),
+    icon="fa-bar-chart",
+    category="",
+    category_icon='',)
+
+appbuilder.add_view(
+    DatabaseView,
+    "Databases",
+    label=__("Databases"),
+    icon="fa-database",
+    category="Sources",
+    category_label=__("Sources"),
+    category_icon='fa-database',)
+
+appbuilder.add_view(
+    TableModelView,
+    "Tables",
+    label=__("Tables"),
+    category="Sources",
+    category_label=__("Sources"),
+    icon='fa-table',)
+
 appbuilder.add_link(
     'SQL Editor',
     href='/superset/sqllab',
@@ -2802,7 +2805,6 @@ appbuilder.add_link(
     icon="fa-search",
     category_icon="fa-flask",
     category='SQL Lab')
-
 
 @app.after_request
 def apply_caching(response):
