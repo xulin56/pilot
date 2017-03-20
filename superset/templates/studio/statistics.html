@@ -1,0 +1,24 @@
+{% extends "superset/basic.html" %}
+
+
+{% block head_js %}
+    {{ super() }}
+    {% with filename="welcome" %}
+        {% include "superset/partials/_script_tag.html" %}
+    {% endwith %}
+{% endblock %}
+
+{% block title %}{{ _("Welcome!") }}{% endblock %}
+
+{% block body %}
+    {% if number %}
+        <h1>dashboard: {{ number['dashboard'] }}</h1>
+        <h1>slice: {{ number['slice'] }}</h1>
+        <h1>connection: {{ number['connection'] }}</h1>
+        <h1>table: {{ number['table'] }}</h1>
+    {% else %}
+        <h1>No statistics data</h1>
+    {% endif %}
+{% endblock %}
+
+
