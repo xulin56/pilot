@@ -1362,7 +1362,7 @@ msgstr "“所有者”是一组可以修改看板的用户列表"
 
 #: superset/views.py:605
 msgid "Dashboard"
-msgstr "看板"
+msgstr "仪表板"
 
 #: superset/views.py:606
 msgid "Title"

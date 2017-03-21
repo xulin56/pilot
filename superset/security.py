@@ -12,24 +12,24 @@ from superset import conf, db, models, sm, source_registry
 READ_ONLY_MODELVIEWS = {
     'DatabaseAsync',
     'DatabaseView',
-    'DruidClusterModelView',
+#    'DruidClusterModelView',
 }
 
 GAMMA_READ_ONLY_MODELVIEWS = {
     'SqlMetricInlineView',
     'TableColumnInlineView',
     'TableModelView',
-    'DruidColumnInlineView',
-    'DruidDatasourceModelView',
-    'DruidMetricInlineView',
+#    'DruidColumnInlineView',
+#    'DruidDatasourceModelView',
+#    'DruidMetricInlineView',
 } | READ_ONLY_MODELVIEWS
 
 ADMIN_ONLY_VIEW_MENUES = {
     'AccessRequestsModelView',
     'Manage',
-    'SQL Lab',
+#    'SQL Lab',
     'Queries',
-    'Refresh Druid Metadata',
+#    'Refresh Druid Metadata',
     'ResetPasswordView',
     'RoleModelView',
     'Security',
@@ -39,9 +39,9 @@ ADMIN_ONLY_VIEW_MENUES = {
 ADMIN_ONLY_PERMISSIONS = {
     'all_database_access',
     # TODO: move can_sql_json to sql_lab role
-    'can_sql_json',
+#    'can_sql_json',
     'can_override_role_permissions',
-    'can_sync_druid_source',
+#    'can_sync_druid_source',
     'can_override_role_permissions',
     'can_approve',
     'can_update_role',
@@ -210,11 +210,11 @@ def sync_role_definitions():
     set_role('Admin', pvms, is_admin_pvm)
     set_role('Alpha', pvms, is_alpha_pvm)
     set_role('Gamma', pvms, is_gamma_pvm)
-    set_role('granter', pvms, is_granter_pvm)
-    set_role('sql_lab', pvms, is_sql_lab_pvm)
-
-    if conf.get('PUBLIC_ROLE_LIKE_GAMMA', False):
-        set_role('Public', pvms, is_gamma_pvm)
+    # set_role('granter', pvms, is_granter_pvm)
+    # set_role('sql_lab', pvms, is_sql_lab_pvm)
+    #
+    # if conf.get('PUBLIC_ROLE_LIKE_GAMMA', False):
+    #     set_role('Public', pvms, is_gamma_pvm)
 
     view_menu_set = db.session.query(models.SqlaTable).all()
     create_missing_datasource_perms(view_menu_set)
