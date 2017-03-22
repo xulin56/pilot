@@ -896,6 +896,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     }
 
     def pre_add(self, obj):
+        if not obj.slug:
+            obj.slug = obj.dashboard_title
         obj.slug = obj.slug.strip() or None
         if obj.slug:
             obj.slug = obj.slug.replace(" ", "-")
@@ -2753,12 +2755,12 @@ appbuilder.add_view_no_menu(DashboardModelViewAsync)
 appbuilder.add_view_no_menu(R)
 appbuilder.add_view_no_menu(Superset)
 
-appbuilder.add_link(
-    'Statistics',
-    href='/superset/statistics',
-    icon="",
-    category_icon="",
-    category='')
+# appbuilder.add_link(
+#     'Statistics',
+#     href='/superset/statistics',
+#     icon="",
+#     category_icon="",
+#     category='')
 
 appbuilder.add_view(
     DashboardModelView,
