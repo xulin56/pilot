@@ -20,13 +20,13 @@ class StatisticsTests(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(StatisticsTests, self).__init__(*args, **kwargs)
 
-    def test_read_csv_to_sql(self, csv_path):
+    def test_read_csv_to_sql(self):
         sep = ','
         header = 0
         names = ['country', 'name', 'sex', 'num', 'year', 'boy_num', 'girl_num']
         parse_dates = [4]
         usecols = [0, 1, 2, 3, 4, 5, 6]
-        df = pd.read_csv(csv_path, sep=sep, header=header,
+        df = pd.read_csv(self.csv_path, sep=sep, header=header,
                            parse_dates=parse_dates, usecols=usecols)
         # print(df.dtypes)
         # print(list(df))
@@ -36,24 +36,24 @@ class StatisticsTests(unittest.TestCase):
         df.to_sql('birth_names_csv', db.engine.connect(), schema='superset2',
                   if_exists='replace', chunksize=10000)
 
-    def test_read_excel_to_sql(self, xls_path):
+    def test_read_excel_to_sql(self):
         sheetname = 0
         header = None
         names = ['country', 'name', 'sex', 'num', 'year', 'boy_num', 'girl_num']
         parse_cols = [0, 1, 2, 3, 4, 5, 6]
-        xlsx = pd.ExcelFile(xls_path)
+        xlsx = pd.ExcelFile(self.xls_path)
         df = pd.read_excel(xlsx, sheetname=sheetname, header=header,
                            names=names, parse_cols=parse_cols)
         df.to_sql('birth_names_xls', db.engine.connect(), schema='superset2',
                   if_exists='replace', chunksize=10000)
 
-    def test_read_txt_to_sql(self, txt_path):
+    def test_read_txt_to_sql(self):
         sep = ','
         header = 0
         names = ['country', 'name', 'sex', 'num', 'year', 'boy_num', 'girl_num']
         parse_dates = [4]
         usecols = [0, 1, 2, 3, 4, 5, 6]
-        df = pd.read_table(txt_path, sep=sep, header=header,
+        df = pd.read_table(self.txt_path, sep=sep, header=header,
                          parse_dates=parse_dates, usecols=usecols)
         df.to_sql('birth_names_txt', db.engine.connect(), schema='superset2',
                   if_exists='replace', chunksize=10000)
