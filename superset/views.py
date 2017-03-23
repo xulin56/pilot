@@ -44,6 +44,7 @@ from superset.sql_parse import SupersetQuery
 
 config = app.config
 log_this = models.Log.log_this
+log_action = models.Log.log_action
 can_access = utils.can_access
 QueryStatus = models.QueryStatus
 
@@ -521,7 +522,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Database)
     list_columns = [
         'database_name', 'backend',
-        'allow_dml', 'creator', 'changed_on_']
+        'allow_dml', 'creator', 'changed_on']
     add_columns = [
         'database_name', 'sqlalchemy_uri', 'cache_timeout', 'extra',
         'expose_in_sqllab', 'allow_dml']
@@ -907,12 +908,24 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         utils.validate_json(obj.json_metadata)
         utils.validate_json(obj.position_json)
 
+    def post_add(self, obj):
+        action_str = 'Add dashboard: {}'.format(str(obj))
+        log_action(action_str, obj, obj.id)
+
     def pre_update(self, obj):
         check_ownership(obj)
         self.pre_add(obj)
 
+    def post_update(self, obj):
+        action_str = 'Update dashboard: {}'.format(str(obj))
+        log_action(action_str, obj, obj.id)
+
     def pre_delete(self, obj):
         check_ownership(obj)
+
+    def post_delete(self, obj):
+        action_str = 'Delete dashboard: {}'.format(str(obj))
+        log_action(action_str, obj, obj.id)
 
     @action("mulexport", "Export", "Export dashboards?", "fa-database")
     def mulexport(self, items):
@@ -953,13 +966,13 @@ class LogModelView(SupersetModelView):
         'json': _("JSON"),
     }
 
-# appbuilder.add_view(
-#     LogModelView,
-#     "Action Log",
-#     label=__("Action Log"),
-#     category="Security",
-#     category_label=__("Security"),
-#     icon="fa-list-ol")
+appbuilder.add_view(
+    LogModelView,
+    "Action Log",
+    label=__("Action Log"),
+    category="Security",
+    category_label=__("Security"),
+    icon="fa-list-ol")
 
 
 class QueryView(SupersetModelView):

@@ -2598,14 +2598,46 @@ class Log(Model):
                 json=params,
                 dashboard_id=d.get('dashboard_id') or None,
                 slice_id=slice_id,
-                duration_ms=(
-                    datetime.now() - start_dttm).total_seconds() * 1000,
+                duration_ms=(datetime.now() - start_dttm).total_seconds() * 1000,
                 referrer=request.referrer[:1000] if request.referrer else None,
                 user_id=user_id)
             sesh.add(log)
             sesh.commit()
             return value
         return wrapper
+
+    @classmethod
+    def log_action(cls, action, obj, obj_id):
+        start_dttm = datetime.now()
+        user_id = None
+        if g.user:
+            user_id = g.user.get_id()
+        d = request.args.to_dict()
+        post_data = request.form or {}
+        d.update(post_data)
+        params = ""
+        try:
+            params = json.dumps(d)
+        except:
+            pass
+
+        slice_id, dashboard_id = None, None
+        if isinstance(obj, Slice):
+            slice_id = int(obj_id)
+        elif isinstance(obj, Dashboard):
+            dashboard_id = int(obj_id)
+
+        sesh = db.session()
+        log = cls(
+            action=action,
+            json=params,
+            dashboard_id=dashboard_id,
+            slice_id=slice_id,
+            duration_ms=(datetime.now() - start_dttm).total_seconds() * 1000,
+            referrer=request.referrer[:1000] if request.referrer else None,
+            user_id=user_id)
+        sesh.add(log)
+        sesh.commit()
 
 
 class FavStar(Model):
