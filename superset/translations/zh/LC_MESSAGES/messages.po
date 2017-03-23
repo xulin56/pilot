@@ -1138,7 +1138,7 @@ msgstr "可筛选"
 #: superset/views.py:235 superset/views.py:299 superset/views.py:433
 #: superset/views.py:543
 msgid "Table"
-msgstr "表"
+msgstr "数据集"
 
 #: superset/views.py:236 superset/views.py:264
 msgid "Count Distinct"
@@ -1179,7 +1179,7 @@ msgstr "类型"
 
 #: superset/views.py:261 superset/views.py:536
 msgid "Datasource"
-msgstr "数据源"
+msgstr "数据集"
 
 #: superset/views.py:286 superset/views.py:328
 msgid ""
@@ -1302,7 +1302,7 @@ msgstr "当单击“保存”或“覆盖”按钮时，这些参数会在视图
 
 #: superset/views.py:527
 msgid "Duration (in seconds) of the caching timeout for this slice."
-msgstr "图表数据过期时间(秒)"
+msgstr "工作表数据过期时间(秒)"
 
 #: superset/templates/superset/welcome.html:26 superset/views.py:535
 msgid "Dashboards"
@@ -1322,7 +1322,7 @@ msgstr "参数"
 
 #: superset/views.py:541 superset/views.py:569
 msgid "Slice"
-msgstr "图表"
+msgstr "工作表"
 
 #: superset/views.py:542
 msgid "Name"
@@ -1374,7 +1374,7 @@ msgstr ""
 
 #: superset/views.py:608
 msgid "Slices"
-msgstr "图表"
+msgstr "工作表"
 
 #: superset/views.py:611
 msgid "Modified"
@@ -1580,11 +1580,11 @@ msgstr "蛇形图"
 
 #: superset/viz.py:1340 superset/viz.py:1410
 msgid "Source / Target"
-msgstr "源/目标"
+msgstr "数据源/目标"
 
 #: superset/viz.py:1341 superset/viz.py:1411
 msgid "Choose a source and a target"
-msgstr "选择源和目标"
+msgstr "选择数据源和目标"
 
 #: superset/viz.py:1391
 msgid "Directed Force Layout"
@@ -1795,7 +1795,7 @@ msgstr "数据源描述"
 
 #: superset/templates/superset/explore.html:277
 msgid "Save a Slice"
-msgstr "保存图表"
+msgstr "保存工作表"
 
 #: superset/templates/superset/explore.html:309
 msgid "Save & go to dashboard"
@@ -1829,7 +1829,7 @@ msgid "Sources"
 msgstr "数据源"
 
 msgid "Tables"
-msgstr "表"
+msgstr "数据集"
 
 msgid "Action Log"
 msgstr "访问日志"
@@ -1930,19 +1930,19 @@ msgid "Changed On"
 msgstr "修改日期"
 
 msgid "List Sqla Table"
-msgstr "已创建的表"
+msgstr "已创建的数据集"
 
 msgid "Delete"
 msgstr "删除"
 
 msgid "Show Sqla Table"
-msgstr "表的详细信息"
+msgstr "数据集的详细信息"
 
 msgid "Detail"
 msgstr "详细信息"
 
 msgid "Table Name"
-msgstr "表名"
+msgstr "数据集"
 
 msgid "Enable Filter Select"
 msgstr "允许筛选该列"
@@ -1972,16 +1972,16 @@ msgid "Is Restricted"
 msgstr "权限限制"
 
 msgid "List Slice"
-msgstr "图表列表"
+msgstr "工作表列表"
 
 msgid "Click on a table link to create a Slice"
-msgstr "点击表名创建图表"
+msgstr "点击数据集链接创建工作表"
 
 msgid "Datasource Id"
 msgstr "表ID"
 
 msgid "Edit Slice"
-msgstr "编辑图表"
+msgstr "编辑工作表"
 
 msgid "Save as"
 msgstr "保存为"
