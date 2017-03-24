@@ -1414,6 +1414,7 @@ class Superset(BaseSupersetView):
     @has_access_api
     @expose("/explore_json/<datasource_type>/<datasource_id>/")
     def explore_json(self, datasource_type, datasource_id):
+        """render the chart of slice"""
         try:
             viz_obj = self.get_viz(
                 datasource_type=datasource_type,
@@ -1474,6 +1475,7 @@ class Superset(BaseSupersetView):
     @has_access
     @expose("/explore/<datasource_type>/<datasource_id>/")
     def explore(self, datasource_type, datasource_id):
+        """render the parameters of slice"""
         viz_type = request.args.get("viz_type")
         slice_id = request.args.get('slice_id')
         slc = None
@@ -1815,7 +1817,8 @@ class Superset(BaseSupersetView):
         session.add(dash)
         session.commit()
         dash_json = dash.json_data
-        session.close()
+        action_str = 'Add dashboard: {}'.format(dash.dashboard_title)
+        log_action(action_str, models.Dashboard, dash.id)
         return Response(
             dash_json, mimetype="application/json")
 
@@ -1833,7 +1836,8 @@ class Superset(BaseSupersetView):
         self._set_dash_metadata(dash, data)
         session.merge(dash)
         session.commit()
-        session.close()
+        action_str = 'Update dashboard: {}'.format(repr(dash))
+        log_action(action_str, models.Dashboard, dashboard_id)
         return "SUCCESS"
 
     @staticmethod
