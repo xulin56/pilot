@@ -1457,8 +1457,7 @@ class Superset(BaseSupersetView):
                 if table.type == 'table':
                     models.SqlaTable.import_obj(table, import_time=current_tt)
                 else:
-                    models.DruidDatasource.import_obj(
-                        table, import_time=current_tt)
+                    models.DruidDatasource.import_obj(table, import_time=current_tt)
             db.session.commit()
             for dashboard in data['dashboards']:
                 models.Dashboard.import_obj(
@@ -1738,10 +1737,7 @@ class Superset(BaseSupersetView):
         """endpoint to power the calendar heatmap on the welcome page"""
         Log = models.Log  # noqa
         qry = (
-            db.session
-            .query(
-                Log.dt,
-                sqla.func.count())
+            db.session.query(Log.dt, sqla.func.count())
             .group_by(Log.dt)
             .all()
         )
@@ -1755,8 +1751,7 @@ class Superset(BaseSupersetView):
     def all_tables(self, db_id):
         """Endpoint that returns all tables and views from the database"""
         database = (
-            db.session
-            .query(models.Database)
+            db.session.query(models.Database)
             .filter_by(id=db_id)
             .one()
         )
@@ -1781,8 +1776,7 @@ class Superset(BaseSupersetView):
         """endpoint to power the calendar heatmap on the welcome page"""
         schema = None if schema in ('null', 'undefined') else schema
         database = (
-            db.session
-            .query(models.Database)
+            db.session.query(models.Database)
             .filter_by(id=db_id)
             .one()
         )
@@ -1802,10 +1796,7 @@ class Superset(BaseSupersetView):
         session = db.session()
         data = json.loads(request.form.get('data'))
         dash = models.Dashboard()
-        original_dash = (session
-                         .query(models.Dashboard)
-                         .filter_by(id=dashboard_id).first())
-
+        original_dash = session.query(models.Dashboard).filter_by(id=dashboard_id).first()
         dash.owners = [g.user] if g.user else []
         dash.dashboard_title = data['dashboard_title']
         dash.slices = original_dash.slices
@@ -1826,9 +1817,7 @@ class Superset(BaseSupersetView):
     def save_dash(self, dashboard_id):
         """Save a dashboard's metadata"""
         session = db.session()
-        dash = (session
-                .query(models.Dashboard)
-                .filter_by(id=dashboard_id).first())
+        dash = session.query(models.Dashboard).filter_by(id=dashboard_id).first()
         check_ownership(dash, raise_if_false=True)
         data = json.loads(request.form.get('data'))
         self._set_dash_metadata(dash, data)
@@ -1863,8 +1852,7 @@ class Superset(BaseSupersetView):
         data = json.loads(request.form.get('data'))
         session = db.session()
         Slice = models.Slice  # noqa
-        dash = (
-            session.query(models.Dashboard).filter_by(id=dashboard_id).first())
+        dash = session.query(models.Dashboard).filter_by(id=dashboard_id).first()
         check_ownership(dash, raise_if_false=True)
         new_slices = session.query(Slice).filter(
             Slice.id.in_(data['slice_ids']))
@@ -1884,8 +1872,7 @@ class Superset(BaseSupersetView):
             db_name = request.json.get('name')
             if db_name:
                 database = (
-                    db.session
-                    .query(models.Database)
+                    db.session.query(models.Database)
                     .filter_by(database_name=db_name)
                     .first()
                 )
@@ -1916,20 +1903,12 @@ class Superset(BaseSupersetView):
         M = models  # noqa
         qry = (
             db.session.query(M.Log, M.Dashboard, M.Slice)
-            .outerjoin(
-                M.Dashboard,
-                M.Dashboard.id == M.Log.dashboard_id
-            )
-            .outerjoin(
-                M.Slice,
-                M.Slice.id == M.Log.slice_id
-            )
+            .outerjoin(M.Dashboard, M.Dashboard.id == M.Log.dashboard_id)
+            .outerjoin(M.Slice, M.Slice.id == M.Log.slice_id)
             .filter(
                 sqla.and_(
                     ~M.Log.action.in_(('queries', 'shortner', 'sql_json')),
-                    M.Log.user_id == user_id,
-                )
-            )
+                    M.Log.user_id == user_id))
             .order_by(M.Log.dttm.desc())
             .limit(1000)
         )
@@ -1959,21 +1938,13 @@ class Superset(BaseSupersetView):
     @expose("/fave_dashboards/<user_id>/", methods=['GET'])
     def fave_dashboards(self, user_id):
         qry = (
-            db.session.query(
-                models.Dashboard,
-                models.FavStar.dttm,
-            )
-            .join(
-                models.FavStar,
+            db.session.query(models.Dashboard, models.FavStar.dttm)
+            .join(models.FavStar,
                 sqla.and_(
                     models.FavStar.user_id == int(user_id),
                     models.FavStar.class_name == 'Dashboard',
-                    models.Dashboard.id == models.FavStar.obj_id,
-                )
-            )
-            .order_by(
-                models.FavStar.dttm.desc()
-            )
+                    models.Dashboard.id == models.FavStar.obj_id))
+            .order_by(models.FavStar.dttm.desc())
         )
         payload = []
         for o in qry.all():
@@ -2000,18 +1971,12 @@ class Superset(BaseSupersetView):
     def created_dashboards(self, user_id):
         Dash = models.Dashboard  # noqa
         qry = (
-            db.session.query(
-                Dash,
-            )
+            db.session.query(Dash)
             .filter(
                 sqla.or_(
                     Dash.created_by_fk == user_id,
-                    Dash.changed_by_fk == user_id,
-                )
-            )
-            .order_by(
-                Dash.changed_on.desc()
-            )
+                    Dash.changed_by_fk == user_id,))
+            .order_by(Dash.changed_on.desc())
         )
         payload = [{
             'id': o.id,
@@ -2035,9 +2000,7 @@ class Superset(BaseSupersetView):
             .filter(
                 sqla.or_(
                     Slice.created_by_fk == user_id,
-                    Slice.changed_by_fk == user_id,
-                )
-            )
+                    Slice.changed_by_fk == user_id))
             .order_by(Slice.changed_on.desc())
         )
         payload = [{
@@ -2056,21 +2019,13 @@ class Superset(BaseSupersetView):
     def fave_slices(self, user_id):
         """Favorite slices for a user"""
         qry = (
-            db.session.query(
-                models.Slice,
-                models.FavStar.dttm,
-            )
-            .join(
-                models.FavStar,
-                sqla.and_(
+            db.session.query(models.Slice,models.FavStar.dttm)
+            .join(models.FavStar,
+                  sqla.and_(
                     models.FavStar.user_id == int(user_id),
                     models.FavStar.class_name == 'slice',
-                    models.Slice.id == models.FavStar.obj_id,
-                )
-            )
-            .order_by(
-                models.FavStar.dttm.desc()
-            )
+                    models.Slice.id == models.FavStar.obj_id))
+            .order_by(models.FavStar.dttm.desc())
         )
         payload = []
         for o in qry.all():
