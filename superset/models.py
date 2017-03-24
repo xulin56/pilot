@@ -30,12 +30,12 @@ from flask_appbuilder.models.mixins import AuditMixin
 from flask_appbuilder.models.decorators import renders
 from flask_babel import lazy_gettext as _
 
-from pydruid.client import PyDruid
-from pydruid.utils.aggregators import count
-from pydruid.utils.filters import Dimension, Filter
-from pydruid.utils.postaggregator import Postaggregator
-from pydruid.utils.having import Aggregation
-from six import string_types
+# from pydruid.client import PyDruid
+# from pydruid.utils.aggregators import count
+# from pydruid.utils.filters import Dimension, Filter
+# from pydruid.utils.postaggregator import Postaggregator
+# from pydruid.utils.having import Aggregation
+# from six import string_types
 
 from sqlalchemy import (
     Column, Integer, String, ForeignKey, Text, Boolean,
@@ -58,10 +58,8 @@ from superset import (
 from superset.source_registry import SourceRegistry
 from superset.viz import viz_types
 from superset.jinja_context import get_template_processor
-from superset.utils import (
-    flasher, MetricPermException, DimSelector, wrap_clause_in_parens,
-    DTTM_ALIAS, QueryStatus,
-)
+from superset.utils import wrap_clause_in_parens, DTTM_ALIAS, QueryStatus
+# from superset.utils import flasher, MetricPermException, DimSelector
 
 config = app.config
 
@@ -104,15 +102,15 @@ def set_related_perm(mapper, connection, target):  # noqa
     target.perm = ds.perm
 
 
-class JavascriptPostAggregator(Postaggregator):
-    def __init__(self, name, field_names, function):
-        self.post_aggregator = {
-            'type': 'javascript',
-            'fieldNames': field_names,
-            'name': name,
-            'function': function,
-        }
-        self.name = name
+# class JavascriptPostAggregator(Postaggregator):
+#     def __init__(self, name, field_names, function):
+#         self.post_aggregator = {
+#             'type': 'javascript',
+#             'fieldNames': field_names,
+#             'name': name,
+#             'function': function,
+#         }
+#         self.name = name
 
 
 class ImportMixin(object):

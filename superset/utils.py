@@ -28,7 +28,7 @@ from email.utils import formatdate
 from flask import flash, Markup, render_template
 from flask_babel import gettext as __
 from past.builtins import basestring
-from pydruid.utils.having import Having
+# from pydruid.utils.having import Having
 from sqlalchemy import event, exc
 from sqlalchemy.types import TypeDecorator, TEXT
 
@@ -36,7 +36,6 @@ logging.getLogger('MARKDOWN').setLevel(logging.INFO)
 
 
 EPOCH = datetime(1970, 1, 1)
-#DTTM_ALIAS = '__timestamp'
 DTTM_ALIAS = 'timestamp__'
 
 
@@ -117,16 +116,16 @@ class memoized(object):  # noqa
         return functools.partial(self.__call__, obj)
 
 
-class DimSelector(Having):
-    def __init__(self, **args):
-        # Just a hack to prevent any exceptions
-        Having.__init__(self, type='equalTo', aggregation=None, value=None)
-
-        self.having = {'having': {
-            'type': 'dimSelector',
-            'dimension': args['dimension'],
-            'value': args['value'],
-        }}
+# class DimSelector(Having):
+#     def __init__(self, **args):
+#         # Just a hack to prevent any exceptions
+#         Having.__init__(self, type='equalTo', aggregation=None, value=None)
+#
+#         self.having = {'having': {
+#             'type': 'dimSelector',
+#             'dimension': args['dimension'],
+#             'value': args['value'],
+#         }}
 
 
 def list_minus(l, minus):
