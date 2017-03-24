@@ -335,6 +335,10 @@ class SupersetModelView(ModelView):
 
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.TableColumn)
+    list_title = _("List Table Column")
+    show_title = _("Show Table Column")
+    add_title = _("Add Table Column")
+    edit_title = _("Edit Table Column")
     can_delete = False
     list_widget = ListWidgetWithCheckboxes
     edit_columns = [
@@ -437,6 +441,10 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.SqlMetric)
+    list_title = _("List Sql Metric")
+    show_title = _("Show Sql Metric")
+    add_title = _("Add Sql Metric")
+    edit_title = _("Edit Sql Metric")
     list_columns = ['metric_name', 'verbose_name', 'metric_type']
     edit_columns = [
         'metric_name', 'description', 'verbose_name', 'metric_type',
@@ -520,17 +528,20 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Database)
+    list_title = _("List Database")
+    show_title = _("Show Database")
+    add_title = _("Add Database")
+    edit_title = _("Edit Database")
     list_columns = [
-        'database_name', 'backend',
-        'allow_dml', 'creator', 'changed_on']
+        'database_name', 'backend', 'allow_dml', 'creator', 'changed_on']
     add_columns = [
-        'database_name', 'sqlalchemy_uri', 'cache_timeout', 'extra',
-        'expose_in_sqllab', 'allow_dml']
+        'database_name', 'sqlalchemy_uri', 'extra', 'expose_in_sqllab', 'allow_dml']
     search_exclude_columns = ('password',)
     edit_columns = add_columns
     show_columns = [
-        'tables', 'cache_timeout', 'extra', 'database_name', 'sqlalchemy_uri',
-        'perm', 'created_by', 'created_on', 'changed_by', 'changed_on']
+        'database_name', 'sqlalchemy_uri', 'extra', 'tables',
+        'backend', 'expose_in_sqllab', 'allow_dml', 'cache_timeout', 'perm',
+        'created_by', 'created_on', 'changed_by', 'changed_on']
     add_template = "superset/models/database/add.html"
     edit_template = "superset/models/database/edit.html"
     base_order = ('changed_on', 'desc')
@@ -608,16 +619,16 @@ class DatabaseTablesAsync(DatabaseView):
 
 class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.SqlaTable)
-    list_columns = [
-        'link', 'database', 'is_featured',
-        'changed_by_', 'changed_on_']
-    order_columns = [
-        'link', 'database', 'is_featured', 'changed_on_']
+    list_title = _("List Table")
+    show_title = _("Show Table")
+    add_title = _("Add Table")
+    edit_title = _("Edit Table")
+    list_columns = ['link', 'database', 'is_featured', 'changed_by_', 'changed_on_']
+    order_columns = ['link', 'database', 'is_featured', 'changed_on_']
     add_columns = ['database', 'schema', 'table_name']
     edit_columns = [
         'table_name', 'sql', 'is_featured', 'filter_select_enabled',
-        'database', 'schema',
-        'description', 'owner',
+        'database', 'schema', 'description', 'owner',
         'main_dttm_col', 'default_endpoint', 'offset', 'cache_timeout']
     show_columns = edit_columns + ['perm']
     related_views = [TableColumnInlineView, SqlMetricInlineView]
@@ -756,6 +767,10 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 
 class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Slice)
+    list_title = _("List Slice")
+    show_title = _("Show Slice")
+    add_title = _("Add Slice")
+    edit_title = _("Edit Slice")
     can_add = False
     label_columns = {
         'datasource_link': 'Datasource',
@@ -852,6 +867,10 @@ class SliceAddView(SliceModelView):  # noqa
 
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Dashboard)
+    list_title = _("List Dashboard")
+    show_title = _("Show Dashboard")
+    add_title = _("Add Dashboard")
+    edit_title = _("Edit Dashboard")
     list_columns = ['dashboard_link', 'description', 'department', 'creator', 'modified']
     edit_columns = ['dashboard_title', 'description', 'department', 'slices', 'owners']
     show_columns = edit_columns + ['table_names']

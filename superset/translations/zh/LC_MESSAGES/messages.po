@@ -1885,14 +1885,20 @@ msgstr "CSS模板"
 msgid "List Database"
 msgstr "连接列表"
 
+msgid "Edit Database"
+msgstr "编辑连接"
+
+msgid "Add Database"
+msgstr "添加连接"
+
+msgid "Show Database"
+msgstr "连接详细信息"
+
 msgid "Backend"
 msgstr "数据库"
 
 msgid "Allow DML"
 msgstr "允许DML"
-
-msgid "Edit Database"
-msgstr "编辑连接"
 
 msgid "Expose in SQL Lab"
 msgstr "在SQL Lab使用"
@@ -1929,14 +1935,44 @@ msgstr "修改者"
 msgid "Changed On"
 msgstr "修改日期"
 
-msgid "List Sqla Table"
-msgstr "已创建的数据集"
+msgid "List Table"
+msgstr "数据集列表"
+
+msgid "Show Table"
+msgstr "数据集详细信息"
+
+msgid "Add Table"
+msgstr "添加数据集"
+
+msgid "Edit Table"
+msgstr "编辑数据集"
+
+msgid "List Sql Metric"
+msgstr "SQL度量列表"
+
+msgid "Show Sql Metric"
+msgstr "SQL度量详细信息"
+
+msgid "Add Sql Metric"
+msgstr "添加SQL度量"
+
+msgid "Edit Sql Metric"
+msgstr "编辑SQL度量"
+
+msgid "List Table Column"
+msgstr "字段列表"
+
+msgid "Show Table Column"
+msgstr "字段详细信息"
+
+msgid "Add Table Column"
+msgstr "添加字段"
+
+msgid "Edit Table Column"
+msgstr "编辑字段"
 
 msgid "Delete"
 msgstr "删除"
-
-msgid "Show Sqla Table"
-msgstr "数据集的详细信息"
 
 msgid "Detail"
 msgstr "详细信息"
@@ -1953,18 +1989,6 @@ msgstr "主时间列"
 msgid "Perm"
 msgstr ""
 
-msgid "List Table Column"
-msgstr "列"
-
-msgid "Add Table Column"
-msgstr "添加列"
-
-msgid "List Sql Metric"
-msgstr "SQL度量列表"
-
-msgid "Add Sql Metric"
-msgstr "添加SQL度量"
-
 msgid "D3Format"
 msgstr "D3格式"
 
@@ -1974,14 +1998,20 @@ msgstr "权限限制"
 msgid "List Slice"
 msgstr "工作表列表"
 
+msgid "Show Slice"
+msgstr "工作表详细信息"
+
+msgid "Add Slice"
+msgstr "添加工作表"
+
+msgid "Edit Slice"
+msgstr "编辑工作表"
+
 msgid "Click on a table link to create a Slice"
 msgstr "点击数据集链接创建工作表"
 
 msgid "Datasource Id"
 msgstr "表ID"
-
-msgid "Edit Slice"
-msgstr "编辑工作表"
 
 msgid "Save as"
 msgstr "保存为"
@@ -1992,14 +2022,14 @@ msgstr "表 & 图表类型"
 msgid "Edit/configure datasource"
 msgstr "修改表"
 
-msgid "List Dashboard"
-msgstr "仪表板列表"
-
 msgid "Export"
 msgstr "导出"
 
+msgid "List Dashboard"
+msgstr "仪表板列表"
+
 msgid "Show Dashboard"
-msgstr "仪表板信息"
+msgstr "仪表板详细信息"
 
 msgid "Edit Dashboard"
 msgstr "编辑仪表板"
