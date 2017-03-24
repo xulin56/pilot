@@ -1045,6 +1045,9 @@ class SqlMetric(Model, AuditMixinNullable, ImportMixin):
         'metric_name', 'verbose_name', 'metric_type', 'table_id', 'expression',
         'description', 'is_restricted', 'd3format')
 
+    def __repr__(self):
+        return self.metric_name
+
     @property
     def sqla_col(self):
         name = self.metric_name
