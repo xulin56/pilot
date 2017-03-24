@@ -2146,10 +2146,8 @@ class Superset(BaseSupersetView):
         favs = session.query(FavStar).filter_by(
             class_name=class_name, obj_id=obj_id,
             user_id=g.user.get_id()).all()
-
         # get obj name to make log readable
-        obj_class = str_to_class[class_name]
-        obj = session.query(obj_class).filter(obj_class.id == obj_id).one()
+        obj = session.query(str_to_class[class_name]).filter_by(id=obj_id).one()
 
         if action == 'select':
             if not favs:
