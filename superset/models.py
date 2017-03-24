@@ -150,8 +150,7 @@ class AuditMixinNullable(AuditMixin):
     """
 
     created_on = Column(DateTime, default=datetime.now, nullable=True)
-    changed_on = Column(
-        DateTime, default=datetime.now,
+    changed_on = Column(DateTime, default=datetime.now,
         onupdate=datetime.now, nullable=True)
 
     @declared_attr
@@ -2565,7 +2564,7 @@ class Log(Model):
     slice_id = Column(Integer)
     json = Column(Text)
     user = relationship('User', backref='logs', foreign_keys=[user_id])
-    dttm = Column(DateTime, default=datetime.utcnow)
+    dttm = Column(DateTime, default=datetime.now)
     dt = Column(Date, default=date.today())
     duration_ms = Column(Integer)
     referrer = Column(String(1024))
