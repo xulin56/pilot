@@ -1387,12 +1387,8 @@ class Superset(BaseSupersetView):
         session.commit()
         return redirect('/accessrequestsmodelview/list/')
 
-    def get_viz(
-            self,
-            slice_id=None,
-            args=None,
-            datasource_type=None,
-            datasource_id=None):
+    def get_viz(self, slice_id=None, args=None, datasource_type=None,
+                datasource_id=None):
         if slice_id:
             slc = db.session.query(models.Slice).filter_by(id=slice_id).one()
             return slc.get_viz()
@@ -1533,6 +1529,8 @@ class Superset(BaseSupersetView):
         # handle different endpoints
         if request.args.get("csv") == "true":
             payload = viz_obj.get_csv()
+            action_str = 'Save slice\'s data to csv'
+            log_action(action_str, models.SqlaTable, datasource_id)
             return Response(
                 payload,
                 status=200,
