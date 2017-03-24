@@ -733,16 +733,16 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 
     def post_add(self, table):
         TableModelView.merge_perm(table)
-        action_str = 'Add table: {}'.format(str(table))
+        action_str = 'Add table: {}'.format(repr(table))
         log_action(action_str, table, table.id)
 
     def post_update(self, table):
         TableModelView.merge_perm(table)
-        action_str = 'Update table: {}'.format(str(table))
+        action_str = 'Update table: {}'.format(repr(table))
         log_action(action_str, table, table.id)
 
     def post_delete(self, table):
-        action_str = 'Delete table: {}'.format(str(table))
+        action_str = 'Delete table: {}'.format(repr(table))
         log_action(action_str, table, table.id)
 
 # class AccessRequestsModelView(SupersetModelView, DeleteMixin):
@@ -814,9 +814,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     add_title = _("Add Slice")
     edit_title = _("Edit Slice")
     can_add = False
-    label_columns = {
-        'datasource_link': 'Datasource',
-    }
+    label_columns = {'datasource_link': 'Datasource', }
     list_columns = [
         'slice_link', 'description', 'viz_type', 'datasource_link',
         'department', 'creator', 'modified']
@@ -870,14 +868,14 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         check_ownership(obj)
 
     def post_update(self, obj):
-        action_str = 'Update slice: {}'.format(str(obj))
+        action_str = 'Update slice: {}'.format(repr(obj))
         log_action(action_str, obj, obj.id)
 
     def pre_delete(self, obj):
         check_ownership(obj)
 
     def post_delete(self, obj):
-        action_str = 'Delete slice: {}'.format(str(obj))
+        action_str = 'Delete slice: {}'.format(repr(obj))
         log_action(action_str, obj, obj.id)
 
     @expose('/add', methods=['GET', 'POST'])
@@ -977,7 +975,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         utils.validate_json(obj.position_json)
 
     def post_add(self, obj):
-        action_str = 'Add dashboard: {}'.format(str(obj))
+        action_str = 'Add dashboard: {}'.format(repr(obj))
         log_action(action_str, obj, obj.id)
 
     def pre_update(self, obj):
@@ -985,14 +983,14 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         self.pre_add(obj)
 
     def post_update(self, obj):
-        action_str = 'Update dashboard: {}'.format(str(obj))
+        action_str = 'Update dashboard: {}'.format(repr(obj))
         log_action(action_str, obj, obj.id)
 
     def pre_delete(self, obj):
         check_ownership(obj)
 
     def post_delete(self, obj):
-        action_str = 'Delete dashboard: {}'.format(str(obj))
+        action_str = 'Delete dashboard: {}'.format(repr(obj))
         log_action(action_str, obj, obj.id)
 
     @action("mulexport", "Export", "Export dashboards?", "fa-database")
@@ -1138,7 +1136,6 @@ class R(BaseSupersetView):
 
     """used for short urls"""
 
-    @log_this
     @expose("/<url_id>")
     def index(self, url_id):
         url = db.session.query(models.Url).filter_by(id=url_id).first()
@@ -1148,7 +1145,6 @@ class R(BaseSupersetView):
             flash("URL to nowhere...", "danger")
             return redirect('/')
 
-    @log_this
     @expose("/shortner/", methods=['POST', 'GET'])
     def shortner(self):
         url = request.form.get('data')
@@ -1272,7 +1268,6 @@ class Superset(BaseSupersetView):
             'requested': list(db_ds_names)
         }), status=201)
 
-    @log_this
     @has_access
     @expose("/request_access/")
     def request_access(self):
@@ -1311,7 +1306,6 @@ class Superset(BaseSupersetView):
             datasource_names=", ".join([o.name for o in datasources]),
         )
 
-    @log_this
     @has_access
     @expose("/approve")
     def approve(self):
@@ -1409,7 +1403,7 @@ class Superset(BaseSupersetView):
         viz_obj = self.get_viz(slice_id)
         return redirect(viz_obj.get_url(**request.args))
 
-    @log_this
+    # @log_this
     @has_access_api
     @expose("/explore_json/<datasource_type>/<datasource_id>/")
     def explore_json(self, datasource_type, datasource_id):
@@ -1447,7 +1441,7 @@ class Superset(BaseSupersetView):
             mimetype="application/json")
 
     @expose("/import_dashboards", methods=['GET', 'POST'])
-    @log_this
+    @log_this('Import dashboard')
     def import_dashboards(self):
         """Overrides the dashboards using pickled instances from the file."""
         f = request.files.get('file')
@@ -1469,7 +1463,7 @@ class Superset(BaseSupersetView):
             return redirect('/dashboardmodelview/list/')
         return self.render_template('superset/import_dashboards.html')
 
-    @log_this
+    # @log_this
     @has_access
     @expose("/explore/<datasource_type>/<datasource_id>/")
     def explore(self, datasource_type, datasource_id):
@@ -2190,7 +2184,7 @@ class Superset(BaseSupersetView):
                     ''.format(**locals()))
 
         # Hack to log the dashboard_id properly, even when getting a slug
-        @log_this
+        # @log_this
         def dashboard(**kwargs):  # noqa
             pass
         dashboard(dashboard_id=dash.id)
@@ -2213,7 +2207,6 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/sync_druid/", methods=['POST'])
-    @log_this
     def sync_druid_source(self):
         """Syncs the druid datasource in main db with the provided config.
 
@@ -2263,7 +2256,7 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/sqllab_viz/", methods=['POST'])
-    @log_this
+    @log_this('Visualize query result')
     def sqllab_viz(self):
         data = json.loads(request.form.get('data'))
         table_name = data.get('datasourceName')
@@ -2327,7 +2320,6 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/table/<database_id>/<table_name>/<schema>/")
-    @log_this
     def table(self, database_id, table_name, schema):
         schema = None if schema in ('null', 'undefined') else schema
         mydb = db.session.query(models.Database).filter_by(id=database_id).one()
@@ -2384,7 +2376,6 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/extra_table_metadata/<database_id>/<table_name>/<schema>/")
-    @log_this
     def extra_table_metadata(self, database_id, table_name, schema):
         schema = None if schema in ('null', 'undefined') else schema
         mydb = db.session.query(models.Database).filter_by(id=database_id).one()
@@ -2394,7 +2385,7 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/select_star/<database_id>/<table_name>/")
-    @log_this
+    # @log_this
     def select_star(self, database_id, table_name):
         mydb = db.session.query(
             models.Database).filter_by(id=database_id).first()
@@ -2420,7 +2411,6 @@ class Superset(BaseSupersetView):
 
     @has_access_api
     @expose("/cached_key/<key>/")
-    @log_this
     def cached_key(self, key):
         """Returns a key from the cache"""
         resp = cache.get(key)
@@ -2430,7 +2420,6 @@ class Superset(BaseSupersetView):
 
     @has_access_api
     @expose("/results/<key>/")
-    @log_this
     def results(self, key):
         """Serves a key off of the results backend"""
         if not results_backend:
@@ -2465,7 +2454,7 @@ class Superset(BaseSupersetView):
 
     @has_access_api
     @expose("/sql_json/", methods=['POST', 'GET'])
-    @log_this
+    @log_this('Run sql')
     def sql_json(self):
         """Runs arbitrary sql and returns and json"""
         def table_accessible(database, full_table_name, schema_name=None):
@@ -2565,7 +2554,7 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/csv/<client_id>")
-    @log_this
+    @log_this('Download the query results as csv')
     def csv(self, client_id):
         """Download the query results as csv."""
         query = (
@@ -2589,7 +2578,6 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/fetch_datasource_metadata")
-    @log_this
     def fetch_datasource_metadata(self):
         datasource_type = request.args.get('datasource_type')
         datasource_class = SourceRegistry.sources[datasource_type]
@@ -2644,7 +2632,6 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/search_queries")
-    @log_this
     def search_queries(self):
         """Search for queries."""
         query = db.session.query(models.Query)
