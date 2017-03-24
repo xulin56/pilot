@@ -395,6 +395,17 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'database_expression': _("Database Expression")
     }
 
+    def post_add(self, obj):
+        action_str = 'Add table column: {}'.format(repr(obj))
+        log_action(action_str, obj, obj.id)
+
+    def post_update(self, obj):
+        action_str = 'Update table column: {}'.format(repr(obj))
+        log_action(action_str, obj, obj.id)
+
+    def post_delete(self, obj):
+        action_str = 'Delete table column: {}'.format(repr(obj))
+        log_action(action_str, obj, obj.id)
 
 # class DruidColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 #     datamodel = SQLAInterface(models.DruidColumn)
@@ -479,10 +490,18 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     def post_add(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
+        action_str = 'Add sql metric: {}'.format(metric.metric_name)
+        log_action(action_str, metric, metric.id)
 
     def post_update(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
+        action_str = 'Update sql metric: {}'.format(metric.metric_name)
+        log_action(action_str, metric, metric.id)
+
+    def post_delete(self, metric):
+        action_str = 'Delete sql metric: {}'.format(metric.metric_name)
+        log_action(action_str, metric, metric.id)
 
 
 # class DruidMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
@@ -592,9 +611,20 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             security.merge_perm(
                 sm, 'schema_access', utils.get_schema_perm(db, schema))
 
+    def post_add(self, obj):
+        action_str = 'Add connection: {}'.format(repr(obj))
+        log_action(action_str, obj, obj.id)
+
     def pre_update(self, db):
         self.pre_add(db)
 
+    def post_update(self, obj):
+        action_str = 'Update connection: {}'.format(repr(obj))
+        log_action(action_str, obj, obj.id)
+
+    def post_delete(self, obj):
+        action_str = 'Delete connection: {}'.format(repr(obj))
+        log_action(action_str, obj, obj.id)
 
 # appbuilder.add_link(
 #     'Import Dashboards',
@@ -604,6 +634,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
 #     category='Manage',
 #     category_label=__("Manage"),
 #     category_icon='fa-wrench',)
+
 
 class DatabaseAsync(DatabaseView):
     list_columns = [
@@ -688,20 +719,31 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
                 "database connection, schema, and "
                 "table name".format(table.name))
 
-    def post_add(self, table):
+    @staticmethod
+    def merge_perm(table):
         table.fetch_metadata()
         security.merge_perm(sm, 'datasource_access', table.get_perm())
         if table.schema:
             security.merge_perm(sm, 'schema_access', table.schema_perm)
-
         flash(_(
             "The table was created. As part of this two phase configuration "
             "process, you should now click the edit button by "
             "the new table to configure it."),
             "info")
 
+    def post_add(self, table):
+        TableModelView.merge_perm(table)
+        action_str = 'Add table: {}'.format(str(table))
+        log_action(action_str, table, table.id)
+
     def post_update(self, table):
-        self.post_add(table)
+        TableModelView.merge_perm(table)
+        action_str = 'Update table: {}'.format(str(table))
+        log_action(action_str, table, table.id)
+
+    def post_delete(self, table):
+        action_str = 'Delete table: {}'.format(str(table))
+        log_action(action_str, table, table.id)
 
 # class AccessRequestsModelView(SupersetModelView, DeleteMixin):
 #     datamodel = SQLAInterface(DAR)
@@ -827,8 +869,16 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     def pre_update(self, obj):
         check_ownership(obj)
 
+    def post_update(self, obj):
+        action_str = 'Update slice: {}'.format(str(obj))
+        log_action(action_str, obj, obj.id)
+
     def pre_delete(self, obj):
         check_ownership(obj)
+
+    def post_delete(self, obj):
+        action_str = 'Delete slice: {}'.format(str(obj))
+        log_action(action_str, obj, obj.id)
 
     @expose('/add', methods=['GET', 'POST'])
     @has_access
@@ -844,7 +894,6 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                 url = "/{}/list/".format(ds.baselink)
                 msg = _("Click on a {} link to create a Slice".format(source))
                 break
-
         redirect_url = "/r/msg/?url={}&msg={}".format(url, msg)
         return redirect(redirect_url)
 
@@ -1650,6 +1699,8 @@ class Superset(BaseSupersetView):
         session.add(slc)
         session.commit()
         flash(msg, "info")
+        action_str = 'Add slice: {}'.format(slc.slice_name)
+        log_action(action_str, slc, slc.id)
 
     def overwrite_slice(self, slc):
         can_update = check_ownership(slc, raise_if_false=False)
@@ -1661,6 +1712,8 @@ class Superset(BaseSupersetView):
             session.commit()
             msg = "Slice [{}] has been overwritten".format(slc.slice_name)
             flash(msg, "info")
+            action_str = 'Update slice: {}'.format(slc.slice_name)
+            log_action(action_str, slc, slc.id)
 
     @api
     @has_access_api
