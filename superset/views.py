@@ -48,6 +48,13 @@ log_action = models.Log.log_action
 can_access = utils.can_access
 QueryStatus = models.QueryStatus
 
+str_to_class = {
+    'slice': models.Slice,
+    'Slice': models.Slice,
+    'dashboard': models.Dashboard,
+    'Dashboard': models.Dashboard
+}
+
 
 class BaseSupersetView(BaseView):
     def can_access(self, permission_name, view_name):
@@ -2139,6 +2146,11 @@ class Superset(BaseSupersetView):
         favs = session.query(FavStar).filter_by(
             class_name=class_name, obj_id=obj_id,
             user_id=g.user.get_id()).all()
+
+        # get obj name to make log readable
+        obj_class = str_to_class[class_name]
+        obj = session.query(obj_class).filter(obj_class.id == obj_id).one()
+
         if action == 'select':
             if not favs:
                 session.add(
@@ -2150,9 +2162,13 @@ class Superset(BaseSupersetView):
                     )
                 )
             count = 1
+            action_str = 'Like {}: {}'.format(class_name.lower(), repr(obj))
+            log_action(action_str, obj, obj_id)
         elif action == 'unselect':
             for fav in favs:
                 session.delete(fav)
+            action_str = 'Dislike {}: {}'.format(class_name.lower(), repr(obj))
+            log_action(action_str, obj, obj_id)
         else:
             count = len(favs)
         session.commit()
