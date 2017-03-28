@@ -86,7 +86,7 @@ def load_examples(load_test_data):
     """Loads a set of Slices and Dashboards and a supporting dataset """
     print("Loading examples into {}".format(db))
 
-    data.load_css_templates()
+    #data.load_css_templates()
 
     print("Loading energy related dataset")
     data.load_energy()
