@@ -181,7 +181,7 @@ def create_missing_metrics_perm(view_menu_set):
     """
     logging.info("Creating missing metrics permissions")
     metrics = []
-    for model in [models.SqlMetric, models.DruidMetric]:
+    for model in [models.SqlMetric]:
         metrics += list(db.session.query(model).all())
 
     for metric in metrics:
