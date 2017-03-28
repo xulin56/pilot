@@ -1239,7 +1239,7 @@ msgstr "SQL编辑器"
 
 #: superset/views.py:438 superset/views.py:693
 msgid "Is Featured"
-msgstr "是否突出"
+msgstr "显示在首页"
 
 #: superset/views.py:439
 msgid "Schema"

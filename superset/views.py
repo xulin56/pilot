@@ -661,11 +661,11 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     show_title = _("Show Table")
     add_title = _("Add Table")
     edit_title = _("Edit Table")
-    list_columns = ['link', 'database', 'is_featured', 'changed_by_', 'changed_on_']
-    order_columns = ['link', 'database', 'is_featured', 'changed_on_']
+    list_columns = ['link', 'database', 'changed_by_', 'changed_on_']
+    order_columns = ['link', 'database', 'changed_on_']
     add_columns = ['database', 'schema', 'table_name']
     edit_columns = [
-        'table_name', 'sql', 'is_featured', 'filter_select_enabled',
+        'table_name', 'sql', 'filter_select_enabled',
         'database', 'schema', 'description', 'owner',
         'main_dttm_col', 'default_endpoint', 'offset', 'cache_timeout']
     show_columns = edit_columns + ['perm']
