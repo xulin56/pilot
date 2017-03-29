@@ -333,6 +333,13 @@ class DeleteMixin(object):
     def muldelete(self, items):
         self.datamodel.delete_all(items)
         self.update_redirect()
+        if isinstance(items[0], models.SqlaTable):
+            cls_name = 'table'
+        else:
+            cls_name = items[0].__class__.__name__.lower()
+        obj_names = [repr(it) for it in items]
+        action_str = 'Delete {}: {}'.format(cls_name, ','.join(obj_names))
+        log_action(action_str, items[0].__class__, None)
         return redirect(self.get_redirect())
 
 
