@@ -20,10 +20,12 @@ class StatisticsTests(unittest.TestCase):
         print(stat.get_slices_count())
 
     def test_get_fav_dashboards(self):
-        stat.get_fav_dashboards()
+        response = stat.get_fav_dashboards(limit=10, all_user=True)
+        print(response)
 
     def test_get_fav_slices(self):
-        stat.get_fav_slices()
+        response = stat.get_fav_slices(limit=10, all_user=True)
+        print(response)
 
     def test_get_table_used(self):
         stat.get_table_used()

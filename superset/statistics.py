@@ -1,7 +1,9 @@
 """Private statistics info"""
+import json
+from flask import g
 from superset import db
 from superset.models import Database, SqlaTable, Slice, Dashboard, FavStar, Log
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from flask_appbuilder.security.sqla.models import User
 
 
@@ -31,30 +33,64 @@ def get_slice_types():
         print(row)
 
 
-def get_fav_dashboards():
+def get_fav_dashboards(limit=10, all_user=True):
     """Query the times of dashboard liked by users"""
-    rs = db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title) \
-        .filter(FavStar.class_name == 'Dashboard') \
-        .filter(FavStar.obj_id == Dashboard.id) \
-        .group_by(FavStar.obj_id) \
-        .order_by(func.count(FavStar.obj_id).desc()) \
-        .limit(10) \
-        .all()
-    for row in rs:
-        print(row)
+    if all_user:
+        rs = (
+            db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+            .filter(
+                and_(FavStar.class_name == 'Dashboard',
+                     FavStar.obj_id == Dashboard.id)
+            )
+            .group_by(FavStar.obj_id)
+            .order_by(func.count(FavStar.obj_id).desc())
+            .limit(limit)
+            .all()
+        )
+    else:
+        rs = (
+            db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+            .filter(
+                and_(FavStar.user_id == g.user.get_id(),
+                     FavStar.class_name == 'Dashboard',
+                     FavStar.obj_id == Dashboard.id)
+            )
+            .group_by(FavStar.obj_id)
+            .order_by(func.count(FavStar.obj_id).desc())
+            .limit(limit)
+            .all()
+        )
+    return json.dumps(rs)
 
 
-def get_fav_slices():
+def get_fav_slices(limit=10, all_user=True):
     """Query the times of slice liked by users"""
-    rs = db.session.query(func.count(FavStar.obj_id), Slice.slice_name) \
-        .filter(FavStar.class_name == 'Slice') \
-        .filter(FavStar.obj_id == Slice.id) \
-        .group_by(FavStar.obj_id) \
-        .order_by(func.count(FavStar.obj_id).desc()) \
-        .limit(10) \
-        .all()
-    for row in rs:
-        print(row)
+    if all_user:
+        rs = (
+            db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
+            .filter(
+                and_(FavStar.class_name == 'Slice',
+                     FavStar.obj_id == Slice.id)
+            )
+            .group_by(FavStar.obj_id)
+            .order_by(func.count(FavStar.obj_id).desc())
+            .limit(limit)
+            .all()
+        )
+    else:
+        rs = (
+            db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+            .filter(
+                and_(FavStar.user_id == g.user.get_id(),
+                     FavStar.class_name == 'Dashboard',
+                     FavStar.obj_id == Dashboard.id)
+            )
+            .group_by(FavStar.obj_id)
+            .order_by(func.count(FavStar.obj_id).desc())
+            .limit(limit)
+            .all()
+        )
+    return json.dumps(rs)
 
 
 def get_table_used():
