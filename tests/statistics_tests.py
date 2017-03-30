@@ -33,11 +33,13 @@ class StatisticsTests(unittest.TestCase):
     def test_get_slice_types(self):
         stat.get_slice_types()
 
-    def test_get_dashboard_actions(self):
-        stat.get_dashboard_actions()
+    def test_get_modified_dashboards(self):
+        response = stat.get_modified_dashboards()
+        print(response)
 
-    def test_get_slice_actions(self):
-        stat.get_slice_actions()
+    def test_get_modified_slices(self):
+        response = stat.get_modified_slices()
+        print(response)
 
     def test_get_user_actions(self):
         stat.get_user_actions()

@@ -106,28 +106,35 @@ def get_table_used():
         print(row)
 
 
-def get_dashboard_actions():
+def get_modified_dashboards(limit=10):
     """The records of dashboards be modified"""
-    # TODO if use Guardian, no table:'ab_user', use 'username' replace 'changed_by_fk'
-    rs = db.session.query(Dashboard.dashboard_title, User.username, Dashboard.changed_on) \
-        .filter(Dashboard.changed_by_fk == User.id) \
-        .order_by(Dashboard.changed_on.desc()) \
-        .limit(10).\
-        all()
-    for row in rs:
-        print(row)
-
-
-def get_slice_actions():
-    """The records of slices be modified"""
-    # TODO if use Guardian, no table:'ab_user', use 'username' replace 'changed_by_fk'
-    rs = db.session.query(Slice.slice_name, User.username, Slice.changed_on) \
-        .filter(Slice.changed_by_fk == User.id) \
-        .order_by(Slice.changed_on.desc()) \
-        .limit(10)\
+    rs = (
+        db.session.query(
+            Dashboard.dashboard_title, User.username, Dashboard.changed_on)
+        .filter(Dashboard.changed_by_fk == User.id)
+        .order_by(Dashboard.changed_on.desc())
+        .limit(limit)
         .all()
-    for row in rs:
-        print(row)
+    )
+    response = []
+    for title, user, dttm in rs:
+        response.append((title, user, str(dttm)))
+    return json.dumps(response)
+
+
+def get_modified_slices(limit=10):
+    """The records of slices be modified"""
+    rs = (
+        db.session.query(Slice.slice_name, User.username, Slice.changed_on)
+        .filter(Slice.changed_by_fk == User.id)
+        .order_by(Slice.changed_on.desc())
+        .limit(limit)
+        .all()
+    )
+    response = []
+    for name, user, dttm in rs:
+        response.append((name, user, str(dttm)))
+    return json.dumps(response)
 
 
 def get_user_actions():
