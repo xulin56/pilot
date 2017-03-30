@@ -43,7 +43,9 @@ class StatisticsTests(unittest.TestCase):
         print(response)
 
     def test_get_user_actions(self):
-        stat.get_user_actions()
+        response = stat.get_user_actions(limit=3)
+        print(response)
+
 
 if __name__ == '__main__':
     unittest.main()

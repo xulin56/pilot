@@ -142,15 +142,30 @@ def get_modified_slices(limit=10):
     return json.dumps(response)
 
 
-def get_user_actions():
-    """The records of user"""
-    # TODO if use Guardian, no table:'ab_user', delete column:'user_id'
-    rs = db.session.query(User.username, Log.action, Log.dttm) \
-        .filter(Log.user_id == User.id) \
-        .order_by(Log.dttm.desc()) \
-        .limit(10).\
-        all()
-    for row in rs:
-        print(row)
+def get_user_actions(limit=10, all_user=True):
+    """The actions of user"""
+    if all_user:
+        rs = (
+            db.session.query(User.username, Log.action, Log.dttm)
+            .filter(Log.user_id == User.id)
+            .order_by(Log.dttm.desc())
+            .limit(limit)
+            .all()
+        )
+    else:
+        rs = (
+            db.session.query(User.username, Log.action, Log.dttm)
+            .filter(
+                and_(Log.user_id == g.user.get_id(),
+                     Log.user_id == User.id)
+            )
+            .order_by(Log.dttm.desc())
+            .limit(limit)
+            .all()
+        )
+    response = []
+    for name, action, dttm in rs:
+        response.append((name, action, str(dttm)))
+    return json.dumps(response)
 
 
