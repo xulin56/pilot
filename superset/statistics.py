@@ -8,29 +8,31 @@ from flask_appbuilder.security.sqla.models import User
 
 
 def get_connections_count():
-    return db.session.query(Database).count()
+    return db.session.query(Database).count().scalar()
 
 
 def get_tables_count():
-    return db.session.query(SqlaTable).count()
+    return db.session.query(SqlaTable).count().scalar()
 
 
 def get_dashboards_count():
-    return db.session.query(Dashboard).count()
+    return db.session.query(Dashboard).count().scalar()
 
 
 def get_slices_count():
-    return db.session.query(Slice).count()
+    return db.session.query(Slice).count().scalar()
 
 
-def get_slice_types():
+def get_slice_types(limit=10):
     """Query the viz_type of slices"""
-    rs = db.session.query(func.count(Slice.viz_type), Slice.viz_type) \
-        .group_by(Slice.viz_type) \
-        .order_by(func.count(Slice.viz_type).desc()) \
+    rs = (
+        db.session.query(func.count(Slice.viz_type), Slice.viz_type)
+        .group_by(Slice.viz_type)
+        .order_by(func.count(Slice.viz_type).desc())
+        .limit(limit)
         .all()
-    for row in rs:
-        print(row)
+    )
+    return json.dumps(rs)
 
 
 def get_fav_dashboards(limit=10, all_user=True):

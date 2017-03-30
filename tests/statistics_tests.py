@@ -32,7 +32,8 @@ class StatisticsTests(unittest.TestCase):
         print(response)
 
     def test_get_slice_types(self):
-        stat.get_slice_types()
+        response = stat.get_slice_types()
+        print(response)
 
     def test_get_modified_dashboards(self):
         response = stat.get_modified_dashboards()
