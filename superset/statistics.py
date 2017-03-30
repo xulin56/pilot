@@ -93,17 +93,22 @@ def get_fav_slices(limit=10, all_user=True):
     return json.dumps(rs)
 
 
-def get_table_used():
+def get_table_used(limit=10):
     """Query the times of table used by slices"""
-    rs = db.session.query(func.count(Slice.datasource_id), SqlaTable.table_name) \
-        .filter(Slice.datasource_type == 'table') \
-        .filter(Slice.datasource_id == SqlaTable.id) \
-        .group_by(Slice.datasource_id) \
-        .order_by(func.count(Slice.datasource_id).desc()) \
-        .limit(10) \
+    rs = (
+        db.session.query(func.count(Slice.datasource_id), SqlaTable.table_name)
+        .filter(
+            and_(
+                Slice.datasource_type == 'table',
+                Slice.datasource_id == SqlaTable.id
+            )
+        )
+        .group_by(Slice.datasource_id)
+        .order_by(func.count(Slice.datasource_id).desc())
+        .limit(limit)
         .all()
-    for row in rs:
-        print(row)
+    )
+    return json.dumps(rs)
 
 
 def get_modified_dashboards(limit=10):

@@ -28,7 +28,8 @@ class StatisticsTests(unittest.TestCase):
         print(response)
 
     def test_get_table_used(self):
-        stat.get_table_used()
+        response = stat.get_table_used(limit=5)
+        print(response)
 
     def test_get_slice_types(self):
         stat.get_slice_types()
