@@ -48,13 +48,6 @@ log_action = models.Log.log_action
 can_access = utils.can_access
 QueryStatus = models.QueryStatus
 
-str_to_class = {
-    'slice': models.Slice,
-    'Slice': models.Slice,
-    'dashboard': models.Dashboard,
-    'Dashboard': models.Dashboard
-}
-
 
 class BaseSupersetView(BaseView):
     def can_access(self, permission_name, view_name):
@@ -2108,11 +2101,17 @@ class Superset(BaseSupersetView):
         session = db.session()
         FavStar = models.FavStar  # noqa
         count = 0
-        favs = session.query(FavStar).filter_by(
-            class_name=class_name, obj_id=obj_id,
-            user_id=g.user.get_id()).all()
+        favs = (
+            session.query(FavStar)
+            .filter_by(class_name=class_name, obj_id=obj_id, user_id=g.user.get_id())
+            .all()
+        )
         # get obj name to make log readable
-        obj = session.query(str_to_class[class_name]).filter_by(id=obj_id).one()
+        obj = (
+            session.query(models.str_to_model[class_name.lower()])
+            .filter_by(id=obj_id)
+            .one()
+        )
 
         if action == 'select':
             if not favs:

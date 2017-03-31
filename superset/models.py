@@ -2819,6 +2819,12 @@ class DatasourceAccessRequest(Model, AuditMixinNullable):
         return '<ul>' + action_list + '</ul>'
 
 
+str_to_model = {
+    'slice': Slice,
+    'dashboard': Dashboard
+}
+
+
 class DailyNumber(Model):
     """ORM object used to log the daily number of Superset objects"""
     __tablename__ = 'daily_number'
