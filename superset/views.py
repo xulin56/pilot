@@ -337,9 +337,10 @@ class DeleteMixin(object):
             cls_name = 'table'
         else:
             cls_name = items[0].__class__.__name__.lower()
-        obj_names = [repr(it) for it in items]
-        action_str = 'Delete {}: {}'.format(cls_name, ','.join(obj_names))
-        log_action(action_str, items[0].__class__, None)
+        for item in items:
+            obj_name = repr(item)
+            action_str = 'Delete {}: {}'.format(cls_name, obj_name)
+            log_action(action_str, item.__class__, item.id)
         return redirect(self.get_redirect())
 
 
