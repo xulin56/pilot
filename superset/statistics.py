@@ -1,5 +1,6 @@
 """Private statistics info"""
 import json
+from collections import Counter
 from flask import g
 from superset import db
 from superset.models import Database, SqlaTable, Slice, Dashboard, FavStar, Log
@@ -111,6 +112,16 @@ def get_table_used(limit=10):
         .all()
     )
     return json.dumps(rs)
+
+
+def get_slice_used(limit=10):
+    """Query the times of slice used by dashboards"""
+    rs = db.session.query(Dashboard).all()
+    slices = []
+    for dash in rs:
+        for s in dash.slices:
+            slices.append(str(s))
+    return json.dumps(Counter(slices).most_common(limit))
 
 
 def get_modified_dashboards(limit=10):

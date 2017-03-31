@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import unittest
 from superset import db, models, statistics as stat
+from pandas import DataFrame
 
 
 class StatisticsTests(unittest.TestCase):
@@ -19,6 +20,17 @@ class StatisticsTests(unittest.TestCase):
         print(stat.get_dashboards_count())
         print(stat.get_slices_count())
 
+    def test_get_slice_number_trend(self):
+        from superset.models import NumberTrend
+        rs = (
+            db.session.query(NumberTrend.count, NumberTrend.dt)
+            .filter(NumberTrend.type == 'slice')
+        )
+        df = DataFrame(rs.all()).sort_values(by='dt', ascending=True)
+        print(df)
+        print(df.dtypes)
+
+
     def test_get_fav_dashboards(self):
         response = stat.get_fav_dashboards(limit=10, all_user=True)
         print(response)
@@ -29,6 +41,10 @@ class StatisticsTests(unittest.TestCase):
 
     def test_get_table_used(self):
         response = stat.get_table_used(limit=5)
+        print(response)
+
+    def test_get_slice_used(self):
+        response = stat.get_slice_used(limit=5)
         print(response)
 
     def test_get_slice_types(self):
