@@ -2817,3 +2817,16 @@ class DatasourceAccessRequest(Model, AuditMixinNullable):
                 href = "{} Role".format(r.name)
             action_list = action_list + '<li>' + href + '</li>'
         return '<ul>' + action_list + '</ul>'
+
+
+class DailyNumber(Model):
+    """ORM object used to log the daily number of Superset objects"""
+    __tablename__ = 'daily_number'
+    id = Column(Integer, primary_key=True)
+    obj_type = Column(String(32), nullable=False)
+    count = Column(Integer, nullable=False)
+    count = Column(Integer, nullable=False)
+    dt = Column(Date, default=date.today())
+
+    def __str__(self):
+        return '{} {}s on {}'.format(self.count, self.type, self.dt)
