@@ -634,6 +634,10 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
                 make_transient(eager_datasource)
                 eager_datasources.append(eager_datasource)
 
+            # log user action
+            action_str = 'Export dashboard: {}'.format(copied_dashboard.dashboard_title)
+            Log.log_action(action_str, copied_dashboard.__class__, dashboard_id)
+
         return pickle.dumps({
             'dashboards': copied_dashboards,
             'datasources': eager_datasources,

@@ -1468,7 +1468,6 @@ class Superset(BaseSupersetView):
             mimetype="application/json")
 
     @expose("/import_dashboards", methods=['GET', 'POST'])
-    @log_this('Import dashboard')
     def import_dashboards(self):
         """Overrides the dashboards using pickled instances from the file."""
         f = request.files.get('file')
@@ -1485,6 +1484,9 @@ class Superset(BaseSupersetView):
             for dashboard in data['dashboards']:
                 models.Dashboard.import_obj(
                     dashboard, import_time=current_tt)
+                # log user action
+                action_str = 'Import dashboard: {}'.format(dashboard.dashboard_title)
+                log_action(action_str, dashboard.__class__, dashboard.id)
             db.session.commit()
             return redirect('/dashboardmodelview/list/')
         return self.render_template('superset/import_dashboards.html')
