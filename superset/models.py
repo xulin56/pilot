@@ -2860,7 +2860,7 @@ class DailyNumber(Model):
             )
             .first()
         )
-        if today_id[0]:
+        if today_id:
             record = db.session.query(cls).filter(cls.id == today_id[0])
             record.update({cls.count: today_count})
         else:
