@@ -9,19 +9,19 @@ from flask_appbuilder.security.sqla.models import User
 
 
 def get_connections_count():
-    return db.session.query(Database).count().scalar()
+    return db.session.query(Database).count()
 
 
 def get_tables_count():
-    return db.session.query(SqlaTable).count().scalar()
+    return db.session.query(SqlaTable).count()
 
 
 def get_dashboards_count():
-    return db.session.query(Dashboard).count().scalar()
+    return db.session.query(Dashboard).count()
 
 
 def get_slices_count():
-    return db.session.query(Slice).count().scalar()
+    return db.session.query(Slice).count()
 
 
 def get_slice_types(limit=10):

@@ -37,10 +37,11 @@ from flask_babel import lazy_gettext as _
 # from pydruid.utils.having import Aggregation
 # from six import string_types
 
+from datetime import date
 from sqlalchemy import (
     Column, Integer, String, ForeignKey, Text, Boolean,
     DateTime, Date, Table, Numeric,
-    create_engine, MetaData, desc, asc, select, and_
+    create_engine, MetaData, desc, asc, select, and_, func, update
 )
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.ext.declarative import declared_attr
@@ -2821,7 +2822,9 @@ class DatasourceAccessRequest(Model, AuditMixinNullable):
 
 str_to_model = {
     'slice': Slice,
-    'dashboard': Dashboard
+    'dashboard': Dashboard,
+    'table': SqlaTable,
+    'database': Database
 }
 
 
@@ -2831,8 +2834,39 @@ class DailyNumber(Model):
     id = Column(Integer, primary_key=True)
     obj_type = Column(String(32), nullable=False)
     count = Column(Integer, nullable=False)
-    count = Column(Integer, nullable=False)
     dt = Column(Date, default=date.today())
+
+    all_obj_type = ['slice', 'dashboard', 'table', 'database']
 
     def __str__(self):
         return '{} {}s on {}'.format(self.count, self.type, self.dt)
+
+    @classmethod
+    def log_number(cls, obj_type):
+        if obj_type.lower() not in cls.all_obj_type:
+            raise Exception('{} is wrong obj_type to log daily number, '
+                            'should be one of {}'
+                            .format(obj_type, cls.all_obj_type))
+        obj_model = str_to_model[obj_type.lower()]
+
+        today_count = db.session.query(obj_model).count()
+        today_id = (
+            db.session.query(cls.id)
+            .filter(
+                and_(
+                    cls.obj_type.ilike(obj_type),
+                    cls.dt == date.today()
+                )
+            )
+            .first()
+        )
+        if today_id:
+            update(cls).where(cls.id == today_id).values(cls.count == today_count)
+        else:
+            new_row = cls(
+                obj_type=obj_type.lower(),
+                count=today_count,
+                dt=date.today()
+            )
+            db.session.add(new_row)
+        db.session.commit()

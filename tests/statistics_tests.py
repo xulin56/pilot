@@ -20,16 +20,12 @@ class StatisticsTests(unittest.TestCase):
         print(stat.get_dashboards_count())
         print(stat.get_slices_count())
 
-    def test_get_slice_number_trend(self):
-        from superset.models import NumberTrend
-        rs = (
-            db.session.query(NumberTrend.count, NumberTrend.dt)
-            .filter(NumberTrend.type == 'slice')
-        )
-        df = DataFrame(rs.all()).sort_values(by='dt', ascending=True)
-        print(df)
-        print(df.dtypes)
-
+    def test_log_number(self):
+        from superset.models import DailyNumber
+        DailyNumber.log_number('slice')
+        DailyNumber.log_number('dashboard')
+        DailyNumber.log_number('table')
+        DailyNumber.log_number('database')
 
     def test_get_fav_dashboards(self):
         response = stat.get_fav_dashboards(limit=10, all_user=True)
