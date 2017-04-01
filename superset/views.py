@@ -1706,6 +1706,9 @@ class Superset(BaseSupersetView):
         if dash and slc not in dash.slices:
             dash.slices.append(slc)
             db.session.commit()
+            # log user aciton
+            action_str = 'Add dashboard: {}'.format(dash.dashboard_title)
+            log_action(action_str, dash.__class__, dash.id)
 
         if request.args.get('goto_dash') == 'true':
             if request.args.get('V2') == 'true':
