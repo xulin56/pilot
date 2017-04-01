@@ -136,9 +136,11 @@ def get_modified_dashboards(limit=10):
         .limit(limit)
         .all()
     )
+    if not rs:
+        return json.dumps({})
     response = []
     for title, user, dttm in rs:
-        response.append((title, user, str(dttm)))
+        response.append({'name': title, 'user': user, 'time': str(dttm)})
     return json.dumps(response)
 
 
@@ -151,9 +153,11 @@ def get_modified_slices(limit=10):
         .limit(limit)
         .all()
     )
+    if not rs:
+        return json.dumps({})
     response = []
     for name, user, dttm in rs:
-        response.append((name, user, str(dttm)))
+        response.append({'name': name, 'user': user, 'time': str(dttm)})
     return json.dumps(response)
 
 
