@@ -1,9 +1,11 @@
 """Private statistics info"""
 import json
 from collections import Counter
+from datetime import date, timedelta
 from flask import g
 from superset import db
-from superset.models import Database, SqlaTable, Slice, Dashboard, FavStar, Log
+from superset.models import Database, SqlaTable, Slice, \
+    Dashboard, FavStar, Log, DailyNumber
 from sqlalchemy import func, and_
 from flask_appbuilder.security.sqla.models import User
 
@@ -182,3 +184,53 @@ def get_user_actions(limit=10, all_user=True):
     return json.dumps(response)
 
 
+def get_object_number_trends(objs):
+    if not objs:
+        return json.dumps({})
+
+    response = {}
+    for obj in objs:
+        r = get_object_number_trend(obj)
+        response[obj.lower()] = r
+    return json.dumps(response)
+
+
+def get_object_number_trend(obj):
+    rows = (
+        db.session.query(DailyNumber.count, DailyNumber.dt)
+        .filter(DailyNumber.obj_type.ilike(obj))
+        .order_by(DailyNumber.dt)
+        .all()
+    )
+    return fill_missing_date(rows)
+
+
+def fill_missing_date(rows):
+    """Fill the discontinuous date and count of number trend"""
+    full_count, full_dt = [], []
+    if not rows:
+        return {}
+
+    one_day = timedelta(days=1)
+    for row in rows:
+        if row.dt > date.today():
+            return {}
+        elif len(full_count) < 1:
+            full_count.append(int(row.count))
+            full_dt.append(row.dt)
+        else:
+            while full_dt[-1] + one_day < row.dt:
+                full_count.append(full_count[-1])
+                full_dt.append(full_dt[-1] + one_day)
+            full_count.append(row.count)
+            full_dt.append(row.dt)
+
+    while full_dt[-1] < date.today():
+        full_count.append(full_count[-1])
+        full_dt.append(full_dt[-1] + one_day)
+
+    full_dt = [str(d) for d in full_dt]
+    js = []
+    for index, v in enumerate(full_count):
+        js.append({'date': full_dt[index], 'count': full_count[index]})
+    return js

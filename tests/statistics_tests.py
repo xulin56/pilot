@@ -23,9 +23,20 @@ class StatisticsTests(unittest.TestCase):
     def test_log_number(self):
         from superset.models import DailyNumber
         DailyNumber.log_number('slice')
-        DailyNumber.log_number('dashboard')
-        DailyNumber.log_number('table')
-        DailyNumber.log_number('database')
+        # DailyNumber.log_number('dashboard')
+        # DailyNumber.log_number('table')
+        # DailyNumber.log_number('database')
+
+    def test_get_object_number_trend(self):
+        objs = ['slice', 'dashboard', 'table', 'database']
+        obj = objs[2]
+        response = stat.get_object_number_trend(obj)
+        print('{}: {}'.format(obj, response))
+
+    def test_get_object_number_trends(self):
+        objs = ['slice', 'dashboard', 'table', 'database']
+        response = stat.get_object_number_trends(objs)
+        print(response)
 
     def test_get_fav_dashboards(self):
         response = stat.get_fav_dashboards(limit=10, all_user=True)
