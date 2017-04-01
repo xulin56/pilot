@@ -2844,7 +2844,7 @@ class DailyNumber(Model):
     @classmethod
     def log_number(cls, obj_type):
         if obj_type.lower() not in cls.all_obj_type:
-            raise Exception('{} is wrong obj_type to log daily number, '
+            raise Exception('\'{}\' is wrong obj_type to log daily number, '
                             'should be one of {}'
                             .format(obj_type, cls.all_obj_type))
         obj_model = str_to_model[obj_type.lower()]
@@ -2860,8 +2860,9 @@ class DailyNumber(Model):
             )
             .first()
         )
-        if today_id:
-            update(cls).where(cls.id == today_id).values(cls.count == today_count)
+        if today_id[0]:
+            record = db.session.query(cls).filter(cls.id == today_id[0])
+            record.update({cls.count: today_count})
         else:
             new_row = cls(
                 obj_type=obj_type.lower(),
