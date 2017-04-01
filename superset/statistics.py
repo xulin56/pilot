@@ -113,7 +113,12 @@ def get_table_used(limit=10):
         .limit(limit)
         .all()
     )
-    return json.dumps(rs)
+    if not rs:
+        return json.dumps({})
+    response = []
+    for count, name in rs:
+        response.append({'name': name, 'count': count})
+    return json.dumps(response)
 
 
 def get_slice_used(limit=10):
@@ -123,7 +128,14 @@ def get_slice_used(limit=10):
     for dash in rs:
         for s in dash.slices:
             slices.append(str(s))
-    return json.dumps(Counter(slices).most_common(limit))
+    if not slices:
+        return json.dumps({})
+
+    top_n = Counter(slices).most_common(limit)
+    response = []
+    for s in top_n:
+        response.append({'name': s[0], 'count': s[1]})
+    return json.dumps(response)
 
 
 def get_modified_dashboards(limit=10):
@@ -184,7 +196,7 @@ def get_user_actions(limit=10, all_user=True):
         )
     response = []
     for name, action, dttm in rs:
-        response.append((name, action, str(dttm)))
+        response.append({'user': name, 'action': action, 'time': str(dttm)})
     return json.dumps(response)
 
 
