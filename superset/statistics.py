@@ -65,7 +65,12 @@ def get_fav_dashboards(limit=10, all_user=True):
             .limit(limit)
             .all()
         )
-    return json.dumps(rs)
+    if not rs:
+        return json.dumps({})
+    response = []
+    for count, name in rs:
+        response.append({'name': name, 'count': count})
+    return json.dumps(response)
 
 
 def get_fav_slices(limit=10, all_user=True):
@@ -95,7 +100,12 @@ def get_fav_slices(limit=10, all_user=True):
             .limit(limit)
             .all()
         )
-    return json.dumps(rs)
+    if not rs:
+        return json.dumps({})
+    response = []
+    for count, name in rs:
+        response.append({'name': name, 'count': count})
+    return json.dumps(response)
 
 
 def get_table_used(limit=10):
