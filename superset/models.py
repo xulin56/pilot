@@ -838,6 +838,14 @@ class Database(Model, AuditMixinNullable):
     def all_schema_names(self):
         return sorted(self.inspector.get_schema_names())
 
+    def all_schema_table_names(self):
+        st = {}
+        schemas = self.all_schema_names()
+        for schema in schemas:
+            tables = self.all_table_names(schema)
+            st[schema] = tables
+        return OrderedDict(sorted(st.items(), key=lambda s: s[0]))
+
     @property
     def db_engine_spec(self):
         engine_name = self.get_sqla_engine().name or 'base'
