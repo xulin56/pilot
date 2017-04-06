@@ -1491,6 +1491,29 @@ class Superset(BaseSupersetView):
             return redirect('/dashboardmodelview/list/')
         return self.render_template('superset/import_dashboards.html')
 
+    def add_table(self, database_id, schema, table_name):
+        if '.' in table_name:
+            schema, table_name = table_name.split('.')
+        tb = SourceRegistry.get_table(
+            db.session, 'table', table_name, schema, database_id)
+        if tb:
+            return 'table', tb.id
+
+        tb = models.SqlaTable(table_name=table_name)
+        tb.schema = schema
+        tb.database_id = database_id
+        tb.database = db.session.query(models.Database)\
+            .filter_by(id=database_id).first()
+        db.session.merge(tb)
+        db.session.commit()
+        tb.fetch_metadata()
+        new_tb = SourceRegistry.get_table(
+            db.session, 'table', table_name, schema, database_id)
+        return 'table', new_tb.id
+
+    # Todo: add parameters in expose url: 'database_id','table_name'
+    # "/explore/<datasource_type>/<datasource_id>/<database_id>/<table_name>"
+    # then add_table()
     # @log_this
     @has_access
     @expose("/explore/<datasource_type>/<datasource_id>/")
