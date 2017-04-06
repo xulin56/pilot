@@ -2304,6 +2304,14 @@ class Superset(BaseSupersetView):
         q = SupersetQuery(data.get('sql'))
         table.sql = q.stripped()
         db.session.add(table)
+        # log user action
+        action_str = 'Add table: {}'.format(table_name)
+        new_tb = db.session.query(models.SqlaTable) \
+                .filter_by(database_id=table.database_id) \
+                .filter_by(table_name=table_name) \
+                .first()
+        log_action(action_str, table, new_tb.id)
+
         cols = []
         dims = []
         metrics = []
