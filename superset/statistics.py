@@ -44,7 +44,7 @@ def get_fav_dashboards(limit=10, all_user=True):
         rs = (
             db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
             .filter(
-                and_(FavStar.class_name == 'Dashboard',
+                and_(FavStar.class_name.ilike('dashboard'),
                      FavStar.obj_id == Dashboard.id)
             )
             .group_by(FavStar.obj_id)
@@ -57,7 +57,7 @@ def get_fav_dashboards(limit=10, all_user=True):
             db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
             .filter(
                 and_(FavStar.user_id == g.user.get_id(),
-                     FavStar.class_name == 'Dashboard',
+                     FavStar.class_name.ilike('dashboard'),
                      FavStar.obj_id == Dashboard.id)
             )
             .group_by(FavStar.obj_id)
@@ -79,7 +79,7 @@ def get_fav_slices(limit=10, all_user=True):
         rs = (
             db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
             .filter(
-                and_(FavStar.class_name == 'Slice',
+                and_(FavStar.class_name.ilike('slice'),
                      FavStar.obj_id == Slice.id)
             )
             .group_by(FavStar.obj_id)
@@ -89,10 +89,10 @@ def get_fav_slices(limit=10, all_user=True):
         )
     else:
         rs = (
-            db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+            db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
             .filter(
                 and_(FavStar.user_id == g.user.get_id(),
-                     FavStar.class_name == 'Dashboard',
+                     FavStar.class_name.ilike('slice'),
                      FavStar.obj_id == Dashboard.id)
             )
             .group_by(FavStar.obj_id)
