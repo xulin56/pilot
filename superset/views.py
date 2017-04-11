@@ -919,6 +919,33 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         redirect_url = "/r/msg/?url={}&msg={}".format(url, msg)
         return redirect(redirect_url)
 
+    @classmethod
+    def list_with_fav(cls, present_user=False):
+        """return the slices with column 'like' showing if liked by user"""
+        SC = models.Slice
+        FS = models.FavStar
+        like_pr = case([(FS.id > 0, True), ], else_=False).label('like')
+        if present_user:
+            query = (
+                db.session.query(SC.id, SC.slice_name, like_pr)
+                    .outerjoin(FS, sqla.and_(
+                    SC.id == FS.obj_id,
+                    FS.class_name.ilike('slice')),
+                               FS.user_id == g.user.get_id()
+                               )
+                    .all()
+            )
+        else:
+            query = (
+                db.session.query(SC.id, SC.slice_name, like_pr)
+                    .outerjoin(FS, sqla.and_(
+                    SC.id == FS.obj_id,
+                    FS.class_name.ilike('slice'))
+                               )
+                    .all()
+            )
+        return query
+    
 
 class SliceAsync(SliceModelView):  # noqa
     list_columns = [
