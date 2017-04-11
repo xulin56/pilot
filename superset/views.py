@@ -29,7 +29,7 @@ from flask_appbuilder.security.sqla import models as ab_models
 from flask_babel import gettext as __
 from flask_babel import lazy_gettext as _
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, case
 from werkzeug.routing import BaseConverter
 from wtforms.validators import ValidationError
 
@@ -1042,6 +1042,33 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             dashboards_url='/dashboardmodelview/list'
         )
 
+    @classmethod
+    def list_with_fav(cls, present_user=False):
+        """return the dashboards with column 'like' showing if liked by user"""
+        DB = models.Dashboard
+        FS = models.FavStar
+        like_pr = case([(FS.id > 0, True), ], else_=False).label('like')
+        if present_user:
+            query = (
+                db.session.query(DB.id, DB.dashboard_title, like_pr)
+                .outerjoin(FS, sqla.and_(
+                    DB.id == FS.obj_id,
+                    FS.class_name.ilike('dashboard')),
+                    FS.user_id == g.user.get_id()
+                )
+                .all()
+            )
+        else:
+            query = (
+                db.session.query(DB, like_pr)
+                .outerjoin(FS, sqla.and_(
+                    DB.id == FS.obj_id,
+                    FS.class_name.ilike('dashboard'))
+                )
+                .all()
+            )
+        return query
+
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
     list_columns = ['dashboard_link', 'creator', 'modified', 'dashboard_title']
@@ -1492,6 +1519,7 @@ class Superset(BaseSupersetView):
         return self.render_template('superset/import_dashboards.html')
 
     def add_table(self, database_id, schema, table_name):
+        """add table at backend when choice source table for new slice"""
         if '.' in table_name:
             schema, table_name = table_name.split('.')
         tb = SourceRegistry.get_table(
