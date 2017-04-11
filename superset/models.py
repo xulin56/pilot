@@ -2594,11 +2594,11 @@ class Log(Model):
                 post_data = request.form or {}
                 d.update(post_data)
                 d.update(kwargs)
-                slice_id = d.get('slice_id', 0)
+                slice_id = d.get('slice_id', None)
                 try:
-                    slice_id = int(slice_id) if slice_id else 0
+                    slice_id = int(slice_id) if slice_id else None
                 except ValueError:
-                    slice_id = 0
+                    slice_id = None
                 params = ""
                 try:
                     params = json.dumps(d)
