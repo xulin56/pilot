@@ -26,6 +26,7 @@ const config = {
     path: BUILD_DIR,
     filename: `[name].${VERSION_STRING}.entry.js`,
   },
+  watch: true,
   resolve: {
     extensions: [
       '',
@@ -43,6 +44,10 @@ const config = {
   module: {
     noParse: /mapbox-gl\/dist/,
     loaders: [
+      {
+        test: /\.scss$/,
+        loaders: ["style-loader", "css-loader", "sass-loader"]
+      },
       {
         test: /datatables\.net.*/,
         loader: 'imports?define=>false',
