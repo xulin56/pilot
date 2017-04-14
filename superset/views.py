@@ -2903,21 +2903,21 @@ class Home(BaseSupersetView):
         'actions': 10
     }
 
-    def get_object_count(self, obj):
+    def get_object_count(self, type_):
         """Get the obj's count"""
         try:
-            model = str_to_model[obj.lower()]
+            model = str_to_model[type_.lower()]
         except KeyError as e:
             print(e)
         return db.session.query(model).count()
 
-    def get_object_counts(self, objs):
+    def get_object_counts(self, types):
         """Get the objs' count"""
-        response = {}
-        for obj in objs:
-            count = self.get_object_count(obj)
-            response[obj] = count
-        return json.dumps(response)
+        dt = {}
+        for type_ in types:
+            count = self.get_object_count(type_)
+            dt[type_] = count
+        return dt
 
     def get_slice_types(self, limit=10):
         """Query the viz_type of slices"""
@@ -2928,7 +2928,7 @@ class Home(BaseSupersetView):
             .limit(limit)
             .all()
         )
-        return json.dumps(rs)
+        return rs
 
     def get_fav_dashboards(self, limit=10, all_user=True):
         """Query the times of dashboard liked by users"""
@@ -2959,10 +2959,10 @@ class Home(BaseSupersetView):
             )
         if not rs:
             return json.dumps({})
-        response = []
+        rows = []
         for count, name in rs:
-            response.append({'name': name, 'count': count})
-        return json.dumps(response)
+            rows.append({'name': name, 'count': count})
+        return rows
 
     def get_fav_slices(self, limit=10, all_user=True):
         """Query the times of slice liked by users"""
@@ -2993,18 +2993,18 @@ class Home(BaseSupersetView):
             )
         if not rs:
             return json.dumps({})
-        response = []
+        rows = []
         for count, name in rs:
-            response.append({'name': name, 'count': count})
-        return json.dumps(response)
+            rows.append({'name': name, 'count': count})
+        return rows
 
-    def get_fav_objects(self, objs, limit):
-        response = {}
-        if 'dashboard' in objs:
-            response['dashboard'] = self.get_fav_dashboards(limit=limit, all_user=False)
-        if 'slice' in objs:
-            response['slice'] = self.get_fav_slices(limit=limit, all_user=False)
-        return response
+    def get_fav_objects(self, types, limit):
+        dt = {}
+        if 'dashboard' in types:
+            dt['dashboard'] = self.get_fav_dashboards(limit=limit, all_user=False)
+        if 'slice' in types:
+            dt['slice'] = self.get_fav_slices(limit=limit, all_user=False)
+        return dt
 
     def get_table_used(self, limit=10):
         """Query the times of table used by slices"""
@@ -3021,11 +3021,11 @@ class Home(BaseSupersetView):
             .all()
         )
         if not rs:
-            return json.dumps({})
-        response = []
+            return {}
+        rows = []
         for count, name in rs:
-            response.append({'name': name, 'count': count})
-        return json.dumps(response)
+            rows.append({'name': name, 'count': count})
+        return rows
 
     def get_slice_used(self, limit=10):
         """Query the times of slice used by dashboards"""
@@ -3035,58 +3035,75 @@ class Home(BaseSupersetView):
             for s in dash.slices:
                 slices.append(str(s))
         if not slices:
-            return json.dumps({})
+            return {}
 
         top_n = Counter(slices).most_common(limit)
-        response = []
+        rows = []
         for s in top_n:
-            response.append({'name': s[0], 'count': s[1]})
-        return json.dumps(response)
+            rows.append({'name': s[0], 'count': s[1]})
+        return rows
 
     def get_modified_dashboards(self, limit=10):
         """The records of dashboards be modified"""
         rs = (
-            db.session.query(
-                Dashboard.dashboard_title, User.username, Dashboard.changed_on)
+            db.session.query(Dashboard.id, Dashboard.dashboard_title,
+                             User.username, Dashboard.changed_on)
             .filter(Dashboard.changed_by_fk == User.id)
             .order_by(Dashboard.changed_on.desc())
             .limit(limit)
             .all()
         )
         if not rs:
-            return json.dumps({})
-        response = []
-        for title, user, dttm in rs:
-            response.append({'name': title, 'user': user, 'time': str(dttm)})
-        return json.dumps(response)
+            return {}
+        rows = []
+        for id, title, user, dttm in rs:
+            obj = db.session.query(Dashboard).filter_by(id=id).first()
+            link = obj.dashboard_link() if obj else None
+            rows.append({'name': title, 'user': user, 'time': str(dttm), 'link': link})
+        return rows
 
     def get_modified_slices(self, limit=10):
         """The records of slices be modified"""
         rs = (
-            db.session.query(Slice.slice_name, User.username, Slice.changed_on)
+            db.session.query(Slice.id, Slice.slice_name,
+                             User.username, Slice.changed_on)
             .filter(Slice.changed_by_fk == User.id)
             .order_by(Slice.changed_on.desc())
             .limit(limit)
             .all()
         )
         if not rs:
-            return json.dumps({})
-        response = []
-        for name, user, dttm in rs:
-            response.append({'name': name, 'user': user, 'time': str(dttm)})
-        return json.dumps(response)
+            return {}
+        rows = []
+        for id, name, user, dttm in rs:
+            obj = db.session.query(Slice).filter_by(id=id).first()
+            link = obj.slice_link if obj else None
+            rows.append({'name': name, 'user': user, 'time': str(dttm), 'link': link})
+        return rows
 
-    def get_modified_objects(self, objs, limit):
-        response = {}
-        if 'dashboard' in objs:
-            response['dashboard'] = self.get_modified_dashboards(limit=limit)
-        if 'slice' in objs:
-            response['slice'] = self.get_modified_slices(limit=limit)
-        return response
+    @expose('/edits/')
+    def get_modified_objects(self, types=None, limit=10):
+        url_types = request.args.get('types')
+        url_limit = request.args.get('limit')
+        types = url_types if url_types is not None else types
+        limit = url_limit if url_limit is not None else limit
+
+        dt = {}
+        if 'dashboard' in types:
+            dt['dashboard'] = self.get_modified_dashboards(limit=limit)
+        if 'slice' in types:
+            dt['slice'] = self.get_modified_slices(limit=limit)
+
+        if url_limit is not None:
+            return Response(json.dumps({'edits': dt}))
+        else:
+            return dt
 
     @expose('/actions/')
     def get_user_actions(self, limit=10, all_user=True):
         """The actions of user"""
+        url_limit = request.args.get('limit')
+        limit = url_limit if url_limit is not None else limit
         if all_user:
             rs = (
                 db.session.query(User.username, Log.action,
@@ -3108,30 +3125,35 @@ class Home(BaseSupersetView):
                 .limit(limit)
                 .all()
             )
-        response = []
+        rows = []
         for name, action, dashboard_id, slice_id, dttm in rs:
             link = None
+            type = 'other'
             if dashboard_id:
                 obj = db.session.query(Dashboard).filter_by(id=dashboard_id).first()
                 link = obj.dashboard_link() if obj else None
+                type = 'dashboard'
             elif slice_id:
                 obj = db.session.query(Slice).filter_by(id=slice_id).first()
                 link = obj.slice_link if obj else None
-            response.append({'user': name, 'action': action, 'link': link, 'time': str(dttm)})
-        return json.dumps(response)
+                type = 'slice'
+            rows.append({'user': name, 'action': action, 'type': type, 'link': link, 'time': str(dttm)})
+        if url_limit is not None:
+            return Response(json.dumps({'actions': rows}))
+        else:
+            return rows
 
-    def get_object_number_trends(self, objs, limit=30):
-        response = {}
-        for obj in objs:
-            r = self.get_object_number_trend(obj, limit=limit)
-            response[obj.lower()] = r
-        return json.dumps(response)
+    def get_object_number_trends(self, types, limit=30):
+        dt = {}
+        for type_ in types:
+            r = self.get_object_number_trend(type_, limit=limit)
+            dt[type_.lower()] = r
+        return dt
 
-    # todo add limit dates
-    def get_object_number_trend(self, obj, limit=30):
+    def get_object_number_trend(self, type_, limit=30):
         rows = (
             db.session.query(DailyNumber.count, DailyNumber.dt)
-            .filter(DailyNumber.obj_type.ilike(obj))
+            .filter(DailyNumber.obj_type.ilike(type_))
             .order_by(DailyNumber.dt)
             .limit(limit)
             .all()
@@ -3165,10 +3187,10 @@ class Home(BaseSupersetView):
             full_dt.append(full_dt[-1] + one_day)
 
         full_dt = [str(d) for d in full_dt]
-        js = []
+        json_rows = []
         for index, v in enumerate(full_count[0:limit]):
-            js.append({'date': full_dt[index], 'count': full_count[index]})
-        return js
+            json_rows.append({'date': full_dt[index], 'count': full_count[index]})
+        return json_rows
 
     @expose('/')
     def get_all_statistics_data(self):
@@ -3222,7 +3244,7 @@ class Home(BaseSupersetView):
         else:
             types = self.default_types.get('edits')
             limit = self.default_limit.get('edits')
-        result = self.get_modified_objects(types, limit)
+        result = self.get_modified_objects(types=types, limit=limit)
         response['edits'] = result
         #
         actions_args = request.args.get('actions')
