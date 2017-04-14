@@ -3170,7 +3170,7 @@ class Home(BaseSupersetView):
         if trends_args:
             trends_args = eval(trends_args)
             types = trends_args['types']
-            limit = trends_args['limit']
+            limit = int(trends_args['limit'])
             trends = self.get_object_number_trends(types, limit=limit)
             response['trends'] = trends
         #
@@ -3178,14 +3178,14 @@ class Home(BaseSupersetView):
         if favorit_args:
             favorit_args = eval(favorit_args)
             types = favorit_args['types']
-            limit = favorit_args['limit']
+            limit = int(favorit_args['limit'])
             favorit = self.get_fav_objects(types, limit)
             response['favorit'] = favorit
         #
         refer_args = request.args.get('refer')
         if refer_args:
             refer_args = eval(refer_args)
-            limit = refer_args['limit']
+            limit = int(refer_args['limit'])
             refer = self.get_slice_used(limit)
             response['refer'] = refer
         #
@@ -3193,14 +3193,14 @@ class Home(BaseSupersetView):
         if edits_args:
             edits_args = eval(edits_args)
             types = edits_args['types']
-            limit = edits_args['limit']
+            limit = int(edits_args['limit'])
             edits = self.get_modified_objects(types, limit)
             response['edits'] = edits
         #
         actions_args = request.args.get('actions')
         if actions_args:
             actions_args = eval(actions_args)
-            limit = actions_args['limit']
+            limit = int(actions_args['limit'])
             actions = self.get_user_actions(limit=limit, all_user=False)
             response['actions'] = actions
 
