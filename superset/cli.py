@@ -14,6 +14,7 @@ from flask_migrate import MigrateCommand
 from flask_script import Manager
 
 from superset import app, db, data, security
+from superset.models import DailyNumber
 
 config = app.config
 
@@ -112,6 +113,11 @@ def load_examples(load_test_data):
     if load_test_data:
         print("Loading [Unicode test data]")
         data.load_unicode_test_data()
+
+    DailyNumber.log_number('slice')
+    DailyNumber.log_number('dashboard')
+    DailyNumber.log_number('table')
+    DailyNumber.log_number('database')
 
 
 @manager.option(
