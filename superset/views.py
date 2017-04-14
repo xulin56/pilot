@@ -2889,6 +2889,20 @@ class Superset(BaseSupersetView):
 class Home(BaseSupersetView):
     """The api for the home page"""
 
+    default_types = {
+        'counts': ['dashboard', 'slice', 'table', 'database'],
+        'trends': ['dashboard', 'slice', 'table', 'database'],
+        'favorits': ['dashboard', 'slice'],
+        'edits': ['dashboard', 'slice']
+    }
+    default_limit = {
+        'trends': 30,
+        'favorits': 10,
+        'refers': 10,
+        'edits': 10,
+        'actions': 10
+    }
+
     def get_object_count(self, obj):
         """Get the obj's count"""
         try:
@@ -3070,6 +3084,7 @@ class Home(BaseSupersetView):
             response['slice'] = self.get_modified_slices(limit=limit)
         return response
 
+    @expose('/actions/')
     def get_user_actions(self, limit=10, all_user=True):
         """The actions of user"""
         if all_user:
@@ -3155,7 +3170,7 @@ class Home(BaseSupersetView):
             js.append({'date': full_dt[index], 'count': full_count[index]})
         return js
 
-    @expose('/index')
+    @expose('/')
     def get_all_statistics_data(self):
         response = {}
         #
@@ -3163,46 +3178,61 @@ class Home(BaseSupersetView):
         if counts_args:
             counts_args = eval(counts_args)
             types = counts_args['types']
-            counts = self.get_object_counts(types)
-            response['counts'] = counts
+        else:
+            types = self.default_types.get('counts')
+        result = self.get_object_counts(types)
+        response['counts'] = result
         #
         trends_args = request.args.get('trends')
         if trends_args:
             trends_args = eval(trends_args)
             types = trends_args['types']
             limit = int(trends_args['limit'])
-            trends = self.get_object_number_trends(types, limit=limit)
-            response['trends'] = trends
+        else:
+            types = self.default_types.get('trends')
+            limit = self.default_limit.get('trends')
+        result = self.get_object_number_trends(types, limit=limit)
+        response['trends'] = result
         #
-        favorit_args = request.args.get('favorit')
+        favorit_args = request.args.get('favorits')
         if favorit_args:
             favorit_args = eval(favorit_args)
             types = favorit_args['types']
             limit = int(favorit_args['limit'])
-            favorit = self.get_fav_objects(types, limit)
-            response['favorit'] = favorit
+        else:
+            types = self.default_types.get('favorits')
+            limit = self.default_limit.get('favorits')
+        result = self.get_fav_objects(types, limit)
+        response['favorits'] = result
         #
-        refer_args = request.args.get('refer')
+        refer_args = request.args.get('refers')
         if refer_args:
             refer_args = eval(refer_args)
             limit = int(refer_args['limit'])
-            refer = self.get_slice_used(limit)
-            response['refer'] = refer
+        else:
+            limit = self.default_limit.get('refers')
+        result = self.get_slice_used(limit)
+        response['refers'] = result
         #
         edits_args = request.args.get('edits')
         if edits_args:
             edits_args = eval(edits_args)
             types = edits_args['types']
             limit = int(edits_args['limit'])
-            edits = self.get_modified_objects(types, limit)
-            response['edits'] = edits
+        else:
+            types = self.default_types.get('edits')
+            limit = self.default_limit.get('edits')
+        result = self.get_modified_objects(types, limit)
+        response['edits'] = result
         #
         actions_args = request.args.get('actions')
         if actions_args:
             actions_args = eval(actions_args)
             limit = int(actions_args['limit'])
-            actions = self.get_user_actions(limit=limit, all_user=False)
-            response['actions'] = actions
+        else:
+            limit = self.default_limit.get('actions')
+        result = self.get_user_actions(limit=limit, all_user=False)
+        response['actions'] = result
 
         return Response(
             json.dumps({'index': response}),
