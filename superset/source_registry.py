@@ -44,6 +44,18 @@ class SourceRegistry(object):
         return db_ds[0]
 
     @classmethod
+    def get_table(cls, session, datasource_type, datasource_name,
+                               schema, database_id):
+        datasource_class = SourceRegistry.sources[datasource_type]
+        query = (
+            session.query(datasource_class)
+            .filter_by(table_name=datasource_name)
+            .filter_by(schema=schema)
+            .filter_by(database_id=database_id)
+        )
+        return query.first() if query else None
+
+    @classmethod
     def query_datasources_by_name(
             cls, session, database, datasource_name, schema=None):
         datasource_class = SourceRegistry.sources[database.type]

@@ -13,6 +13,8 @@ const VERSION_STRING = JSON.parse(fs.readFileSync('package.json')).version;
 const config = {
   entry: {
     'css-theme': APP_DIR + '/javascripts/css-theme.js',
+    home: ['babel-polyfill', APP_DIR + '/javascripts/home.js'],
+
     common: APP_DIR + '/javascripts/common.js',
     dashboard: ['babel-polyfill', APP_DIR + '/javascripts/dashboard/Dashboard.jsx'],
     explore: ['babel-polyfill', APP_DIR + '/javascripts/explore/explore.jsx'],
@@ -60,7 +62,7 @@ const config = {
           presets: [
             'airbnb',
             'es2015',
-            'react',
+            'react', 'stage-0'
           ],
         },
       },

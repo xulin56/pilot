@@ -1,0 +1,275 @@
+{% extends "superset/basic.html" %}
+
+{% block title %}{{ _("Welcome!") }}{% endblock %}
+
+{% block body %}
+<div class="container welcome">
+  {% include 'superset/flash_wrapper.html' %}
+
+  <!-- <div class="panel panel-default">
+    <div class="panel-heading">
+      <div class="panel-title">
+        <div class="row">
+          <div class="col-md-6">
+            <h2>{{ _("Dashboards") }}</h2>
+          </div>
+          <div class="col-md-6">
+            <div class="search-container pull-right">
+              <i class="fa fa-search"></i>
+              <span class="search"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-body">
+      <img class="loading" src="/static/assets/images/loading.gif"/>
+      <table id="dash_table" class="table" width="100%"></table>
+    </div>
+  </div> -->
+
+  <section class="suprest-bd  k44d">
+        <aside class="data-tendency white-bg-and-border-radius">
+            <hgroup class="data-title">
+                <h2 class="current">
+                    <dl>
+                        <dt>
+                            <svg>
+                                <use xlink:href="#analysis"></use>
+                            </svg>
+                            <span>354</span>
+                        </dt>
+                        <dd>仪表盘</dd>
+                    </dl>
+                </h2>
+                <h2>
+                    <dl>
+                        <dt>
+                            <svg>
+                                <use xlink:href="#analysis"></use>
+                            </svg>
+                            <span>354</span>
+                        </dt>
+                        <dd>工作表</dd>
+                    </dl>
+                </h2>
+                <h2>
+                    <dl>
+                        <dt>
+                            <svg>
+                                <use xlink:href="#analysis"></use>
+                            </svg>
+                            <span>354</span>
+                        </dt>
+                        <dd>连接</dd>
+                    </dl>
+                </h2>
+                <h2>
+                    <dl>
+                        <dt>
+                            <svg>
+                                <use xlink:href="#analysis"></use>
+                            </svg>
+                            <span>354</span>
+                        </dt>
+                        <dd>数据集</dd>
+                    </dl>
+                </h2>
+            </hgroup>
+            <div id="dashboard-linechart" style="height:420px; width:100%; ">
+                这里是折线统计图
+            </div>
+        </aside>
+        <aside class="top10-and-worktimes">
+            <div class="top10 white-bg-and-border-radius">
+                <div class="index-title-module">
+                    <h3>收藏次数top10</h3>
+                    <div class="title-tab">
+                        <ul>
+                            <li class="current">仪表板</li>
+                            <li>工作表</li>
+                        </ul>
+                    </div> 
+                    <div class="transparent"></div>
+                </div>
+                <div class="times-barchart" style="background:red;">
+                    这里是条形图
+                </div>
+            </div>
+            <div class="worktimes white-bg-and-border-radius">
+                <div class="index-title-module">
+                    <h3>被引用次数最多的工作表</h3>
+                </div>
+                <div class="times-barchart" style="background:red;">
+                    这里是条形图
+                </div>
+            </div>
+        </aside>
+        <aside class="recentedit-and-event">
+            <div class="recentedit white-bg-and-border-radius">
+                <div class="index-title-module">
+                    <h3>最近编辑</h3>
+                    <table id="testTable">
+                      
+                    </table>
+                </div>
+                <div class="edit-list">
+                    <ul>
+                        <li>
+                            <span>名称</span>
+                        </li>
+                        <li>
+                            <span>操作</span>
+                            <svg>
+                                <use xlink:href="#sort"></use>
+                            </svg>
+                        </li>
+                        <li>
+                            <span>编辑时间</span>
+                            <svg>
+                                <use xlink:href="#sort"></use>
+                            </svg>
+                        </li>
+                    </ul>
+                    <dl>
+                        <dt>incpetor_Births</dt>
+                        <dd>explore_json</dd>
+                        <dd>2017-03-10 07:07:23</dd>
+                    </dl>
+                    <dl>
+                        <dt>incpetor_Births</dt>
+                        <dd>explore_json</dd>
+                        <dd>2017-03-10 07:07:23</dd>
+                    </dl>
+                    <dl>
+                        <dt>incpetor_Births</dt>
+                        <dd>explore_json</dd>
+                        <dd>2017-03-10 07:07:23</dd>
+                    </dl>
+                    <dl>
+                        <dt>incpetor_Births</dt>
+                        <dd>explore_json</dd>
+                        <dd>2017-03-10 07:07:23</dd>
+                    </dl>
+                </div>
+            </div>
+            <div class="event white-bg-and-border-radius">
+                <div class="index-title-module">
+                    <h3>事件</h3>
+                    <div class="more">
+                        <svg>
+                            <use xlink:href="#search"></use>
+                        </svg>
+                    </div>
+                </div>
+                <div class="event-list">
+                    <ul>
+                        <li>
+                            <figure class="round-bg">
+                                <svg>
+                                    <use xlink:href="#export"></use>
+                                </svg>
+                            </figure>
+                            <span>admin</span>
+                        </li>
+                        <li>
+                            <div class="explore_json-type">
+                                <dl>
+                                    <dt>explore</dt>
+                                    <dd>
+                                        <svg>
+                                            <use xlink:href="#export"></use>
+                                        </svg>
+                                        <strong>数据集Incoptor Births</strong>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </li>
+                        <li>2017-03-10 07:07:23</li>
+                    </ul>
+                    <ul>
+                        <li>
+                            <figure class="round-bg">
+                                <svg>
+                                    <use xlink:href="#export"></use>
+                                </svg>
+                            </figure>
+                            <span>admin</span>
+                        </li>
+                        <li>
+                            <div class="explore_json-type">
+                                <dl>
+                                    <dt>explore</dt>
+                                    <dd>
+                                        <svg>
+                                            <use xlink:href="#export"></use>
+                                        </svg>
+                                        <strong>数据集Incoptor Births</strong>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </li>
+                        <li>2017-03-10 07:07:23</li>
+                    </ul>
+                    <ul>
+                        <li>
+                            <figure class="round-bg">
+                                <svg>
+                                    <use xlink:href="#export"></use>
+                                </svg>
+                            </figure>
+                            <span>admin</span>
+                        </li>
+                        <li>
+                            <div class="explore_json-type">
+                                <dl>
+                                    <dt>explore</dt>
+                                    <dd>
+                                        <svg>
+                                            <use xlink:href="#export"></use>
+                                        </svg>
+                                        <strong>数据集Incoptor Births</strong>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </li>
+                        <li>2017-03-10 07:07:23</li>
+                    </ul>
+                    <ul>
+                        <li>
+                            <figure class="round-bg">
+                                <svg>
+                                    <use xlink:href="#export"></use>
+                                </svg>
+                            </figure>
+                            <span>admin</span>
+                        </li>
+                        <li>
+                            <div class="explore_json-type">
+                                <dl>
+                                    <dt>explore</dt>
+                                    <dd>
+                                        <svg>
+                                            <use xlink:href="#export"></use>
+                                        </svg>
+                                        <strong>数据集Incoptor Births</strong>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </li>
+                        <li>2017-03-10 07:07:23</li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block head_js %}
+  {{ super() }}
+  {% with filename="home" %}
+    {% include "superset/partials/_script_tag.html" %}
+  {% endwith %}
+{% endblock %}

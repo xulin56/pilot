@@ -1,7 +1,7 @@
 {% set menu = appbuilder.menu %}
 {% set languages = appbuilder.languages %}
 
-<!-- <div class="navbar navbar-static-top {{menu.extra_classes}}" role="navigation">
+<div class="navbar navbar-static-top {{menu.extra_classes}}" role="navigation">
   <div class="container{{ '-fluid' if not navbar_container else '' }}">
     <div class="navbar-header">
       <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -30,11 +30,11 @@
       </ul>
     </div>
   </div>
-</div> -->
+</div>
 
-<header class="superset-hd">
+<!-- <header class="superset-hd">
   <div class="logo">
-      <a href=""  title="星环科技">
+      <a href="/superset/home" title="星环科技">
           <svg>
               <use xlink:href="#logo"></use>
           </svg>
@@ -43,7 +43,7 @@
   <nav>
       <ul>
           <li class="current">
-              <a href="">
+              <a href="/superset/home">
                   <svg>
                       <use xlink:href="#execution"></use>
                   </svg>
@@ -91,7 +91,7 @@
       </svg>
       <div class="arrow"></div>
   </div>
-</header>
+</header> -->
 
 {% set WARNING_MSG = appbuilder.app.config.get('WARNING_MSG') %}
 {% if WARNING_MSG %}

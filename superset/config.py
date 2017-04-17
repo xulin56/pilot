@@ -43,11 +43,11 @@ CUSTOM_SECURITY_MANAGER = None
 SECRET_KEY = '=== Transwarp Studio Inceptor ==='  # noqa
 
 # The SQLAlchemy connection string.
-SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(DATA_DIR, 'superset.db')
+#SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(DATA_DIR, 'superset.db')
 # If use mysql, the database should be existed and change its charset to 'utf8':
 # 'alter database superset character set utf8'
 # and  'charset=utf8' should be in uri
-#SQLALCHEMY_DATABASE_URI = 'mysql://username:password@lcoalhost:3306/database?charset=utf8'
+SQLALCHEMY_DATABASE_URI = 'mysql://root:vision168111@localhost:3306/pilot?charset=utf8'
 
 # The limit of queries fetched for query search
 QUERY_SEARCH_LIMIT = 1000
@@ -148,8 +148,10 @@ IMG_UPLOAD_URL = '/static/uploads/'
 # Setup image size default is (300, 200, True)
 # IMG_SIZE = (300, 200, True)
 
-CACHE_DEFAULT_TIMEOUT = 60
-CACHE_CONFIG = {'CACHE_TYPE': 'simple'}
+CACHE_DEFAULT_TIMEOUT = 120
+CACHE_CONFIG = {'CACHE_TYPE': 'filesystem',
+                'CACHE_THRESHOLD': 50,
+                'CACHE_DIR': '/tmp/superset_cache'}
 
 # CORS Options
 ENABLE_CORS = False
