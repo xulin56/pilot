@@ -148,8 +148,10 @@ IMG_UPLOAD_URL = '/static/uploads/'
 # Setup image size default is (300, 200, True)
 # IMG_SIZE = (300, 200, True)
 
-CACHE_DEFAULT_TIMEOUT = 60
-CACHE_CONFIG = {'CACHE_TYPE': 'simple'}
+CACHE_DEFAULT_TIMEOUT = 120
+CACHE_CONFIG = {'CACHE_TYPE': 'filesystem',
+                'CACHE_THRESHOLD': 50,
+                'CACHE_DIR': '/tmp/superset_cache'}
 
 # CORS Options
 ENABLE_CORS = False

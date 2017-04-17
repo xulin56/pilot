@@ -838,6 +838,14 @@ class Database(Model, AuditMixinNullable):
     def all_schema_names(self):
         return sorted(self.inspector.get_schema_names())
 
+    def all_schema_table_names(self):
+        st = {}
+        schemas = self.all_schema_names()
+        for schema in schemas:
+            tables = self.all_table_names(schema)
+            st[schema] = tables
+        return OrderedDict(sorted(st.items(), key=lambda s: s[0]))
+
     @property
     def db_engine_spec(self):
         engine_name = self.get_sqla_engine().name or 'base'
@@ -2586,11 +2594,11 @@ class Log(Model):
                 post_data = request.form or {}
                 d.update(post_data)
                 d.update(kwargs)
-                slice_id = d.get('slice_id', 0)
+                slice_id = d.get('slice_id', None)
                 try:
-                    slice_id = int(slice_id) if slice_id else 0
+                    slice_id = int(slice_id) if slice_id else None
                 except ValueError:
-                    slice_id = 0
+                    slice_id = None
                 params = ""
                 try:
                     params = json.dumps(d)

@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import json
 import logging
 import pickle
@@ -12,6 +12,7 @@ import sys
 import time
 import traceback
 import zlib
+from collections import Counter
 
 import functools
 import sqlalchemy as sqla
@@ -29,7 +30,7 @@ from flask_appbuilder.security.sqla import models as ab_models
 from flask_babel import gettext as __
 from flask_babel import lazy_gettext as _
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, case
 from werkzeug.routing import BaseConverter
 from wtforms.validators import ValidationError
 
@@ -41,6 +42,11 @@ from superset import (
 from superset.source_registry import SourceRegistry
 from superset.models import DatasourceAccessRequest as DAR
 from superset.sql_parse import SupersetQuery
+
+from superset.models import Database, SqlaTable, Slice, \
+    Dashboard, FavStar, Log, DailyNumber, str_to_model
+from sqlalchemy import func, and_
+from flask_appbuilder.security.sqla.models import User
 
 config = app.config
 log_this = models.Log.log_this
@@ -919,6 +925,33 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         redirect_url = "/r/msg/?url={}&msg={}".format(url, msg)
         return redirect(redirect_url)
 
+    @classmethod
+    def list_with_fav(cls, present_user=False):
+        """return the slices with column 'like' showing if liked by user"""
+        SC = models.Slice
+        FS = models.FavStar
+        like_pr = case([(FS.id > 0, True), ], else_=False).label('like')
+        if present_user:
+            query = (
+                db.session.query(SC.id, SC.slice_name, like_pr)
+                    .outerjoin(FS, sqla.and_(
+                    SC.id == FS.obj_id,
+                    FS.class_name.ilike('slice')),
+                               FS.user_id == g.user.get_id()
+                               )
+                    .all()
+            )
+        else:
+            query = (
+                db.session.query(SC.id, SC.slice_name, like_pr)
+                    .outerjoin(FS, sqla.and_(
+                    SC.id == FS.obj_id,
+                    FS.class_name.ilike('slice'))
+                               )
+                    .all()
+            )
+        return query
+    
 
 class SliceAsync(SliceModelView):  # noqa
     list_columns = [
@@ -1041,6 +1074,33 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             'superset/export_dashboards.html',
             dashboards_url='/dashboardmodelview/list'
         )
+
+    @classmethod
+    def list_with_fav(cls, present_user=False):
+        """return the dashboards with column 'like' showing if liked by user"""
+        DB = models.Dashboard
+        FS = models.FavStar
+        like_pr = case([(FS.id > 0, True), ], else_=False).label('like')
+        if present_user:
+            query = (
+                db.session.query(DB.id, DB.dashboard_title, like_pr)
+                .outerjoin(FS, sqla.and_(
+                    DB.id == FS.obj_id,
+                    FS.class_name.ilike('dashboard')),
+                    FS.user_id == g.user.get_id()
+                )
+                .all()
+            )
+        else:
+            query = (
+                db.session.query(DB, like_pr)
+                .outerjoin(FS, sqla.and_(
+                    DB.id == FS.obj_id,
+                    FS.class_name.ilike('dashboard'))
+                )
+                .all()
+            )
+        return query
 
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
@@ -1491,6 +1551,30 @@ class Superset(BaseSupersetView):
             return redirect('/dashboardmodelview/list/')
         return self.render_template('superset/import_dashboards.html')
 
+    def add_table(self, database_id, schema, table_name):
+        """add table at backend when choice source table for new slice"""
+        if '.' in table_name:
+            schema, table_name = table_name.split('.')
+        tb = SourceRegistry.get_table(
+            db.session, 'table', table_name, schema, database_id)
+        if tb:
+            return 'table', tb.id
+
+        tb = models.SqlaTable(table_name=table_name)
+        tb.schema = schema
+        tb.database_id = database_id
+        tb.database = db.session.query(models.Database)\
+            .filter_by(id=database_id).first()
+        db.session.merge(tb)
+        db.session.commit()
+        tb.fetch_metadata()
+        new_tb = SourceRegistry.get_table(
+            db.session, 'table', table_name, schema, database_id)
+        return 'table', new_tb.id
+
+    # Todo: add parameters in expose url: 'database_id','table_name'
+    # "/explore/<datasource_type>/<datasource_id>/<database_id>/<table_name>"
+    # then add_table()
     # @log_this
     @has_access
     @expose("/explore/<datasource_type>/<datasource_id>/")
@@ -2281,6 +2365,14 @@ class Superset(BaseSupersetView):
         q = SupersetQuery(data.get('sql'))
         table.sql = q.stripped()
         db.session.add(table)
+        # log user action
+        action_str = 'Add table: {}'.format(table_name)
+        new_tb = db.session.query(models.SqlaTable) \
+                .filter_by(database_id=table.database_id) \
+                .filter_by(table_name=table_name) \
+                .first()
+        log_action(action_str, table, new_tb.id)
+
         cols = []
         dims = []
         metrics = []
@@ -2793,6 +2885,382 @@ class Superset(BaseSupersetView):
         number = {'dashboard': 1, 'slice': 2, 'connection': 3, 'table': 4}
         return self.render_template('superset/statistics.html', number=number)
 
+
+class Home(BaseSupersetView):
+    """The api for the home page"""
+
+    default_types = {
+        'counts': ['dashboard', 'slice', 'table', 'database'],
+        'trends': ['dashboard', 'slice', 'table', 'database'],
+        'favorits': ['dashboard', 'slice'],
+        'edits': ['dashboard', 'slice']
+    }
+    default_limit = {
+        'trends': 30,
+        'favorits': 10,
+        'refers': 10,
+        'edits': 10,
+        'actions': 10
+    }
+
+    def get_object_count(self, type_):
+        """Get the obj's count"""
+        try:
+            model = str_to_model[type_.lower()]
+        except KeyError as e:
+            print(e)
+        return db.session.query(model).count()
+
+    def get_object_counts(self, types):
+        """Get the objs' count"""
+        dt = {}
+        for type_ in types:
+            count = self.get_object_count(type_)
+            dt[type_] = count
+        return dt
+
+    def get_slice_types(self, limit=10):
+        """Query the viz_type of slices"""
+        rs = (
+            db.session.query(func.count(Slice.viz_type), Slice.viz_type)
+            .group_by(Slice.viz_type)
+            .order_by(func.count(Slice.viz_type).desc())
+            .limit(limit)
+            .all()
+        )
+        return rs
+
+    def get_fav_dashboards(self, limit=10, all_user=True):
+        """Query the times of dashboard liked by users"""
+        if all_user:
+            rs = (
+                db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+                .filter(
+                    and_(FavStar.class_name.ilike('dashboard'),
+                        FavStar.obj_id == Dashboard.id)
+                )
+                .group_by(FavStar.obj_id)
+                .order_by(func.count(FavStar.obj_id).desc())
+                .limit(limit)
+                .all()
+            )
+        else:
+            rs = (
+                db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+                .filter(
+                    and_(FavStar.user_id == g.user.get_id(),
+                        FavStar.class_name.ilike('dashboard'),
+                        FavStar.obj_id == Dashboard.id)
+                )
+                .group_by(FavStar.obj_id)
+                .order_by(func.count(FavStar.obj_id).desc())
+                .limit(limit)
+                .all()
+            )
+        if not rs:
+            return json.dumps({})
+        rows = []
+        for count, name in rs:
+            rows.append({'name': name, 'count': count})
+        return rows
+
+    def get_fav_slices(self, limit=10, all_user=True):
+        """Query the times of slice liked by users"""
+        if all_user:
+            rs = (
+                db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
+                .filter(
+                    and_(FavStar.class_name.ilike('slice'),
+                        FavStar.obj_id == Slice.id)
+                )
+                .group_by(FavStar.obj_id)
+                .order_by(func.count(FavStar.obj_id).desc())
+                .limit(limit)
+                .all()
+            )
+        else:
+            rs = (
+                db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
+                .filter(
+                    and_(FavStar.user_id == g.user.get_id(),
+                        FavStar.class_name.ilike('slice'),
+                        FavStar.obj_id == Slice.id)
+                )
+                .group_by(FavStar.obj_id)
+                .order_by(func.count(FavStar.obj_id).desc())
+                .limit(limit)
+                .all()
+            )
+        if not rs:
+            return json.dumps({})
+        rows = []
+        for count, name in rs:
+            rows.append({'name': name, 'count': count})
+        return rows
+
+    def get_fav_objects(self, types, limit):
+        dt = {}
+        if 'dashboard' in types:
+            dt['dashboard'] = self.get_fav_dashboards(limit=limit, all_user=False)
+        if 'slice' in types:
+            dt['slice'] = self.get_fav_slices(limit=limit, all_user=False)
+        return dt
+
+    def get_table_used(self, limit=10):
+        """Query the times of table used by slices"""
+        rs = (
+            db.session.query(func.count(Slice.datasource_id), SqlaTable.table_name)
+            .filter(
+                and_(
+                    Slice.datasource_type == 'table',
+                    Slice.datasource_id == SqlaTable.id)
+            )
+            .group_by(Slice.datasource_id)
+            .order_by(func.count(Slice.datasource_id).desc())
+            .limit(limit)
+            .all()
+        )
+        if not rs:
+            return {}
+        rows = []
+        for count, name in rs:
+            rows.append({'name': name, 'count': count})
+        return rows
+
+    def get_slice_used(self, limit=10):
+        """Query the times of slice used by dashboards"""
+        rs = db.session.query(Dashboard).all()
+        slices = []
+        for dash in rs:
+            for s in dash.slices:
+                slices.append(str(s))
+        if not slices:
+            return {}
+
+        top_n = Counter(slices).most_common(limit)
+        rows = []
+        for s in top_n:
+            rows.append({'name': s[0], 'count': s[1]})
+        return rows
+
+    def get_modified_dashboards(self, limit=10):
+        """The records of dashboards be modified"""
+        rs = (
+            db.session.query(Dashboard.id, Dashboard.dashboard_title,
+                             User.username, Dashboard.changed_on)
+            .filter(Dashboard.changed_by_fk == User.id)
+            .order_by(Dashboard.changed_on.desc())
+            .limit(limit)
+            .all()
+        )
+        if not rs:
+            return {}
+        rows = []
+        for id, title, user, dttm in rs:
+            obj = db.session.query(Dashboard).filter_by(id=id).first()
+            link = obj.dashboard_link() if obj else None
+            rows.append({'name': title, 'user': user, 'time': str(dttm), 'link': link})
+        return rows
+
+    def get_modified_slices(self, limit=10):
+        """The records of slices be modified"""
+        rs = (
+            db.session.query(Slice.id, Slice.slice_name,
+                             User.username, Slice.changed_on)
+            .filter(Slice.changed_by_fk == User.id)
+            .order_by(Slice.changed_on.desc())
+            .limit(limit)
+            .all()
+        )
+        if not rs:
+            return {}
+        rows = []
+        for id, name, user, dttm in rs:
+            obj = db.session.query(Slice).filter_by(id=id).first()
+            link = obj.slice_link if obj else None
+            rows.append({'name': name, 'user': user, 'time': str(dttm), 'link': link})
+        return rows
+
+    @expose('/edits/')
+    def get_modified_objects(self, types=None, limit=10):
+        url_types = request.args.get('types')
+        url_limit = request.args.get('limit')
+        types = url_types if url_types is not None else types
+        limit = url_limit if url_limit is not None else limit
+
+        dt = {}
+        if 'dashboard' in types:
+            dt['dashboard'] = self.get_modified_dashboards(limit=limit)
+        if 'slice' in types:
+            dt['slice'] = self.get_modified_slices(limit=limit)
+
+        if url_limit is not None:
+            return Response(json.dumps({'edits': dt}))
+        else:
+            return dt
+
+    @expose('/actions/')
+    def get_user_actions(self, limit=10, all_user=True):
+        """The actions of user"""
+        url_limit = request.args.get('limit')
+        limit = url_limit if url_limit is not None else limit
+        if all_user:
+            rs = (
+                db.session.query(User.username, Log.action,
+                                 Log.dashboard_id, Log.slice_id, Log.dttm)
+                .filter(Log.user_id == User.id)
+                .order_by(Log.dttm.desc())
+                .limit(limit)
+                .all()
+            )
+        else:
+            rs = (
+                db.session.query(User.username, Log.action,
+                                 Log.dashboard_id, Log.slice_id, Log.dttm)
+                .filter(
+                    and_(Log.user_id == g.user.get_id(),
+                         Log.user_id == User.id)
+                )
+                .order_by(Log.dttm.desc())
+                .limit(limit)
+                .all()
+            )
+        rows = []
+        for name, action, dashboard_id, slice_id, dttm in rs:
+            link = None
+            type = 'other'
+            if dashboard_id:
+                obj = db.session.query(Dashboard).filter_by(id=dashboard_id).first()
+                link = obj.dashboard_link() if obj else None
+                type = 'dashboard'
+            elif slice_id:
+                obj = db.session.query(Slice).filter_by(id=slice_id).first()
+                link = obj.slice_link if obj else None
+                type = 'slice'
+            rows.append({'user': name, 'action': action, 'type': type, 'link': link, 'time': str(dttm)})
+        if url_limit is not None:
+            return Response(json.dumps({'actions': rows}))
+        else:
+            return rows
+
+    def get_object_number_trends(self, types, limit=30):
+        dt = {}
+        for type_ in types:
+            r = self.get_object_number_trend(type_, limit=limit)
+            dt[type_.lower()] = r
+        return dt
+
+    def get_object_number_trend(self, type_, limit=30):
+        rows = (
+            db.session.query(DailyNumber.count, DailyNumber.dt)
+            .filter(DailyNumber.obj_type.ilike(type_))
+            .order_by(DailyNumber.dt)
+            .limit(limit)
+            .all()
+        )
+        return self.fill_missing_date(rows, limit)
+
+    def fill_missing_date(self, rows, limit):
+        """Fill the discontinuous date and count of number trend
+           Still need to limit
+        """
+        full_count, full_dt = [], []
+        if not rows:
+            return {}
+
+        one_day = timedelta(days=1)
+        for row in rows:
+            if row.dt > date.today():
+                return {}
+            elif len(full_count) < 1:
+                full_count.append(int(row.count))
+                full_dt.append(row.dt)
+            else:
+                while full_dt[-1] + one_day < row.dt:
+                    full_count.append(full_count[-1])
+                    full_dt.append(full_dt[-1] + one_day)
+                full_count.append(row.count)
+                full_dt.append(row.dt)
+
+        while full_dt[-1] < date.today():
+            full_count.append(full_count[-1])
+            full_dt.append(full_dt[-1] + one_day)
+
+        full_dt = [str(d) for d in full_dt]
+        json_rows = []
+        for index, v in enumerate(full_count[0:limit]):
+            json_rows.append({'date': full_dt[index], 'count': full_count[index]})
+        return json_rows
+
+    @expose('/')
+    def get_all_statistics_data(self):
+        response = {}
+        #
+        counts_args = request.args.get('counts')
+        if counts_args:
+            counts_args = eval(counts_args)
+            types = counts_args['types']
+        else:
+            types = self.default_types.get('counts')
+        result = self.get_object_counts(types)
+        response['counts'] = result
+        #
+        trends_args = request.args.get('trends')
+        if trends_args:
+            trends_args = eval(trends_args)
+            types = trends_args['types']
+            limit = int(trends_args['limit'])
+        else:
+            types = self.default_types.get('trends')
+            limit = self.default_limit.get('trends')
+        result = self.get_object_number_trends(types, limit=limit)
+        response['trends'] = result
+        #
+        favorit_args = request.args.get('favorits')
+        if favorit_args:
+            favorit_args = eval(favorit_args)
+            types = favorit_args['types']
+            limit = int(favorit_args['limit'])
+        else:
+            types = self.default_types.get('favorits')
+            limit = self.default_limit.get('favorits')
+        result = self.get_fav_objects(types, limit)
+        response['favorits'] = result
+        #
+        refer_args = request.args.get('refers')
+        if refer_args:
+            refer_args = eval(refer_args)
+            limit = int(refer_args['limit'])
+        else:
+            limit = self.default_limit.get('refers')
+        result = self.get_slice_used(limit)
+        response['refers'] = result
+        #
+        edits_args = request.args.get('edits')
+        if edits_args:
+            edits_args = eval(edits_args)
+            types = edits_args['types']
+            limit = int(edits_args['limit'])
+        else:
+            types = self.default_types.get('edits')
+            limit = self.default_limit.get('edits')
+        result = self.get_modified_objects(types=types, limit=limit)
+        response['edits'] = result
+        #
+        actions_args = request.args.get('actions')
+        if actions_args:
+            actions_args = eval(actions_args)
+            limit = int(actions_args['limit'])
+        else:
+            limit = self.default_limit.get('actions')
+        result = self.get_user_actions(limit=limit, all_user=False)
+        response['actions'] = result
+
+        return Response(
+            json.dumps({'index': response}),
+            status=200,
+            mimetype="application/json")
+
 # if config['DRUID_IS_ACTIVE']:
 #     appbuilder.add_link(
 #         "Refresh Druid Metadata",
@@ -2835,6 +3303,7 @@ appbuilder.add_view_no_menu(SliceAddView)
 appbuilder.add_view_no_menu(DashboardModelViewAsync)
 appbuilder.add_view_no_menu(R)
 appbuilder.add_view_no_menu(Superset)
+appbuilder.add_view_no_menu(Home)
 
 # appbuilder.add_link(
 #     'Statistics',

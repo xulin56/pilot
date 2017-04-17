@@ -44,7 +44,7 @@ def get_fav_dashboards(limit=10, all_user=True):
         rs = (
             db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
             .filter(
-                and_(FavStar.class_name == 'Dashboard',
+                and_(FavStar.class_name.ilike('dashboard'),
                      FavStar.obj_id == Dashboard.id)
             )
             .group_by(FavStar.obj_id)
@@ -57,7 +57,7 @@ def get_fav_dashboards(limit=10, all_user=True):
             db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
             .filter(
                 and_(FavStar.user_id == g.user.get_id(),
-                     FavStar.class_name == 'Dashboard',
+                     FavStar.class_name.ilike('dashboard'),
                      FavStar.obj_id == Dashboard.id)
             )
             .group_by(FavStar.obj_id)
@@ -79,7 +79,7 @@ def get_fav_slices(limit=10, all_user=True):
         rs = (
             db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
             .filter(
-                and_(FavStar.class_name == 'Slice',
+                and_(FavStar.class_name.ilike('slice'),
                      FavStar.obj_id == Slice.id)
             )
             .group_by(FavStar.obj_id)
@@ -89,10 +89,10 @@ def get_fav_slices(limit=10, all_user=True):
         )
     else:
         rs = (
-            db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+            db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
             .filter(
                 and_(FavStar.user_id == g.user.get_id(),
-                     FavStar.class_name == 'Dashboard',
+                     FavStar.class_name.ilike('slice'),
                      FavStar.obj_id == Dashboard.id)
             )
             .group_by(FavStar.obj_id)
@@ -187,7 +187,8 @@ def get_user_actions(limit=10, all_user=True):
     """The actions of user"""
     if all_user:
         rs = (
-            db.session.query(User.username, Log.action, Log.dttm)
+            db.session.query(User.username, Log.action,
+                             Log.dashboard_id, Log.slice_id, Log.dttm)
             .filter(Log.user_id == User.id)
             .order_by(Log.dttm.desc())
             .limit(limit)
@@ -195,7 +196,8 @@ def get_user_actions(limit=10, all_user=True):
         )
     else:
         rs = (
-            db.session.query(User.username, Log.action, Log.dttm)
+            db.session.query(User.username, Log.action,
+                             Log.dashboard_id, Log.slice_id, Log.dttm)
             .filter(
                 and_(Log.user_id == g.user.get_id(),
                      Log.user_id == User.id)
@@ -205,8 +207,16 @@ def get_user_actions(limit=10, all_user=True):
             .all()
         )
     response = []
-    for name, action, dttm in rs:
-        response.append({'user': name, 'action': action, 'time': str(dttm)})
+    for name, action, dashboard_id, slice_id, dttm in rs:
+        link = None
+        if dashboard_id:
+            obj = db.session.query(Dashboard).filter_by(id=dashboard_id).first()
+            link = obj.dashboard_link() if obj else None
+        elif slice_id:
+            obj = db.session.query(Slice).filter_by(id=slice_id).first()
+            link = obj.slice_link if obj else None
+        response.append({'user': name, 'action': action, 'link': link, 'time': str(dttm)})
+        print({'user': name, 'action': action, 'link': link, 'time': str(dttm)})
     return json.dumps(response)
 
 
