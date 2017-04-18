@@ -94,7 +94,7 @@ def get_or_create_main_db():
         dbobj = models.Database(database_name="main")
     logging.info(conf.get("SQLALCHEMY_DATABASE_URI"))
     dbobj.set_sqlalchemy_uri(conf.get("SQLALCHEMY_DATABASE_URI"))
-    dbobj.expose_in_sqllab = True
+    dbobj.expose_in_sqllab = False
     dbobj.allow_run_sync = True
     db.session.add(dbobj)
     db.session.commit()
