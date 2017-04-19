@@ -115,6 +115,9 @@ ACCESS_REQUEST_MISSING_ERR = __(
     "The access requests seem to have been deleted")
 USER_MISSING_ERR = __("The user seems to have been deleted")
 DATASOURCE_ACCESS_ERR = __("You don't have access to this datasource")
+DASHBOARD_NOT_FOUND = __("Not found this dashboard")
+RELEASE_DASHBOARD_SUCCESS = __("Release dashboard success")
+CONFINE_DASHBOARD_SUCCESS = __("Cancel release dashboard success")
 
 
 def get_database_access_error_msg(database_name):
@@ -825,13 +828,13 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
     list_columns = [
-        'slice_link', 'description', 'viz_type', 'datasource_link',
+        'slice_link', 'description', 'online', 'viz_type', 'datasource_link',
         'department', 'creator', 'modified']
     edit_columns = [
-        'slice_name', 'description', 'viz_type', 'department', 'owners',
-        'dashboards',  'params', 'cache_timeout']
+        'slice_name', 'description', 'online', 'viz_type', 'department',
+        'dashboards',  'params']
     show_columns = [
-        'slice_name', 'description', 'viz_type', 'department', 'params', 'dashboards', 'owners',
+        'slice_name', 'description', 'online', 'viz_type', 'department', 'params', 'dashboards',
         'created_by', 'created_on', 'changed_by', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
@@ -958,8 +961,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     show_title = _("Show Dashboard")
     add_title = _("Add Dashboard")
     edit_title = _("Edit Dashboard")
-    list_columns = ['dashboard_link', 'description', 'department', 'creator', 'modified']
-    edit_columns = ['dashboard_title', 'description', 'department', 'slices', 'owners']
+    list_columns = ['dashboard_link', 'description', 'online', 'department', 'creator', 'modified']
+    edit_columns = ['dashboard_title', 'description', 'online', 'department', 'slices', 'owners']
     show_columns = edit_columns + ['table_names']
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
@@ -2867,13 +2870,27 @@ class Superset(BaseSupersetView):
             bootstrap_data=json.dumps(d, default=utils.json_iso_dttm_ser)
         )
 
-    @expose("/statistics")
-    def statistics(self):
-        """Personalized welcome page"""
-        if not g.user or not g.user.get_id():
-            return redirect(appbuilder.get_url_for_login)
-        number = {'dashboard': 1, 'slice': 2, 'connection': 3, 'table': 4}
-        return self.render_template('superset/statistics.html', number=number)
+    @expose("/dashboard/release/<action>/<dashboard_id>")
+    def release_or_confine_dashbaord(self, action, dashboard_id):
+        obj = db.session.query(models.Dashboard)\
+            .filter_by(id=dashboard_id).first()
+        if not obj:
+            return Response(
+                json.dumps({'message': DASHBOARD_NOT_FOUND}),
+                status=404,
+                mimetype="application/json")
+        message = None
+        if action.lower() == 'online':
+            obj.online = True
+            message = RELEASE_DASHBOARD_SUCCESS
+        elif action.lower() == 'offline':
+            obj.online = False
+            message = CONFINE_DASHBOARD_SUCCESS
+        db.session.commit()
+        return Response(
+            json.dumps({'message': message}),
+            status=201,
+            mimetype="application/json")
 
 
 class Home(BaseSupersetView):
