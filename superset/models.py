@@ -640,7 +640,7 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
 
             # log user action
             action_str = 'Export dashboard: {}'.format(copied_dashboard.dashboard_title)
-            Log.log_action(action_str, copied_dashboard.__class__, dashboard_id)
+            Log.log_action('export', action_str, 'dashboard', dashboard_id)
 
         return pickle.dumps({
             'dashboards': copied_dashboards,
