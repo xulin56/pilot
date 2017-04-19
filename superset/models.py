@@ -232,9 +232,12 @@ class Slice(Model, AuditMixinNullable, ImportMixin):
     __tablename__ = 'slices'
     id = Column(Integer, primary_key=True)
     slice_name = Column(String(250))
+    online = Column(Boolean, default=False)
     datasource_id = Column(Integer)
     datasource_type = Column(String(200))
     datasource_name = Column(String(2000))
+    database_id = Column(Integer)
+    full_table_name = Column(String(2000))
     viz_type = Column(String(250))
     params = Column(Text)
     description = Column(Text)
@@ -436,6 +439,7 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
     description = Column(Text)
     department = Column(Text)
     css = Column(Text)
+    online = Column(Boolean, default=False)
     json_metadata = Column(Text)
     slug = Column(String(255), unique=True)
     slices = relationship(
@@ -721,11 +725,11 @@ class Database(Model, AuditMixinNullable):
     password = Column(EncryptedType(String(1024), config.get('SECRET_KEY')))
     cache_timeout = Column(Integer)
     select_as_create_table_as = Column(Boolean, default=False)
-    expose_in_sqllab = Column(Boolean, default=False)
+    expose_in_sqllab = Column(Boolean, default=True)
     allow_run_sync = Column(Boolean, default=True)
     allow_run_async = Column(Boolean, default=False)
     allow_ctas = Column(Boolean, default=False)
-    allow_dml = Column(Boolean, default=False)
+    allow_dml = Column(Boolean, default=True)
     force_ctas_schema = Column(String(250))
     extra = Column(Text, default=textwrap.dedent("""\
     {
@@ -2570,9 +2574,10 @@ class Log(Model):
 
     id = Column(Integer, primary_key=True)
     action = Column(String(512))
+    action_type = Column(String(200))
+    obj_type = Column(String(50))
+    obj_id = Column(Integer)
     user_id = Column(Integer, ForeignKey('ab_user.id'))
-    dashboard_id = Column(Integer)
-    slice_id = Column(Integer)
     json = Column(Text)
     user = relationship('User', backref='logs', foreign_keys=[user_id])
     dttm = Column(DateTime, default=datetime.now)
