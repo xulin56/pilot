@@ -2627,11 +2627,7 @@ class Log(Model):
         return _log_this
 
     @classmethod
-    def log_action(cls, action, obj, obj_id):
-        start_dttm = datetime.now()
-        user_id = None
-        if g.user:
-            user_id = g.user.get_id()
+    def log_action(cls, action_type, action, obj_type, obj_id):
         d = request.args.to_dict()
         post_data = request.form or {}
         d.update(post_data)
@@ -2640,22 +2636,15 @@ class Log(Model):
             params = json.dumps(d)
         except:
             pass
-
-        slice_id, dashboard_id = None, None
-        if isinstance(obj, Slice):
-            slice_id = int(obj_id)
-        elif isinstance(obj, Dashboard):
-            dashboard_id = int(obj_id)
-
         sesh = db.session()
         log = cls(
             action=action,
+            action_type=action_type,
+            obj_type=obj_type,
+            obj_id=obj_id,
             json=params,
-            dashboard_id=dashboard_id,
-            slice_id=slice_id,
-            duration_ms=(datetime.now() - start_dttm).total_seconds() * 1000,
             referrer=request.referrer[:1000] if request.referrer else None,
-            user_id=user_id)
+            user_id=g.user.get_id() if g.user else None)
         sesh.add(log)
         sesh.commit()
 
