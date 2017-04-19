@@ -333,6 +333,7 @@ class DeleteMixin(object):
     def muldelete(self, items):
         self.datamodel.delete_all(items)
         self.update_redirect()
+        # log_action
         if isinstance(items[0], models.SqlaTable):
             cls_name = 'table'
         else:
@@ -340,7 +341,7 @@ class DeleteMixin(object):
         for item in items:
             obj_name = repr(item)
             action_str = 'Delete {}: {}'.format(cls_name, obj_name)
-            log_action(action_str, item.__class__, item.id)
+            log_action('delete', action_str, cls_name, item.id)
         return redirect(self.get_redirect())
 
 
@@ -409,18 +410,6 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'python_date_format': _("Datetime Format"),
         'database_expression': _("Database Expression")
     }
-
-    def post_add(self, obj):
-        action_str = 'Add table column: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
-
-    def post_update(self, obj):
-        action_str = 'Update table column: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
-
-    def post_delete(self, obj):
-        action_str = 'Delete table column: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
 
 # class DruidColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 #     datamodel = SQLAInterface(models.DruidColumn)
@@ -505,19 +494,10 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     def post_add(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
-        action_str = 'Add sql metric: {}'.format(metric.metric_name)
-        log_action(action_str, metric, metric.id)
 
     def post_update(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
-        action_str = 'Update sql metric: {}'.format(metric.metric_name)
-        log_action(action_str, metric, metric.id)
-
-    def post_delete(self, metric):
-        action_str = 'Delete sql metric: {}'.format(metric.metric_name)
-        log_action(action_str, metric, metric.id)
-
 
 # class DruidMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 #     datamodel = SQLAInterface(models.DruidMetric)
@@ -629,7 +609,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     def post_add(self, obj):
         # log user aciton
         action_str = 'Add connection: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('add', action_str, 'database', obj.id)
         # log database number
         log_number('database')
 
@@ -637,13 +617,14 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         self.pre_add(db)
 
     def post_update(self, obj):
-        action_str = 'Update connection: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        # log user action
+        action_str = 'Edit connection: {}'.format(repr(obj))
+        log_action('edit', action_str, 'database', obj.id)
 
     def post_delete(self, obj):
         # log user action
         action_str = 'Delete connection: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('delete', action_str, 'database', obj.id)
         # log database number
         log_number('database')
 
@@ -756,19 +737,20 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         TableModelView.merge_perm(table)
         # log user aciton
         action_str = 'Add table: {}'.format(repr(table))
-        log_action(action_str, table, table.id)
+        log_action('add', action_str, 'table', table.id)
         # log table number
         log_number('table')
 
     def post_update(self, table):
         TableModelView.merge_perm(table)
-        action_str = 'Update table: {}'.format(repr(table))
-        log_action(action_str, table, table.id)
+        # log user action
+        action_str = 'Edit table: {}'.format(repr(table))
+        log_action('edit', action_str, 'table', table.id)
 
     def post_delete(self, table):
         # log user action
         action_str = 'Delete table: {}'.format(repr(table))
-        log_action(action_str, table, table.id)
+        log_action('delete', action_str, 'table', table.id)
         # log table number
         log_number('table')
 
@@ -895,8 +877,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         check_ownership(obj)
 
     def post_update(self, obj):
-        action_str = 'Update slice: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        # log user action
+        action_str = 'Edit slice: {}'.format(repr(obj))
+        log_action('edit', action_str, 'slice', obj.id)
 
     def pre_delete(self, obj):
         check_ownership(obj)
@@ -904,7 +887,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     def post_delete(self, obj):
         # log user action
         action_str = 'Delete slice: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('delete', action_str, 'slice', obj.id)
         # log slice number
         log_number('slice')
 
@@ -1034,7 +1017,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     def post_add(self, obj):
         # log user action
         action_str = 'Add dashboard: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('add', action_str, 'dashboard', obj.id)
         # log dashboard number
         log_number('dashboard')
 
@@ -1043,8 +1026,9 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         self.pre_add(obj)
 
     def post_update(self, obj):
-        action_str = 'Update dashboard: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        # log user action
+        action_str = 'Edit dashboard: {}'.format(repr(obj))
+        log_action('edit', action_str, 'dashboard', obj.id)
 
     def pre_delete(self, obj):
         check_ownership(obj)
@@ -1052,7 +1036,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     def post_delete(self, obj):
         # log user action
         action_str = 'Delete dashboard: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('delete', action_str, 'dashboard', obj.id)
         # log dashboard number
         log_number('dashboard')
 
@@ -1112,7 +1096,7 @@ class DashboardModelViewAsync(DashboardModelView):  # noqa
 
 class LogModelView(SupersetModelView):
     datamodel = SQLAInterface(models.Log)
-    list_columns = ('user', 'action', 'dttm')
+    list_columns = ('user', 'action_type', 'action', 'obj_type', 'obj_id', 'dttm')
     edit_columns = ('user', 'action', 'dttm', 'json')
     base_order = ('dttm', 'desc')
     label_columns = {
@@ -1546,7 +1530,7 @@ class Superset(BaseSupersetView):
                     dashboard, import_time=current_tt)
                 # log user action
                 action_str = 'Import dashboard: {}'.format(dashboard.dashboard_title)
-                log_action(action_str, dashboard.__class__, dashboard.id)
+                log_action('import', action_str, 'dashboard', dashboard.id)
             db.session.commit()
             return redirect('/dashboardmodelview/list/')
         return self.render_template('superset/import_dashboards.html')
@@ -1637,8 +1621,9 @@ class Superset(BaseSupersetView):
         # handle different endpoints
         if request.args.get("csv") == "true":
             payload = viz_obj.get_csv()
-            action_str = 'Save slice\'s data to csv'
-            log_action(action_str, models.SqlaTable, datasource_id)
+            # log user action
+            # action_str = 'Save slice\'s data to csv'
+            # log_action('csv', action_str, 'slice', datasource_id)
             return Response(
                 payload,
                 status=200,
@@ -1794,7 +1779,7 @@ class Superset(BaseSupersetView):
             db.session.commit()
             # log user aciton
             action_str = 'Add dashboard: {}'.format(dash.dashboard_title)
-            log_action(action_str, dash.__class__, dash.id)
+            log_action('add', action_str, 'dashboard', dash.id)
 
         if request.args.get('goto_dash') == 'true':
             if request.args.get('V2') == 'true':
@@ -1813,7 +1798,7 @@ class Superset(BaseSupersetView):
         flash(msg, "info")
         # log user action
         action_str = 'Add slice: {}'.format(slc.slice_name)
-        log_action(action_str, slc, slc.id)
+        log_action('add', action_str, 'slice', slc.id)
         # log slice number
         log_number('slice')
 
@@ -1828,8 +1813,9 @@ class Superset(BaseSupersetView):
             session.commit()
             msg = "Slice [{}] has been overwritten".format(slc.slice_name)
             flash(msg, "info")
-            action_str = 'Update slice: {}'.format(slc.slice_name)
-            log_action(action_str, slc, slc.id)
+            # log user action
+            action_str = 'Edit slice: {}'.format(slc.slice_name)
+            log_action('edit', action_str, 'slice', slc.id)
 
     @api
     @has_access_api
@@ -1922,8 +1908,9 @@ class Superset(BaseSupersetView):
         session.add(dash)
         session.commit()
         dash_json = dash.json_data
+        # log user action
         action_str = 'Add dashboard: {}'.format(dash.dashboard_title)
-        log_action(action_str, models.Dashboard, dash.id)
+        log_action('add', action_str, 'dashboard', dash.id)
         return Response(
             dash_json, mimetype="application/json")
 
@@ -1939,8 +1926,9 @@ class Superset(BaseSupersetView):
         self._set_dash_metadata(dash, data)
         session.merge(dash)
         session.commit()
-        action_str = 'Update dashboard: {}'.format(repr(dash))
-        log_action(action_str, models.Dashboard, dashboard_id)
+        # log user aciton
+        action_str = 'Edit dashboard: {}'.format(repr(dash))
+        log_action('edit', action_str, 'dashboard', dashboard_id)
         return "SUCCESS"
 
     @staticmethod
@@ -2239,13 +2227,15 @@ class Superset(BaseSupersetView):
                     )
                 )
             count = 1
+            # log user aciton
             action_str = 'Like {}: {}'.format(class_name.lower(), repr(obj))
-            log_action(action_str, obj, obj_id)
+            log_action('like', action_str, class_name.lower(), obj_id)
         elif action == 'unselect':
             for fav in favs:
                 session.delete(fav)
+            # log user aciton
             action_str = 'Dislike {}: {}'.format(class_name.lower(), repr(obj))
-            log_action(action_str, obj, obj_id)
+            log_action('dislike', action_str, class_name.lower(), obj_id)
         else:
             count = len(favs)
         session.commit()
@@ -2349,7 +2339,7 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/sqllab_viz/", methods=['POST'])
-    @log_this('Visualize query result')
+    #@log_this('Visualize query result')
     def sqllab_viz(self):
         data = json.loads(request.form.get('data'))
         table_name = data.get('datasourceName')
@@ -2371,7 +2361,7 @@ class Superset(BaseSupersetView):
                 .filter_by(database_id=table.database_id) \
                 .filter_by(table_name=table_name) \
                 .first()
-        log_action(action_str, table, new_tb.id)
+        log_action('add', action_str, 'table', new_tb.id)
 
         cols = []
         dims = []
@@ -2555,7 +2545,7 @@ class Superset(BaseSupersetView):
 
     @has_access_api
     @expose("/sql_json/", methods=['POST', 'GET'])
-    @log_this('Run sql')
+    #@log_this('Run sql')
     def sql_json(self):
         """Runs arbitrary sql and returns and json"""
         def table_accessible(database, full_table_name, schema_name=None):
