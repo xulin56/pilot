@@ -3034,7 +3034,7 @@ class Home(BaseSupersetView):
             dt['slice'] = self.get_fav_slices(limit=limit)
         return dt
 
-    def get_table_used(self, limit=10):
+    def get_refered_tables(self, limit=10):
         """Query the times of table used by slices"""
         rs = (
             db.session.query(func.count(Slice.datasource_id), SqlaTable.table_name)
@@ -3055,20 +3055,25 @@ class Home(BaseSupersetView):
             rows.append({'name': name, 'count': count})
         return rows
 
-    def get_slice_used(self, limit=10):
+    def get_refered_slices(self, limit=10):
         """Query the times of slice used by dashboards"""
-        rs = db.session.query(Dashboard).all()
-        slices = []
-        for dash in rs:
-            for s in dash.slices:
-                slices.append(str(s))
-        if not slices:
-            return {}
-
-        top_n = Counter(slices).most_common(limit)
+        user_id = g.user.get_id()
+        sql = """
+            SELECT slices.slice_name, count(slices.slice_name)
+            FROM slices, dashboards, dashboard_slices
+            WHERE slices.id = dashboard_slices.slice_id
+            AND dashboards.id = dashboard_slices.dashboard_id
+            AND (
+                slices.created_by_fk = {}
+                OR
+                slices.online = True)
+            GROUP BY slices.slice_name
+            ORDER BY count(slices.slice_name) DESC
+            LIMIT {}""".format(user_id, limit)
+        rs = db.session.execute(sql)
         rows = []
-        for s in top_n:
-            rows.append({'name': s[0], 'count': s[1]})
+        for row in rs:
+            rows.append({'name': row[0], 'count': row[1]})
         return rows
 
     def get_modified_dashboards(self, limit=10):
@@ -3244,34 +3249,29 @@ class Home(BaseSupersetView):
         result = self.get_fav_objects(types, limit)
         response['favorits'] = result
         #
-        refer_args = request.args.get('refers')
-        if refer_args:
-            refer_args = eval(refer_args)
-            limit = int(refer_args['limit'])
-        else:
-            limit = self.default_limit.get('refers')
-        result = self.get_slice_used(limit)
+        limit = self.default_limit.get('refers')
+        result = self.get_refered_slices(limit)
         response['refers'] = result
         #
-        edits_args = request.args.get('edits')
-        if edits_args:
-            edits_args = eval(edits_args)
-            types = edits_args['types']
-            limit = int(edits_args['limit'])
-        else:
-            types = self.default_types.get('edits')
-            limit = self.default_limit.get('edits')
-        result = self.get_modified_objects(types=types, limit=limit)
-        response['edits'] = result
-        #
-        actions_args = request.args.get('actions')
-        if actions_args:
-            actions_args = eval(actions_args)
-            limit = int(actions_args['limit'])
-        else:
-            limit = self.default_limit.get('actions')
-        result = self.get_user_actions(limit=limit, all_user=False)
-        response['actions'] = result
+        # edits_args = request.args.get('edits')
+        # if edits_args:
+        #     edits_args = eval(edits_args)
+        #     types = edits_args['types']
+        #     limit = int(edits_args['limit'])
+        # else:
+        #     types = self.default_types.get('edits')
+        #     limit = self.default_limit.get('edits')
+        # result = self.get_modified_objects(types=types, limit=limit)
+        # response['edits'] = result
+        # #
+        # actions_args = request.args.get('actions')
+        # if actions_args:
+        #     actions_args = eval(actions_args)
+        #     limit = int(actions_args['limit'])
+        # else:
+        #     limit = self.default_limit.get('actions')
+        # result = self.get_user_actions(limit=limit, all_user=False)
+        # response['actions'] = result
 
         status_ = self.status
         if len(self.message) > 0:
