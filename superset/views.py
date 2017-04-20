@@ -616,7 +616,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         action_str = 'Add connection: {}'.format(repr(obj))
         log_action('add', action_str, 'database', obj.id)
         # log database number
-        log_number('database')
+        log_number('database', g.user.get_id())
 
     def pre_update(self, db):
         self.pre_add(db)
@@ -631,7 +631,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         action_str = 'Delete connection: {}'.format(repr(obj))
         log_action('delete', action_str, 'database', obj.id)
         # log database number
-        log_number('database')
+        log_number('database', g.user.get_id())
 
 # appbuilder.add_link(
 #     'Import Dashboards',
@@ -744,7 +744,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         action_str = 'Add table: {}'.format(repr(table))
         log_action('add', action_str, 'table', table.id)
         # log table number
-        log_number('table')
+        log_number('table', g.user.get_id())
 
     def post_update(self, table):
         TableModelView.merge_perm(table)
@@ -757,7 +757,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         action_str = 'Delete table: {}'.format(repr(table))
         log_action('delete', action_str, 'table', table.id)
         # log table number
-        log_number('table')
+        log_number('table', g.user.get_id())
 
 # class AccessRequestsModelView(SupersetModelView, DeleteMixin):
 #     datamodel = SQLAInterface(DAR)
@@ -894,7 +894,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         action_str = 'Delete slice: {}'.format(repr(obj))
         log_action('delete', action_str, 'slice', obj.id)
         # log slice number
-        log_number('slice')
+        log_number('slice', g.user.get_id())
 
     @expose('/add', methods=['GET', 'POST'])
     @has_access
@@ -1024,7 +1024,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         action_str = 'Add dashboard: {}'.format(repr(obj))
         log_action('add', action_str, 'dashboard', obj.id)
         # log dashboard number
-        log_number('dashboard')
+        log_number('dashboard', g.user.get_id())
 
     def pre_update(self, obj):
         check_ownership(obj)
@@ -1043,7 +1043,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         action_str = 'Delete dashboard: {}'.format(repr(obj))
         log_action('delete', action_str, 'dashboard', obj.id)
         # log dashboard number
-        log_number('dashboard')
+        log_number('dashboard', g.user.get_id())
 
     @action("mulexport", "Export", "Export dashboards?", "fa-database")
     def mulexport(self, items):
@@ -1805,7 +1805,7 @@ class Superset(BaseSupersetView):
         action_str = 'Add slice: {}'.format(slc.slice_name)
         log_action('add', action_str, 'slice', slc.id)
         # log slice number
-        log_number('slice')
+        log_number('slice', g.user.get_id())
 
 
     def overwrite_slice(self, slc):

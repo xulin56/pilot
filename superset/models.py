@@ -2863,32 +2863,44 @@ class DailyNumber(Model):
         return '{} {}s on {}'.format(self.count, self.type, self.dt)
 
     @classmethod
-    def log_number(cls, obj_type):
-        if obj_type.lower() not in cls.all_obj_type:
-            raise Exception('\'{}\' is wrong obj_type to log daily number, '
-                            'should be one of {}'
-                            .format(obj_type, cls.all_obj_type))
-        obj_model = str_to_model[obj_type.lower()]
+    def log_number(cls, obj_type, user_id):
+        try:
+            obj_model = str_to_model[obj_type.lower()]
+        except KeyError as e:
+            logging.error("Unrecognized object type in {}".format(obj_type.lower()))
+            logging.exception(e)
 
-        today_count = db.session.query(obj_model).count()
-        today_id = (
-            db.session.query(cls.id)
+        user_id = int(user_id)
+        today_count = 0
+        if user_id > 0:   # present user's obect number
+            today_count = db.session.query(obj_model)\
+                .filter_by(created_by_fk=user_id)\
+                .count()
+        elif user_id == -1:
+            today_count = db.session.query(obj_model).count()
+        else:
+            logging.error("Error user_id value: {} tranformed to {}"
+                          .format(obj_type.lower(), 'log_number()'))
+
+        today_record = (
+            db.session.query(cls)
             .filter(
                 and_(
                     cls.obj_type.ilike(obj_type),
-                    cls.dt == date.today()
+                    cls.dt == date.today(),
+                    cls.user_id == user_id
                 )
             )
             .first()
         )
-        if today_id:
-            record = db.session.query(cls).filter(cls.id == today_id[0])
-            record.update({cls.count: today_count})
+        if today_record:
+            today_record.count = today_count
         else:
-            new_row = cls(
+            new_record = cls(
                 obj_type=obj_type.lower(),
+                user_id=user_id,
                 count=today_count,
                 dt=date.today()
             )
-            db.session.add(new_row)
+            db.session.add(new_record)
         db.session.commit()
