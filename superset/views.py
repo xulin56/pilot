@@ -2986,33 +2986,19 @@ class Home(BaseSupersetView):
         )
         return rs
 
-    def get_fav_dashboards(self, limit=10, all_user=True):
+    def get_fav_dashboards(self, limit=10):
         """Query the times of dashboard liked by users"""
-        if all_user:
-            rs = (
-                db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
-                .filter(
-                    and_(FavStar.class_name.ilike('dashboard'),
-                        FavStar.obj_id == Dashboard.id)
-                )
-                .group_by(FavStar.obj_id)
-                .order_by(func.count(FavStar.obj_id).desc())
-                .limit(limit)
-                .all()
+        rs = (
+            db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+            .filter(
+                and_(FavStar.class_name.ilike('dashboard'),
+                    FavStar.obj_id == Dashboard.id)
             )
-        else:
-            rs = (
-                db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
-                .filter(
-                    and_(FavStar.user_id == g.user.get_id(),
-                        FavStar.class_name.ilike('dashboard'),
-                        FavStar.obj_id == Dashboard.id)
-                )
-                .group_by(FavStar.obj_id)
-                .order_by(func.count(FavStar.obj_id).desc())
-                .limit(limit)
-                .all()
-            )
+            .group_by(FavStar.obj_id)
+            .order_by(func.count(FavStar.obj_id).desc())
+            .limit(limit)
+            .all()
+        )
         if not rs:
             return json.dumps({})
         rows = []
@@ -3020,49 +3006,32 @@ class Home(BaseSupersetView):
             rows.append({'name': name, 'count': count})
         return rows
 
-    def get_fav_slices(self, limit=10, all_user=True):
+    def get_fav_slices(self, limit=10):
         """Query the times of slice liked by users"""
-        if all_user:
-            rs = (
-                db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
-                .filter(
-                    and_(FavStar.class_name.ilike('slice'),
-                        FavStar.obj_id == Slice.id)
-                )
-                .group_by(FavStar.obj_id)
-                .order_by(func.count(FavStar.obj_id).desc())
-                .limit(limit)
-                .all()
+        rs = (
+            db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
+            .filter(
+                and_(FavStar.class_name.ilike('slice'),
+                    FavStar.obj_id == Slice.id)
             )
-        else:
-            rs = (
-                db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
-                .filter(
-                    and_(FavStar.user_id == g.user.get_id(),
-                        FavStar.class_name.ilike('slice'),
-                        FavStar.obj_id == Slice.id)
-                )
-                .group_by(FavStar.obj_id)
-                .order_by(func.count(FavStar.obj_id).desc())
-                .limit(limit)
-                .all()
-            )
+            .group_by(FavStar.obj_id)
+            .order_by(func.count(FavStar.obj_id).desc())
+            .limit(limit)
+            .all()
+        )
         if not rs:
             return json.dumps({})
         rows = []
         for count, name in rs:
             rows.append({'name': name, 'count': count})
         return rows
-
-    def get_fav_object(self, type_, limit):
-        pass
 
     def get_fav_objects(self, types, limit):
         dt = {}
         if 'dashboard' in types:
-            dt['dashboard'] = self.get_fav_dashboards(limit=limit, all_user=False)
+            dt['dashboard'] = self.get_fav_dashboards(limit=limit)
         if 'slice' in types:
-            dt['slice'] = self.get_fav_slices(limit=limit, all_user=False)
+            dt['slice'] = self.get_fav_slices(limit=limit)
         return dt
 
     def get_table_used(self, limit=10):
@@ -3270,14 +3239,8 @@ class Home(BaseSupersetView):
         result = self.get_object_number_trends(types, limit=limit)
         response['trends'] = result
         #
-        favorit_args = request.args.get('favorits')
-        if favorit_args:
-            favorit_args = eval(favorit_args)
-            types = favorit_args['types']
-            limit = int(favorit_args['limit'])
-        else:
-            types = self.default_types.get('favorits')
-            limit = self.default_limit.get('favorits')
+        types = self.default_types.get('favorits')
+        limit = self.default_limit.get('favorits')
         result = self.get_fav_objects(types, limit)
         response['favorits'] = result
         #
