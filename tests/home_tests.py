@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import unittest
 from superset import db, models
+from superset.models import str_to_model
 from superset.views import Home
 
 
@@ -15,9 +16,12 @@ class HomeTests(unittest.TestCase):
         db.session.query(models.Query).delete()
         db.session.commit()
 
-    def test_get_object_counts(self):
-        objs = ['slice', 'dashboard', 'table', 'database']
-        print(self.home.get_object_counts(objs))
+    def test_get_object_count(self):
+        types = ['dashboard', 'slice', 'table', 'database']
+        for index, value in enumerate(types):
+            except_ = db.session.query(str_to_model[value]).count()
+            acture_ = self.home.get_object_count(value, all_user=True)
+            self.assertEquals(except_, acture_)
 
     def test_log_number(self):
         from superset.models import DailyNumber
