@@ -119,6 +119,7 @@ OBJECT_NOT_FOUND = __("Not found this object")
 RELEASE_SUCCESS = __("Release success")
 DOWNLINE_SUCCESS = __("Downline success")
 ERROR_URL = __("Error request url")
+ERROR_REQUEST_PARAM = __("Error request parameter")
 
 
 def get_database_access_error_msg(database_name):
@@ -2947,19 +2948,30 @@ class Home(BaseSupersetView):
         'actions': 10
     }
 
-    def get_object_count(self, type_):
-        """Get the obj's count"""
+    def __init__(self):
+        super(Home, self).__init__()
+        self.status = 201
+        self.message = []
+
+    def get_object_count(self, type_, all_user=False):
         try:
             model = str_to_model[type_.lower()]
-        except KeyError as e:
-            print(e)
-        return db.session.query(model).count()
+        except KeyError:
+            self.status = 400 if str(self.status)[0] < '4' else self.status
+            self.message = '{}: {}'.format(ERROR_REQUEST_PARAM, type_)
+            print(self.message)
+            return 0
+        if all_user:
+            return db.session.query(model).count()
+        else:
+            return db.session.query(model)\
+                .filter_by(created_by_fk=g.user.get_id())\
+                .count()
 
-    def get_object_counts(self, types):
-        """Get the objs' count"""
+    def get_object_counts(self, types, all_user=False):
         dt = {}
         for type_ in types:
-            count = self.get_object_count(type_)
+            count = self.get_object_count(type_, all_user=all_user)
             dt[type_] = count
         return dt
 
@@ -3041,6 +3053,9 @@ class Home(BaseSupersetView):
         for count, name in rs:
             rows.append({'name': name, 'count': count})
         return rows
+
+    def get_fav_object(self, type_, limit):
+        pass
 
     def get_fav_objects(self, types, limit):
         dt = {}
@@ -3240,12 +3255,7 @@ class Home(BaseSupersetView):
     def get_all_statistics_data(self):
         response = {}
         #
-        counts_args = request.args.get('counts')
-        if counts_args:
-            counts_args = eval(counts_args)
-            types = counts_args['types']
-        else:
-            types = self.default_types.get('counts')
+        types = self.default_types.get('counts')
         result = self.get_object_counts(types)
         response['counts'] = result
         #
@@ -3300,9 +3310,14 @@ class Home(BaseSupersetView):
         result = self.get_user_actions(limit=limit, all_user=False)
         response['actions'] = result
 
+        status_ = self.status
+        if len(self.message) > 0:
+            response['error'] = '. '.join(self.message)
+        self.status = 201
+        self.message = []
         return Response(
             json.dumps({'index': response}),
-            status=200,
+            status=status_,
             mimetype="application/json")
 
 # if config['DRUID_IS_ACTIVE']:
