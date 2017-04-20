@@ -115,9 +115,10 @@ ACCESS_REQUEST_MISSING_ERR = __(
     "The access requests seem to have been deleted")
 USER_MISSING_ERR = __("The user seems to have been deleted")
 DATASOURCE_ACCESS_ERR = __("You don't have access to this datasource")
-DASHBOARD_NOT_FOUND = __("Not found this dashboard")
-RELEASE_DASHBOARD_SUCCESS = __("Release dashboard success")
-CONFINE_DASHBOARD_SUCCESS = __("Cancel release dashboard success")
+OBJECT_NOT_FOUND = __("Not found this object")
+RELEASE_SUCCESS = __("Release success")
+DOWNLINE_SUCCESS = __("Downline success")
+ERROR_URL = __("Error request url")
 
 
 def get_database_access_error_msg(database_name):
@@ -2870,28 +2871,34 @@ class Superset(BaseSupersetView):
             bootstrap_data=json.dumps(d, default=utils.json_iso_dttm_ser)
         )
 
-    @expose("/dashboard/release/<action>/<dashboard_id>")
+    @expose("/dashboard/<action>/<dashboard_id>")
     def release_or_confine_dashbaord(self, action, dashboard_id):
-        obj = db.session.query(models.Dashboard)\
+        obj = db.session.query(models.Dashboard) \
             .filter_by(id=dashboard_id).first()
-        if not obj:
-            return Response(
-                json.dumps({'message': DASHBOARD_NOT_FOUND}),
-                status=404,
-                mimetype="application/json")
         message = None
-        if action.lower() == 'online':
+        status = 201
+        if not obj:
+            message = OBJECT_NOT_FOUND
+            status = 404
+        elif action.lower() == 'release':
             obj.online = True
-            message = RELEASE_DASHBOARD_SUCCESS
-        elif action.lower() == 'offline':
+            db.session.commit()
+            message = RELEASE_SUCCESS
+            action_str = 'Release dashboard: {}'.format(repr(obj))
+            log_action('release', action_str, 'dashboard', dashboard_id)
+        elif action.lower() == 'downline':
             obj.online = False
-            message = CONFINE_DASHBOARD_SUCCESS
-        db.session.commit()
+            db.session.commit()
+            message = DOWNLINE_SUCCESS
+            action_str = 'Downline dashboard: {}'.format(repr(obj))
+            log_action('downline', action_str, 'dashboard', dashboard_id)
+        else:
+            message = ERROR_URL
+            status = 404
         return Response(
             json.dumps({'message': message}),
-            status=201,
+            status=status,
             mimetype="application/json")
-
 
 class Home(BaseSupersetView):
     """The api for the home page"""
