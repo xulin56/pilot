@@ -2847,9 +2847,12 @@ str_to_model = {
 
 
 class DailyNumber(Model):
-    """ORM object used to log the daily number of Superset objects"""
+    """ORM object used to log the daily number of Superset objects
+    'user_id = -1' means all user's number
+    """
     __tablename__ = 'daily_number'
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('ab_user.id'))
     obj_type = Column(String(32), nullable=False)
     count = Column(Integer, nullable=False)
     dt = Column(Date, default=date.today())
