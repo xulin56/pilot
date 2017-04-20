@@ -2872,7 +2872,7 @@ class Superset(BaseSupersetView):
         )
 
     @expose("/dashboard/<action>/<dashboard_id>")
-    def release_or_confine_dashbaord(self, action, dashboard_id):
+    def release_or_downline_dashbaord(self, action, dashboard_id):
         obj = db.session.query(models.Dashboard) \
             .filter_by(id=dashboard_id).first()
         message = None
@@ -2899,6 +2899,36 @@ class Superset(BaseSupersetView):
             json.dumps({'message': message}),
             status=status,
             mimetype="application/json")
+
+    @expose("/slice/<action>/<slice_id>")
+    def release_or_downline_slice(self, action, slice_id):
+        obj = db.session.query(models.Slice) \
+            .filter_by(id=slice_id).first()
+        message = None
+        status = 201
+        if not obj:
+            message = OBJECT_NOT_FOUND
+            status = 404
+        elif action.lower() == 'release':
+            obj.online = True
+            db.session.commit()
+            message = RELEASE_SUCCESS
+            action_str = 'Release slice: {}'.format(repr(obj))
+            log_action('release', action_str, 'slice', slice_id)
+        elif action.lower() == 'downline':
+            obj.online = False
+            db.session.commit()
+            message = DOWNLINE_SUCCESS
+            action_str = 'Downline slice: {}'.format(repr(obj))
+            log_action('downline', action_str, 'slice', slice_id)
+        else:
+            message = ERROR_URL
+            status = 404
+        return Response(
+            json.dumps({'message': message}),
+            status=status,
+            mimetype="application/json")
+
 
 class Home(BaseSupersetView):
     """The api for the home page"""
