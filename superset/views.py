@@ -2938,7 +2938,9 @@ class Home(BaseSupersetView):
         'counts': ['dashboard', 'slice', 'table', 'database'],
         'trends': ['dashboard', 'slice', 'table', 'database'],
         'favorits': ['dashboard', 'slice'],
-        'edits': ['dashboard', 'slice']
+        'edits': ['dashboard', 'slice'],
+        # action_types could be: ['release', 'downline', 'add', 'edit', 'delete'...]
+        'actions': ['release', 'downline']
     }
     default_limit = {
         'trends': 30,
@@ -2958,7 +2960,8 @@ class Home(BaseSupersetView):
             model = str_to_model[type_.lower()]
         except KeyError:
             self.status = 400 if str(self.status)[0] < '4' else self.status
-            self.message = '{}: {}'.format(ERROR_REQUEST_PARAM, type_)
+            self.message.append('{}: {} passed to {}'
+                                .format(ERROR_REQUEST_PARAM, type_, 'get_object_count()'))
             print(self.message)
             return 0
         if all_user:
@@ -3132,49 +3135,64 @@ class Home(BaseSupersetView):
         else:
             return dt
 
-    @expose('/actions/')
-    def get_user_actions(self, limit=10, all_user=True):
+    def get_user_actions(self, types=[], limit=10, all_user=True):
         """The actions of user"""
-        url_limit = request.args.get('limit')
-        limit = url_limit if url_limit is not None else limit
-        if all_user:
-            rs = (
-                db.session.query(User.username, Log.action,
-                                 Log.dashboard_id, Log.slice_id, Log.dttm)
-                .filter(Log.user_id == User.id)
-                .order_by(Log.dttm.desc())
-                .limit(limit)
-                .all()
-            )
-        else:
-            rs = (
-                db.session.query(User.username, Log.action,
-                                 Log.dashboard_id, Log.slice_id, Log.dttm)
-                .filter(
-                    and_(Log.user_id == g.user.get_id(),
-                         Log.user_id == User.id)
+        if len(types) < 1 or limit < 0:
+            self.status = 401 if str(self.status)[0] < '4' else self.status
+            self.message.append('{}: {},{} ppassed to {}'
+                                .format(ERROR_REQUEST_PARAM, types, limit, 'get_user_actions()'))
+            return {}
+
+        query = (
+            db.session.query(User.username, Log.action,
+                            Log.obj_type, Log.obj_id, Log.dttm)
+            .filter(
+                and_(Log.action_type.in_(types),
+                    Log.user_id == User.id)
                 )
-                .order_by(Log.dttm.desc())
-                .limit(limit)
-                .all()
             )
+        if not all_user:
+            query = query.filter(Log.user_id == g.user.get_id())
+        rs = query.order_by(Log.dttm.desc()).limit(limit).all()
+
         rows = []
-        for name, action, dashboard_id, slice_id, dttm in rs:
-            link = None
-            type = 'other'
-            if dashboard_id:
-                obj = db.session.query(Dashboard).filter_by(id=dashboard_id).first()
-                link = obj.dashboard_link() if obj else None
-                type = 'dashboard'
-            elif slice_id:
-                obj = db.session.query(Slice).filter_by(id=slice_id).first()
-                link = obj.slice_link if obj else None
-                type = 'slice'
-            rows.append({'user': name, 'action': action, 'type': type, 'link': link, 'time': str(dttm)})
-        if url_limit is not None:
-            return Response(json.dumps({'actions': rows}))
+        for name, action, obj_type, obj_id, dttm in rs:
+            if obj_type == 'dashboard':
+                obj = db.session.query(Dashboard).filter_by(id=obj_id).first()
+                link = obj.url if obj else None
+                title = repr(obj) if obj else None
+            elif obj_type == 'slice':
+                obj = db.session.query(Slice).filter_by(id=obj_id).first()
+                link = obj.slice_url if obj else None
+                title = repr(obj) if obj else None
+            rows.append({'user': name, 'action': action, 'title': title, 'link': link, 'time': str(dttm)})
+        return rows
+
+    @expose('/actions/')
+    def get_user_actions_by_url(self):
+        args = request.args
+        if 'limit' in args.keys():
+            limit = request.args.get('limit')
         else:
-            return rows
+            limit = self.default_limit.get('actions')
+        if 'types' in args.keys():
+            types = request.args.get('types')
+        else:
+            types = self.default_types.get('actions')
+
+        rs = self.get_user_actions(types=types, limit=int(limit))
+        status_ = self.status
+        message_ = self.message
+        self.status = 201
+        self.message = []
+        if str(self.status)[0] != '2':
+            return Response(json.dumps(message_),
+                            status=status_,
+                            mimetype='application/json')
+        else:
+            return Response(json.dumps({'actions': rs}),
+                            status=status_,
+                            mimetype='application/json')
 
     def get_object_number_trends(self, types, limit=30, all_user=False):
         dt = {}
