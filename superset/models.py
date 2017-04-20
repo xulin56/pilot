@@ -918,6 +918,18 @@ sqla.event.listen(Database, 'after_insert', set_perm)
 sqla.event.listen(Database, 'after_update', set_perm)
 
 
+class DatabaseAccount(Model):
+    """ORM object to store the account info of database"""
+    __tablename__ = 'database_account'
+    type = "table"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('ab_user.id'))
+    database_id = Column(Integer, ForeignKey('dbs.id'))
+    username = Column(String(255))
+    password = Column(EncryptedType(String(1024), config.get('SECRET_KEY')))
+
+
 class TableColumn(Model, AuditMixinNullable, ImportMixin):
 
     """ORM object for table columns, each table can have multiple columns"""
