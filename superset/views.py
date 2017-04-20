@@ -3202,17 +3202,23 @@ class Home(BaseSupersetView):
         else:
             return rows
 
-    def get_object_number_trends(self, types, limit=30):
+    def get_object_number_trends(self, types, limit=30, all_user=False):
         dt = {}
         for type_ in types:
-            r = self.get_object_number_trend(type_, limit=limit)
+            r = self.get_object_number_trend(type_, limit=limit, all_user=all_user)
             dt[type_.lower()] = r
         return dt
 
-    def get_object_number_trend(self, type_, limit=30):
+    def get_object_number_trend(self, type_, limit=30, all_user=False):
+        user_id = -1 if all_user else g.user.get_id()
         rows = (
             db.session.query(DailyNumber.count, DailyNumber.dt)
-            .filter(DailyNumber.obj_type.ilike(type_))
+            .filter(
+                and_(
+                    DailyNumber.obj_type.ilike(type_),
+                    DailyNumber.user_id == user_id
+                )
+            )
             .order_by(DailyNumber.dt)
             .limit(limit)
             .all()
@@ -3259,14 +3265,8 @@ class Home(BaseSupersetView):
         result = self.get_object_counts(types)
         response['counts'] = result
         #
-        trends_args = request.args.get('trends')
-        if trends_args:
-            trends_args = eval(trends_args)
-            types = trends_args['types']
-            limit = int(trends_args['limit'])
-        else:
-            types = self.default_types.get('trends')
-            limit = self.default_limit.get('trends')
+        types = self.default_types.get('trends')
+        limit = self.default_limit.get('trends')
         result = self.get_object_number_trends(types, limit=limit)
         response['trends'] = result
         #
