@@ -2935,6 +2935,9 @@ class Superset(BaseSupersetView):
         if not obj:
             message = OBJECT_NOT_FOUND
             status = 404
+        elif obj.created_by_fk != int(g.user.get_id()):
+            message = NO_PERMISSION
+            status = 404
         elif action.lower() == 'release':
             if obj.online is True:
                 message = OBJECT_IS_RELEASED
