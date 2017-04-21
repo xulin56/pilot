@@ -1058,6 +1058,11 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         check_ownership(obj)
 
     def post_delete(self, obj):
+        db.session.query(models.FavStar)\
+            .filter(models.FavStar.class_name.ilike('dashboard'),
+                    models.FavStar.obj_id == obj.id)\
+            .delete(synchronize_session=False)
+        db.session.commit()
         # log user action
         action_str = 'Delete dashboard: {}'.format(repr(obj))
         log_action('delete', action_str, 'dashboard', obj.id)
