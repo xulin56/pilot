@@ -232,9 +232,12 @@ class Slice(Model, AuditMixinNullable, ImportMixin):
     __tablename__ = 'slices'
     id = Column(Integer, primary_key=True)
     slice_name = Column(String(250))
+    online = Column(Boolean, default=False)
     datasource_id = Column(Integer)
     datasource_type = Column(String(200))
     datasource_name = Column(String(2000))
+    database_id = Column(Integer)
+    full_table_name = Column(String(2000))
     viz_type = Column(String(250))
     params = Column(Text)
     description = Column(Text)
@@ -436,6 +439,7 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
     description = Column(Text)
     department = Column(Text)
     css = Column(Text)
+    online = Column(Boolean, default=False)
     json_metadata = Column(Text)
     slug = Column(String(255), unique=True)
     slices = relationship(
@@ -636,7 +640,7 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
 
             # log user action
             action_str = 'Export dashboard: {}'.format(copied_dashboard.dashboard_title)
-            Log.log_action(action_str, copied_dashboard.__class__, dashboard_id)
+            Log.log_action('export', action_str, 'dashboard', dashboard_id)
 
         return pickle.dumps({
             'dashboards': copied_dashboards,
@@ -721,11 +725,11 @@ class Database(Model, AuditMixinNullable):
     password = Column(EncryptedType(String(1024), config.get('SECRET_KEY')))
     cache_timeout = Column(Integer)
     select_as_create_table_as = Column(Boolean, default=False)
-    expose_in_sqllab = Column(Boolean, default=False)
+    expose_in_sqllab = Column(Boolean, default=True)
     allow_run_sync = Column(Boolean, default=True)
     allow_run_async = Column(Boolean, default=False)
     allow_ctas = Column(Boolean, default=False)
-    allow_dml = Column(Boolean, default=False)
+    allow_dml = Column(Boolean, default=True)
     force_ctas_schema = Column(String(250))
     extra = Column(Text, default=textwrap.dedent("""\
     {
@@ -912,6 +916,18 @@ class Database(Model, AuditMixinNullable):
 
 sqla.event.listen(Database, 'after_insert', set_perm)
 sqla.event.listen(Database, 'after_update', set_perm)
+
+
+class DatabaseAccount(Model):
+    """ORM object to store the account info of database"""
+    __tablename__ = 'database_account'
+    type = "table"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('ab_user.id'))
+    database_id = Column(Integer, ForeignKey('dbs.id'))
+    username = Column(String(255))
+    password = Column(EncryptedType(String(1024), config.get('SECRET_KEY')))
 
 
 class TableColumn(Model, AuditMixinNullable, ImportMixin):
@@ -2570,9 +2586,10 @@ class Log(Model):
 
     id = Column(Integer, primary_key=True)
     action = Column(String(512))
+    action_type = Column(String(200))
+    obj_type = Column(String(50))
+    obj_id = Column(Integer)
     user_id = Column(Integer, ForeignKey('ab_user.id'))
-    dashboard_id = Column(Integer)
-    slice_id = Column(Integer)
     json = Column(Text)
     user = relationship('User', backref='logs', foreign_keys=[user_id])
     dttm = Column(DateTime, default=datetime.now)
@@ -2622,11 +2639,7 @@ class Log(Model):
         return _log_this
 
     @classmethod
-    def log_action(cls, action, obj, obj_id):
-        start_dttm = datetime.now()
-        user_id = None
-        if g.user:
-            user_id = g.user.get_id()
+    def log_action(cls, action_type, action, obj_type, obj_id):
         d = request.args.to_dict()
         post_data = request.form or {}
         d.update(post_data)
@@ -2635,22 +2648,15 @@ class Log(Model):
             params = json.dumps(d)
         except:
             pass
-
-        slice_id, dashboard_id = None, None
-        if isinstance(obj, Slice):
-            slice_id = int(obj_id)
-        elif isinstance(obj, Dashboard):
-            dashboard_id = int(obj_id)
-
         sesh = db.session()
         log = cls(
             action=action,
+            action_type=action_type,
+            obj_type=obj_type,
+            obj_id=obj_id,
             json=params,
-            dashboard_id=dashboard_id,
-            slice_id=slice_id,
-            duration_ms=(datetime.now() - start_dttm).total_seconds() * 1000,
             referrer=request.referrer[:1000] if request.referrer else None,
-            user_id=user_id)
+            user_id=g.user.get_id() if g.user else None)
         sesh.add(log)
         sesh.commit()
 
@@ -2841,9 +2847,12 @@ str_to_model = {
 
 
 class DailyNumber(Model):
-    """ORM object used to log the daily number of Superset objects"""
+    """ORM object used to log the daily number of Superset objects
+    'user_id = -1' means all user's number
+    """
     __tablename__ = 'daily_number'
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('ab_user.id'))
     obj_type = Column(String(32), nullable=False)
     count = Column(Integer, nullable=False)
     dt = Column(Date, default=date.today())
@@ -2854,32 +2863,44 @@ class DailyNumber(Model):
         return '{} {}s on {}'.format(self.count, self.type, self.dt)
 
     @classmethod
-    def log_number(cls, obj_type):
-        if obj_type.lower() not in cls.all_obj_type:
-            raise Exception('\'{}\' is wrong obj_type to log daily number, '
-                            'should be one of {}'
-                            .format(obj_type, cls.all_obj_type))
-        obj_model = str_to_model[obj_type.lower()]
+    def log_number(cls, obj_type, user_id):
+        try:
+            obj_model = str_to_model[obj_type.lower()]
+        except KeyError as e:
+            logging.error("Unrecognized object type in {}".format(obj_type.lower()))
+            logging.exception(e)
 
-        today_count = db.session.query(obj_model).count()
-        today_id = (
-            db.session.query(cls.id)
+        user_id = int(user_id)
+        today_count = 0
+        if user_id > 0:   # present user's obect number
+            today_count = db.session.query(obj_model)\
+                .filter_by(created_by_fk=user_id)\
+                .count()
+        elif user_id == -1:
+            today_count = db.session.query(obj_model).count()
+        else:
+            logging.error("Error user_id value: {} tranformed to {}"
+                          .format(obj_type.lower(), 'log_number()'))
+
+        today_record = (
+            db.session.query(cls)
             .filter(
                 and_(
                     cls.obj_type.ilike(obj_type),
-                    cls.dt == date.today()
+                    cls.dt == date.today(),
+                    cls.user_id == user_id
                 )
             )
             .first()
         )
-        if today_id:
-            record = db.session.query(cls).filter(cls.id == today_id[0])
-            record.update({cls.count: today_count})
+        if today_record:
+            today_record.count = today_count
         else:
-            new_row = cls(
+            new_record = cls(
                 obj_type=obj_type.lower(),
+                user_id=user_id,
                 count=today_count,
                 dt=date.today()
             )
-            db.session.add(new_row)
+            db.session.add(new_record)
         db.session.commit()

@@ -115,6 +115,13 @@ ACCESS_REQUEST_MISSING_ERR = __(
     "The access requests seem to have been deleted")
 USER_MISSING_ERR = __("The user seems to have been deleted")
 DATASOURCE_ACCESS_ERR = __("You don't have access to this datasource")
+OBJECT_NOT_FOUND = __("Not found this object")
+RELEASE_SUCCESS = __("Release success")
+DOWNLINE_SUCCESS = __("Downline success")
+OBJECT_IS_RELEASED = __("This object has been released")
+OBJECT_IS_DOWNLINED = __("This object has been downlined")
+ERROR_URL = __("Error request url")
+ERROR_REQUEST_PARAM = __("Error request parameter")
 
 
 def get_database_access_error_msg(database_name):
@@ -333,6 +340,7 @@ class DeleteMixin(object):
     def muldelete(self, items):
         self.datamodel.delete_all(items)
         self.update_redirect()
+        # log_action
         if isinstance(items[0], models.SqlaTable):
             cls_name = 'table'
         else:
@@ -340,7 +348,7 @@ class DeleteMixin(object):
         for item in items:
             obj_name = repr(item)
             action_str = 'Delete {}: {}'.format(cls_name, obj_name)
-            log_action(action_str, item.__class__, item.id)
+            log_action('delete', action_str, cls_name, item.id)
         return redirect(self.get_redirect())
 
 
@@ -409,18 +417,6 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'python_date_format': _("Datetime Format"),
         'database_expression': _("Database Expression")
     }
-
-    def post_add(self, obj):
-        action_str = 'Add table column: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
-
-    def post_update(self, obj):
-        action_str = 'Update table column: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
-
-    def post_delete(self, obj):
-        action_str = 'Delete table column: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
 
 # class DruidColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 #     datamodel = SQLAInterface(models.DruidColumn)
@@ -505,19 +501,10 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     def post_add(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
-        action_str = 'Add sql metric: {}'.format(metric.metric_name)
-        log_action(action_str, metric, metric.id)
 
     def post_update(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
-        action_str = 'Update sql metric: {}'.format(metric.metric_name)
-        log_action(action_str, metric, metric.id)
-
-    def post_delete(self, metric):
-        action_str = 'Delete sql metric: {}'.format(metric.metric_name)
-        log_action(action_str, metric, metric.id)
-
 
 # class DruidMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 #     datamodel = SQLAInterface(models.DruidMetric)
@@ -629,23 +616,24 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     def post_add(self, obj):
         # log user aciton
         action_str = 'Add connection: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('add', action_str, 'database', obj.id)
         # log database number
-        log_number('database')
+        log_number('database', g.user.get_id())
 
     def pre_update(self, db):
         self.pre_add(db)
 
     def post_update(self, obj):
-        action_str = 'Update connection: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        # log user action
+        action_str = 'Edit connection: {}'.format(repr(obj))
+        log_action('edit', action_str, 'database', obj.id)
 
     def post_delete(self, obj):
         # log user action
         action_str = 'Delete connection: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('delete', action_str, 'database', obj.id)
         # log database number
-        log_number('database')
+        log_number('database', g.user.get_id())
 
 # appbuilder.add_link(
 #     'Import Dashboards',
@@ -756,21 +744,22 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         TableModelView.merge_perm(table)
         # log user aciton
         action_str = 'Add table: {}'.format(repr(table))
-        log_action(action_str, table, table.id)
+        log_action('add', action_str, 'table', table.id)
         # log table number
-        log_number('table')
+        log_number('table', g.user.get_id())
 
     def post_update(self, table):
         TableModelView.merge_perm(table)
-        action_str = 'Update table: {}'.format(repr(table))
-        log_action(action_str, table, table.id)
+        # log user action
+        action_str = 'Edit table: {}'.format(repr(table))
+        log_action('edit', action_str, 'table', table.id)
 
     def post_delete(self, table):
         # log user action
         action_str = 'Delete table: {}'.format(repr(table))
-        log_action(action_str, table, table.id)
+        log_action('delete', action_str, 'table', table.id)
         # log table number
-        log_number('table')
+        log_number('table', g.user.get_id())
 
 # class AccessRequestsModelView(SupersetModelView, DeleteMixin):
 #     datamodel = SQLAInterface(DAR)
@@ -843,13 +832,13 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
     list_columns = [
-        'slice_link', 'description', 'viz_type', 'datasource_link',
+        'slice_link', 'description', 'online', 'viz_type', 'datasource_link',
         'department', 'creator', 'modified']
     edit_columns = [
-        'slice_name', 'description', 'viz_type', 'department', 'owners',
-        'dashboards',  'params', 'cache_timeout']
+        'slice_name', 'description', 'online', 'viz_type', 'department',
+        'dashboards',  'params']
     show_columns = [
-        'slice_name', 'description', 'viz_type', 'department', 'params', 'dashboards', 'owners',
+        'slice_name', 'description', 'online', 'viz_type', 'department', 'params', 'dashboards',
         'created_by', 'created_on', 'changed_by', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
@@ -895,8 +884,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         check_ownership(obj)
 
     def post_update(self, obj):
-        action_str = 'Update slice: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        # log user action
+        action_str = 'Edit slice: {}'.format(repr(obj))
+        log_action('edit', action_str, 'slice', obj.id)
 
     def pre_delete(self, obj):
         check_ownership(obj)
@@ -904,9 +894,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     def post_delete(self, obj):
         # log user action
         action_str = 'Delete slice: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('delete', action_str, 'slice', obj.id)
         # log slice number
-        log_number('slice')
+        log_number('slice', g.user.get_id())
 
     @expose('/add', methods=['GET', 'POST'])
     @has_access
@@ -975,8 +965,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     show_title = _("Show Dashboard")
     add_title = _("Add Dashboard")
     edit_title = _("Edit Dashboard")
-    list_columns = ['dashboard_link', 'description', 'department', 'creator', 'modified']
-    edit_columns = ['dashboard_title', 'description', 'department', 'slices', 'owners']
+    list_columns = ['dashboard_link', 'description', 'online', 'department', 'creator', 'modified']
+    edit_columns = ['dashboard_title', 'description', 'online', 'department', 'slices', 'owners']
     show_columns = edit_columns + ['table_names']
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
@@ -1034,17 +1024,18 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     def post_add(self, obj):
         # log user action
         action_str = 'Add dashboard: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('add', action_str, 'dashboard', obj.id)
         # log dashboard number
-        log_number('dashboard')
+        log_number('dashboard', g.user.get_id())
 
     def pre_update(self, obj):
         check_ownership(obj)
         self.pre_add(obj)
 
     def post_update(self, obj):
-        action_str = 'Update dashboard: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        # log user action
+        action_str = 'Edit dashboard: {}'.format(repr(obj))
+        log_action('edit', action_str, 'dashboard', obj.id)
 
     def pre_delete(self, obj):
         check_ownership(obj)
@@ -1052,9 +1043,9 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     def post_delete(self, obj):
         # log user action
         action_str = 'Delete dashboard: {}'.format(repr(obj))
-        log_action(action_str, obj, obj.id)
+        log_action('delete', action_str, 'dashboard', obj.id)
         # log dashboard number
-        log_number('dashboard')
+        log_number('dashboard', g.user.get_id())
 
     @action("mulexport", "Export", "Export dashboards?", "fa-database")
     def mulexport(self, items):
@@ -1112,7 +1103,7 @@ class DashboardModelViewAsync(DashboardModelView):  # noqa
 
 class LogModelView(SupersetModelView):
     datamodel = SQLAInterface(models.Log)
-    list_columns = ('user', 'action', 'dttm')
+    list_columns = ('user', 'action_type', 'action', 'obj_type', 'obj_id', 'dttm')
     edit_columns = ('user', 'action', 'dttm', 'json')
     base_order = ('dttm', 'desc')
     label_columns = {
@@ -1546,7 +1537,7 @@ class Superset(BaseSupersetView):
                     dashboard, import_time=current_tt)
                 # log user action
                 action_str = 'Import dashboard: {}'.format(dashboard.dashboard_title)
-                log_action(action_str, dashboard.__class__, dashboard.id)
+                log_action('import', action_str, 'dashboard', dashboard.id)
             db.session.commit()
             return redirect('/dashboardmodelview/list/')
         return self.render_template('superset/import_dashboards.html')
@@ -1637,8 +1628,9 @@ class Superset(BaseSupersetView):
         # handle different endpoints
         if request.args.get("csv") == "true":
             payload = viz_obj.get_csv()
-            action_str = 'Save slice\'s data to csv'
-            log_action(action_str, models.SqlaTable, datasource_id)
+            # log user action
+            # action_str = 'Save slice\'s data to csv'
+            # log_action('csv', action_str, 'slice', datasource_id)
             return Response(
                 payload,
                 status=200,
@@ -1794,7 +1786,7 @@ class Superset(BaseSupersetView):
             db.session.commit()
             # log user aciton
             action_str = 'Add dashboard: {}'.format(dash.dashboard_title)
-            log_action(action_str, dash.__class__, dash.id)
+            log_action('add', action_str, 'dashboard', dash.id)
 
         if request.args.get('goto_dash') == 'true':
             if request.args.get('V2') == 'true':
@@ -1813,9 +1805,9 @@ class Superset(BaseSupersetView):
         flash(msg, "info")
         # log user action
         action_str = 'Add slice: {}'.format(slc.slice_name)
-        log_action(action_str, slc, slc.id)
+        log_action('add', action_str, 'slice', slc.id)
         # log slice number
-        log_number('slice')
+        log_number('slice', g.user.get_id())
 
 
     def overwrite_slice(self, slc):
@@ -1828,8 +1820,9 @@ class Superset(BaseSupersetView):
             session.commit()
             msg = "Slice [{}] has been overwritten".format(slc.slice_name)
             flash(msg, "info")
-            action_str = 'Update slice: {}'.format(slc.slice_name)
-            log_action(action_str, slc, slc.id)
+            # log user action
+            action_str = 'Edit slice: {}'.format(slc.slice_name)
+            log_action('edit', action_str, 'slice', slc.id)
 
     @api
     @has_access_api
@@ -1922,8 +1915,9 @@ class Superset(BaseSupersetView):
         session.add(dash)
         session.commit()
         dash_json = dash.json_data
+        # log user action
         action_str = 'Add dashboard: {}'.format(dash.dashboard_title)
-        log_action(action_str, models.Dashboard, dash.id)
+        log_action('add', action_str, 'dashboard', dash.id)
         return Response(
             dash_json, mimetype="application/json")
 
@@ -1939,8 +1933,9 @@ class Superset(BaseSupersetView):
         self._set_dash_metadata(dash, data)
         session.merge(dash)
         session.commit()
-        action_str = 'Update dashboard: {}'.format(repr(dash))
-        log_action(action_str, models.Dashboard, dashboard_id)
+        # log user aciton
+        action_str = 'Edit dashboard: {}'.format(repr(dash))
+        log_action('edit', action_str, 'dashboard', dashboard_id)
         return "SUCCESS"
 
     @staticmethod
@@ -2239,13 +2234,15 @@ class Superset(BaseSupersetView):
                     )
                 )
             count = 1
+            # log user aciton
             action_str = 'Like {}: {}'.format(class_name.lower(), repr(obj))
-            log_action(action_str, obj, obj_id)
+            log_action('like', action_str, class_name.lower(), obj_id)
         elif action == 'unselect':
             for fav in favs:
                 session.delete(fav)
+            # log user aciton
             action_str = 'Dislike {}: {}'.format(class_name.lower(), repr(obj))
-            log_action(action_str, obj, obj_id)
+            log_action('dislike', action_str, class_name.lower(), obj_id)
         else:
             count = len(favs)
         session.commit()
@@ -2349,7 +2346,7 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/sqllab_viz/", methods=['POST'])
-    @log_this('Visualize query result')
+    #@log_this('Visualize query result')
     def sqllab_viz(self):
         data = json.loads(request.form.get('data'))
         table_name = data.get('datasourceName')
@@ -2371,7 +2368,7 @@ class Superset(BaseSupersetView):
                 .filter_by(database_id=table.database_id) \
                 .filter_by(table_name=table_name) \
                 .first()
-        log_action(action_str, table, new_tb.id)
+        log_action('add', action_str, 'table', new_tb.id)
 
         cols = []
         dims = []
@@ -2555,7 +2552,7 @@ class Superset(BaseSupersetView):
 
     @has_access_api
     @expose("/sql_json/", methods=['POST', 'GET'])
-    @log_this('Run sql')
+    #@log_this('Run sql')
     def sql_json(self):
         """Runs arbitrary sql and returns and json"""
         def table_accessible(database, full_table_name, schema_name=None):
@@ -2884,23 +2881,86 @@ class Superset(BaseSupersetView):
             bootstrap_data=json.dumps(d, default=utils.json_iso_dttm_ser)
         )
 
-    @expose("/statistics")
-    def statistics(self):
-        """Personalized welcome page"""
-        if not g.user or not g.user.get_id():
-            return redirect(appbuilder.get_url_for_login)
-        number = {'dashboard': 1, 'slice': 2, 'connection': 3, 'table': 4}
-        return self.render_template('superset/statistics.html', number=number)
+    @expose("/dashboard/<action>/<dashboard_id>")
+    def release_or_downline_dashbaord(self, action, dashboard_id):
+        obj = db.session.query(models.Dashboard) \
+            .filter_by(id=dashboard_id).first()
+        message = None
+        status = 201
+        if not obj:
+            message = OBJECT_NOT_FOUND
+            status = 404
+        elif action.lower() == 'release':
+            if obj.online is True:
+                message = OBJECT_IS_RELEASED
+            else:
+                obj.online = True
+                db.session.commit()
+                message = RELEASE_SUCCESS
+                action_str = 'Release dashboard: {}'.format(repr(obj))
+                log_action('release', action_str, 'dashboard', dashboard_id)
+        elif action.lower() == 'downline':
+            if obj.online is False:
+                message = OBJECT_IS_DOWNLINED
+            else:
+                obj.online = False
+                db.session.commit()
+                message = DOWNLINE_SUCCESS
+                action_str = 'Downline dashboard: {}'.format(repr(obj))
+                log_action('downline', action_str, 'dashboard', dashboard_id)
+        else:
+            message = ERROR_URL
+            status = 404
+        return Response(
+            json.dumps({'message': message}),
+            status=status,
+            mimetype="application/json")
+
+    @expose("/slice/<action>/<slice_id>")
+    def release_or_downline_slice(self, action, slice_id):
+        obj = db.session.query(models.Slice) \
+            .filter_by(id=slice_id).first()
+        message = None
+        status = 201
+        if not obj:
+            message = OBJECT_NOT_FOUND
+            status = 404
+        elif action.lower() == 'release':
+            if obj.online is True:
+                message = OBJECT_IS_RELEASED
+            else:
+                obj.online = True
+                db.session.commit()
+                message = RELEASE_SUCCESS
+                action_str = 'Release slice: {}'.format(repr(obj))
+                log_action('release', action_str, 'slice', slice_id)
+        elif action.lower() == 'downline':
+            if obj.online is False:
+                message = OBJECT_IS_DOWNLINED
+            else:
+                obj.online = False
+                db.session.commit()
+                message = DOWNLINE_SUCCESS
+                action_str = 'Downline slice: {}'.format(repr(obj))
+                log_action('downline', action_str, 'slice', slice_id)
+        else:
+            message = ERROR_URL
+            status = 404
+        return Response(
+            json.dumps({'message': message}),
+            status=status,
+            mimetype="application/json")
 
 
 class Home(BaseSupersetView):
     """The api for the home page"""
-
+    # action_types could be: ['release', 'downline', 'add', 'edit', 'delete'...]
     default_types = {
         'counts': ['dashboard', 'slice', 'table', 'database'],
         'trends': ['dashboard', 'slice', 'table', 'database'],
         'favorits': ['dashboard', 'slice'],
-        'edits': ['dashboard', 'slice']
+        'edits': ['dashboard', 'slice'],
+        'actions': ['release', 'downline']
     }
     default_limit = {
         'trends': 30,
@@ -2910,19 +2970,30 @@ class Home(BaseSupersetView):
         'actions': 10
     }
 
-    def get_object_count(self, type_):
-        """Get the obj's count"""
+    def __init__(self):
+        super(Home, self).__init__()
+        self.status = 201
+        self.message = []
+
+    def get_object_count(self, type_, all_user=False):
         try:
             model = str_to_model[type_.lower()]
-        except KeyError as e:
-            print(e)
-        return db.session.query(model).count()
+        except KeyError:
+            self.status = 400 if str(self.status)[0] < '4' else self.status
+            self.message.append('{}: {} passed to {}'
+                                .format(ERROR_REQUEST_PARAM, type_, 'get_object_count()'))
+            return 0
+        if all_user:
+            return db.session.query(model).count()
+        else:
+            return db.session.query(model)\
+                .filter_by(created_by_fk=g.user.get_id())\
+                .count()
 
-    def get_object_counts(self, types):
-        """Get the objs' count"""
+    def get_object_counts(self, types, all_user=False):
         dt = {}
         for type_ in types:
-            count = self.get_object_count(type_)
+            count = self.get_object_count(type_, all_user=all_user)
             dt[type_] = count
         return dt
 
@@ -2937,33 +3008,19 @@ class Home(BaseSupersetView):
         )
         return rs
 
-    def get_fav_dashboards(self, limit=10, all_user=True):
+    def get_fav_dashboards(self, limit=10):
         """Query the times of dashboard liked by users"""
-        if all_user:
-            rs = (
-                db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
-                .filter(
-                    and_(FavStar.class_name.ilike('dashboard'),
-                        FavStar.obj_id == Dashboard.id)
-                )
-                .group_by(FavStar.obj_id)
-                .order_by(func.count(FavStar.obj_id).desc())
-                .limit(limit)
-                .all()
+        rs = (
+            db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+            .filter(
+                and_(FavStar.class_name.ilike('dashboard'),
+                    FavStar.obj_id == Dashboard.id)
             )
-        else:
-            rs = (
-                db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
-                .filter(
-                    and_(FavStar.user_id == g.user.get_id(),
-                        FavStar.class_name.ilike('dashboard'),
-                        FavStar.obj_id == Dashboard.id)
-                )
-                .group_by(FavStar.obj_id)
-                .order_by(func.count(FavStar.obj_id).desc())
-                .limit(limit)
-                .all()
-            )
+            .group_by(FavStar.obj_id)
+            .order_by(func.count(FavStar.obj_id).desc())
+            .limit(limit)
+            .all()
+        )
         if not rs:
             return json.dumps({})
         rows = []
@@ -2971,33 +3028,19 @@ class Home(BaseSupersetView):
             rows.append({'name': name, 'count': count})
         return rows
 
-    def get_fav_slices(self, limit=10, all_user=True):
+    def get_fav_slices(self, limit=10):
         """Query the times of slice liked by users"""
-        if all_user:
-            rs = (
-                db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
-                .filter(
-                    and_(FavStar.class_name.ilike('slice'),
-                        FavStar.obj_id == Slice.id)
-                )
-                .group_by(FavStar.obj_id)
-                .order_by(func.count(FavStar.obj_id).desc())
-                .limit(limit)
-                .all()
+        rs = (
+            db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
+            .filter(
+                and_(FavStar.class_name.ilike('slice'),
+                    FavStar.obj_id == Slice.id)
             )
-        else:
-            rs = (
-                db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
-                .filter(
-                    and_(FavStar.user_id == g.user.get_id(),
-                        FavStar.class_name.ilike('slice'),
-                        FavStar.obj_id == Slice.id)
-                )
-                .group_by(FavStar.obj_id)
-                .order_by(func.count(FavStar.obj_id).desc())
-                .limit(limit)
-                .all()
-            )
+            .group_by(FavStar.obj_id)
+            .order_by(func.count(FavStar.obj_id).desc())
+            .limit(limit)
+            .all()
+        )
         if not rs:
             return json.dumps({})
         rows = []
@@ -3008,12 +3051,12 @@ class Home(BaseSupersetView):
     def get_fav_objects(self, types, limit):
         dt = {}
         if 'dashboard' in types:
-            dt['dashboard'] = self.get_fav_dashboards(limit=limit, all_user=False)
+            dt['dashboard'] = self.get_fav_dashboards(limit=limit)
         if 'slice' in types:
-            dt['slice'] = self.get_fav_slices(limit=limit, all_user=False)
+            dt['slice'] = self.get_fav_slices(limit=limit)
         return dt
 
-    def get_table_used(self, limit=10):
+    def get_refered_tables(self, limit=10):
         """Query the times of table used by slices"""
         rs = (
             db.session.query(func.count(Slice.datasource_id), SqlaTable.table_name)
@@ -3034,133 +3077,212 @@ class Home(BaseSupersetView):
             rows.append({'name': name, 'count': count})
         return rows
 
-    def get_slice_used(self, limit=10):
+    def get_refered_slices(self, limit=10):
         """Query the times of slice used by dashboards"""
-        rs = db.session.query(Dashboard).all()
-        slices = []
-        for dash in rs:
-            for s in dash.slices:
-                slices.append(str(s))
-        if not slices:
-            return {}
-
-        top_n = Counter(slices).most_common(limit)
+        user_id = g.user.get_id()
+        sql = """
+            SELECT slices.slice_name, count(slices.slice_name)
+            FROM slices, dashboards, dashboard_slices
+            WHERE slices.id = dashboard_slices.slice_id
+            AND dashboards.id = dashboard_slices.dashboard_id
+            AND (
+                slices.created_by_fk = {}
+                OR
+                slices.online = True)
+            GROUP BY slices.slice_name
+            ORDER BY count(slices.slice_name) DESC
+            LIMIT {}""".format(user_id, limit)
+        rs = db.session.execute(sql)
         rows = []
-        for s in top_n:
-            rows.append({'name': s[0], 'count': s[1]})
+        for row in rs:
+            rows.append({'name': row[0], 'count': row[1]})
         return rows
 
-    def get_modified_dashboards(self, limit=10):
-        """The records of dashboards be modified"""
-        rs = (
-            db.session.query(Dashboard.id, Dashboard.dashboard_title,
-                             User.username, Dashboard.changed_on)
-            .filter(Dashboard.changed_by_fk == User.id)
-            .order_by(Dashboard.changed_on.desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return {}
-        rows = []
-        for id, title, user, dttm in rs:
-            obj = db.session.query(Dashboard).filter_by(id=id).first()
-            link = obj.dashboard_link() if obj else None
-            rows.append({'name': title, 'user': user, 'time': str(dttm), 'link': link})
-        return rows
-
-    def get_modified_slices(self, limit=10):
+    def get_edited_object(self, obj_type, limit=10, all_user=False):
         """The records of slices be modified"""
-        rs = (
-            db.session.query(Slice.id, Slice.slice_name,
-                             User.username, Slice.changed_on)
-            .filter(Slice.changed_by_fk == User.id)
-            .order_by(Slice.changed_on.desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return {}
-        rows = []
-        for id, name, user, dttm in rs:
-            obj = db.session.query(Slice).filter_by(id=id).first()
-            link = obj.slice_link if obj else None
-            rows.append({'name': name, 'user': user, 'time': str(dttm), 'link': link})
-        return rows
-
-    @expose('/edits/')
-    def get_modified_objects(self, types=None, limit=10):
-        url_types = request.args.get('types')
-        url_limit = request.args.get('limit')
-        types = url_types if url_types is not None else types
-        limit = url_limit if url_limit is not None else limit
-
-        dt = {}
-        if 'dashboard' in types:
-            dt['dashboard'] = self.get_modified_dashboards(limit=limit)
-        if 'slice' in types:
-            dt['slice'] = self.get_modified_slices(limit=limit)
-
-        if url_limit is not None:
-            return Response(json.dumps({'edits': dt}))
-        else:
-            return dt
-
-    @expose('/actions/')
-    def get_user_actions(self, limit=10, all_user=True):
-        """The actions of user"""
-        url_limit = request.args.get('limit')
-        limit = url_limit if url_limit is not None else limit
-        if all_user:
-            rs = (
-                db.session.query(User.username, Log.action,
-                                 Log.dashboard_id, Log.slice_id, Log.dttm)
-                .filter(Log.user_id == User.id)
-                .order_by(Log.dttm.desc())
-                .limit(limit)
-                .all()
-            )
-        else:
-            rs = (
-                db.session.query(User.username, Log.action,
-                                 Log.dashboard_id, Log.slice_id, Log.dttm)
-                .filter(
-                    and_(Log.user_id == g.user.get_id(),
-                         Log.user_id == User.id)
+        obj_class = None
+        try:
+            obj_class = str_to_model[obj_type]
+        except KeyError:
+            self.status = 400 if str(self.status)[0] < '4' else self.status
+            self.message.append('{}: {} passed to {}'
+                                .format(ERROR_REQUEST_PARAM, obj_type, 'get_edited_object()'))
+        #
+        query_created = db.session.query(obj_class)
+        if not all_user:
+            query_created = query_created.filter(
+                sqla.or_(
+                    obj_class.created_by_fk == g.user.get_id(),
+                    obj_class.online == 1
                 )
-                .order_by(Log.dttm.desc())
-                .limit(limit)
-                .all()
             )
+        query_created = query_created.order_by(obj_class.created_on.desc())
+        if limit > 0:
+            query_created = query_created.limit(limit)
+        rs_created = query_created.all()
+        #
+        query_edited = db.session.query(obj_class) \
+            .filter(obj_class.changed_on > obj_class.created_on)
+        if not all_user:
+            query_edited = query_edited.filter(
+                sqla.or_(
+                    obj_class.changed_by_fk == g.user.get_id(),
+                    obj_class.online == 1
+                )
+            )
+        query_edited = query_edited.order_by(obj_class.changed_on.desc())
+        if limit > 0:
+            query_edited = query_edited.limit(limit)
+        rs_edited = query_edited.all()
+        #
         rows = []
-        for name, action, dashboard_id, slice_id, dttm in rs:
-            link = None
-            type = 'other'
-            if dashboard_id:
-                obj = db.session.query(Dashboard).filter_by(id=dashboard_id).first()
-                link = obj.dashboard_link() if obj else None
-                type = 'dashboard'
-            elif slice_id:
-                obj = db.session.query(Slice).filter_by(id=slice_id).first()
-                link = obj.slice_link if obj else None
-                type = 'slice'
-            rows.append({'user': name, 'action': action, 'type': type, 'link': link, 'time': str(dttm)})
-        if url_limit is not None:
-            return Response(json.dumps({'actions': rows}))
+        if obj_type.lower() == 'slice':
+            if rs_created:
+                for obj in rs_created:
+                    rows.append({'name': obj.slice_name,
+                                 'action': 'create',
+                                 'time': str(obj.created_on),
+                                 'link': obj.slice_url})
+            if rs_edited:
+                for obj in rs_edited:
+                    rows.append({'name': obj.slice_name,
+                                 'action': 'edit',
+                                 'time': str(obj.changed_on),
+                                 'link': obj.slice_url})
+        elif obj_type.lower() == 'dashboard':
+            if rs_created:
+                for obj in rs_created:
+                    rows.append({'name': obj.dashboard_title,
+                                 'action': 'create',
+                                 'time': str(obj.created_on),
+                                 'link': obj.url})
+            if rs_edited:
+                for obj in rs_edited:
+                    rows.append({'name': obj.dashboard_title,
+                                 'action': 'edit',
+                                 'time': str(obj.changed_on),
+                                 'link': obj.url})
         else:
-            return rows
+            self.status = 400 if str(self.status)[0] < '4' else self.status
+            self.message.append('{}: {} passed to {}'
+                                .format(ERROR_REQUEST_PARAM, obj_type, 'get_edited_object()'))
+        rows = sorted(rows, key=lambda x: x['time'], reverse=True)
+        return rows[0:limit]
 
-    def get_object_number_trends(self, types, limit=30):
+    def get_edited_objects(self, types=None, limit=10, all_user=False):
         dt = {}
         for type_ in types:
-            r = self.get_object_number_trend(type_, limit=limit)
+            dt[type_] = self.get_edited_object(type_, limit=limit, all_user=all_user)
+        return dt
+
+    @expose('/edits/')
+    def get_edited_objects_by_url(self):
+        args = request.args
+        if 'limit' in args.keys():
+            limit = request.args.get('limit')
+        else:
+            limit = self.default_limit.get('edits')
+        if 'types' in args.keys():
+            types = request.args.get('types')
+        else:
+            types = self.default_types.get('edits')
+
+        if not isinstance(types, list) or len(types) < 1:
+            message_ = '{}: {} '.format(ERROR_REQUEST_PARAM, args)
+            return Response(json.dumps(message_),
+                            status=400,
+                            mimetype='application/json')
+
+        rs = self.get_edited_objects(types=types, limit=int(limit))
+        status_ = self.status
+        message_ = self.message
+        self.status = 201
+        self.message = []
+        if str(self.status)[0] != '2':
+            return Response(json.dumps(message_),
+                            status=status_,
+                            mimetype='application/json')
+        else:
+            return Response(json.dumps({'edits': rs}),
+                            status=status_,
+                            mimetype='application/json')
+
+    def get_user_actions(self, types=[], limit=10, all_user=True):
+        """The actions of user"""
+        if len(types) < 1 or limit < 0:
+            self.status = 401 if str(self.status)[0] < '4' else self.status
+            self.message.append('{}: {},{} ppassed to {}'
+                                .format(ERROR_REQUEST_PARAM, types, limit, 'get_user_actions()'))
+            return {}
+
+        query = (
+            db.session.query(User.username, Log.action,
+                            Log.obj_type, Log.obj_id, Log.dttm)
+            .filter(
+                and_(Log.action_type.in_(types),
+                    Log.user_id == User.id)
+                )
+            )
+        if not all_user:
+            query = query.filter(Log.user_id == g.user.get_id())
+        rs = query.order_by(Log.dttm.desc()).limit(limit).all()
+
+        rows = []
+        for name, action, obj_type, obj_id, dttm in rs:
+            if obj_type == 'dashboard':
+                obj = db.session.query(Dashboard).filter_by(id=obj_id).first()
+                link = obj.url if obj else None
+                title = repr(obj) if obj else None
+            elif obj_type == 'slice':
+                obj = db.session.query(Slice).filter_by(id=obj_id).first()
+                link = obj.slice_url if obj else None
+                title = repr(obj) if obj else None
+            rows.append({'user': name, 'action': action, 'title': title, 'link': link, 'time': str(dttm)})
+        return rows
+
+    @expose('/actions/')
+    def get_user_actions_by_url(self):
+        args = request.args
+        if 'limit' in args.keys():
+            limit = request.args.get('limit')
+        else:
+            limit = self.default_limit.get('actions')
+        if 'types' in args.keys():
+            types = request.args.get('types')
+        else:
+            types = self.default_types.get('actions')
+
+        rs = self.get_user_actions(types=types, limit=int(limit))
+        status_ = self.status
+        message_ = self.message
+        self.status = 201
+        self.message = []
+        if str(self.status)[0] != '2':
+            return Response(json.dumps(message_),
+                            status=status_,
+                            mimetype='application/json')
+        else:
+            return Response(json.dumps({'actions': rs}),
+                            status=status_,
+                            mimetype='application/json')
+
+    def get_object_number_trends(self, types, limit=30, all_user=False):
+        dt = {}
+        for type_ in types:
+            r = self.get_object_number_trend(type_, limit=limit, all_user=all_user)
             dt[type_.lower()] = r
         return dt
 
-    def get_object_number_trend(self, type_, limit=30):
+    def get_object_number_trend(self, type_, limit=30, all_user=False):
+        user_id = -1 if all_user else g.user.get_id()
         rows = (
             db.session.query(DailyNumber.count, DailyNumber.dt)
-            .filter(DailyNumber.obj_type.ilike(type_))
+            .filter(
+                and_(
+                    DailyNumber.obj_type.ilike(type_),
+                    DailyNumber.user_id == user_id
+                )
+            )
             .order_by(DailyNumber.dt)
             .limit(limit)
             .all()
@@ -3203,69 +3325,42 @@ class Home(BaseSupersetView):
     def get_all_statistics_data(self):
         response = {}
         #
-        counts_args = request.args.get('counts')
-        if counts_args:
-            counts_args = eval(counts_args)
-            types = counts_args['types']
-        else:
-            types = self.default_types.get('counts')
+        types = self.default_types.get('counts')
         result = self.get_object_counts(types)
         response['counts'] = result
         #
-        trends_args = request.args.get('trends')
-        if trends_args:
-            trends_args = eval(trends_args)
-            types = trends_args['types']
-            limit = int(trends_args['limit'])
-        else:
-            types = self.default_types.get('trends')
-            limit = self.default_limit.get('trends')
+        types = self.default_types.get('trends')
+        limit = self.default_limit.get('trends')
         result = self.get_object_number_trends(types, limit=limit)
         response['trends'] = result
         #
-        favorit_args = request.args.get('favorits')
-        if favorit_args:
-            favorit_args = eval(favorit_args)
-            types = favorit_args['types']
-            limit = int(favorit_args['limit'])
-        else:
-            types = self.default_types.get('favorits')
-            limit = self.default_limit.get('favorits')
+        types = self.default_types.get('favorits')
+        limit = self.default_limit.get('favorits')
         result = self.get_fav_objects(types, limit)
         response['favorits'] = result
         #
-        refer_args = request.args.get('refers')
-        if refer_args:
-            refer_args = eval(refer_args)
-            limit = int(refer_args['limit'])
-        else:
-            limit = self.default_limit.get('refers')
-        result = self.get_slice_used(limit)
+        limit = self.default_limit.get('refers')
+        result = self.get_refered_slices(limit)
         response['refers'] = result
         #
-        edits_args = request.args.get('edits')
-        if edits_args:
-            edits_args = eval(edits_args)
-            types = edits_args['types']
-            limit = int(edits_args['limit'])
-        else:
-            types = self.default_types.get('edits')
-            limit = self.default_limit.get('edits')
-        result = self.get_modified_objects(types=types, limit=limit)
+        types = self.default_types.get('edits')
+        limit = self.default_limit.get('edits')
+        result = self.get_edited_objects(types=types, limit=limit)
         response['edits'] = result
         #
-        actions_args = request.args.get('actions')
-        if actions_args:
-            actions_args = eval(actions_args)
-            limit = int(actions_args['limit'])
-        else:
-            limit = self.default_limit.get('actions')
-        result = self.get_user_actions(limit=limit, all_user=False)
+        limit = self.default_limit.get('actions')
+        types = self.default_types.get('actions')
+        result = self.get_user_actions(types=types, limit=limit)
         response['actions'] = result
 
+        status_ = self.status
+        if len(self.message) > 0:
+            response['error'] = '. '.join(self.message)
+        self.status = 201
+        self.message = []
         return Response(
             json.dumps({'index': response}),
-            status=200,
+            status=status_,
             mimetype="application/json")
 
 # if config['DRUID_IS_ACTIVE']:

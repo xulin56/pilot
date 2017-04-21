@@ -1,7 +1,7 @@
 """The main config file for Superset
 
-All configuration in this file can be overridden by providing a superset_config
-in your PYTHONPATH as there is a ``from superset_config import *``
+All configuration in this file can be overridden by providing a pilot
+in your PYTHONPATH as there is a ``from pilot import *``
 at the end of this file.
 """
 from __future__ import absolute_import
@@ -43,11 +43,13 @@ CUSTOM_SECURITY_MANAGER = None
 SECRET_KEY = '=== Transwarp Studio Inceptor ==='  # noqa
 
 # The SQLAlchemy connection string.
-#SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(DATA_DIR, 'superset.db')
+
+SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(DATA_DIR, 'pilot.db')
+
 # If use mysql, the database should be existed and change its charset to 'utf8':
-# 'alter database superset character set utf8'
+# 'alter database db character set utf8'
 # and  'charset=utf8' should be in uri
-SQLALCHEMY_DATABASE_URI = 'mysql://root:vision168111@localhost:3306/pilot?charset=utf8'
+#SQLALCHEMY_DATABASE_URI = 'mysql://username:password@lcoalhost:3306/database?charset=utf8'
 
 # The limit of queries fetched for query search
 QUERY_SEARCH_LIMIT = 1000
@@ -68,7 +70,7 @@ ENABLE_PROXY_FIX = False
 # GLOBALS FOR APP Builder
 # ------------------------------
 # Uncomment to setup Your App name
-APP_NAME = "Superset"
+APP_NAME = "Pilot"
 
 # Uncomment to setup an App icon
 APP_ICON = "/static/assets/images/superset-logo@2x.png"
@@ -150,8 +152,8 @@ IMG_UPLOAD_URL = '/static/uploads/'
 
 CACHE_DEFAULT_TIMEOUT = 120
 CACHE_CONFIG = {'CACHE_TYPE': 'filesystem',
-                'CACHE_THRESHOLD': 50,
-                'CACHE_DIR': '/tmp/superset_cache'}
+                'CACHE_THRESHOLD': 200,
+                'CACHE_DIR': '/tmp/pilot_cache'}
 
 # CORS Options
 ENABLE_CORS = False
@@ -197,7 +199,7 @@ LOG_LEVEL = 'DEBUG'
 
 ENABLE_TIME_ROTATE = False
 TIME_ROTATE_LOG_LEVEL = 'DEBUG'
-FILENAME = os.path.join(DATA_DIR, 'superset.log')
+FILENAME = os.path.join(DATA_DIR, 'pilot.log')
 ROLLOVER = 'midnight'
 INTERVAL = 1
 BACKUP_COUNT = 30
@@ -265,9 +267,9 @@ try:
     if CONFIG_PATH_ENV_VAR in os.environ:
         # Explicitly import config module that is not in pythonpath; useful
         # for case where app is being executed via pex.
-        imp.load_source('superset_config', os.environ[CONFIG_PATH_ENV_VAR])
+        imp.load_source('pilot_config', os.environ[CONFIG_PATH_ENV_VAR])
 
-    from superset_config import *  # noqa
+    from pilot_config import *  # noqa
     print('Loaded your LOCAL configuration')
 except ImportError:
     pass
@@ -277,10 +279,10 @@ EMAIL_NOTIFICATIONS = False  # all the emails are sent using dryrun
 SMTP_HOST = 'localhost'
 SMTP_STARTTLS = True
 SMTP_SSL = False
-SMTP_USER = 'superset'
+SMTP_USER = 'pilot'
 SMTP_PORT = 25
-SMTP_PASSWORD = 'superset'
-SMTP_MAIL_FROM = 'superset@superset.com'
+SMTP_PASSWORD = 'pilot'
+SMTP_MAIL_FROM = 'pilot@pilot.com'
 
 if not CACHE_DEFAULT_TIMEOUT:
     CACHE_DEFAULT_TIMEOUT = CACHE_CONFIG.get('CACHE_DEFAULT_TIMEOUT')
