@@ -122,6 +122,7 @@ OBJECT_IS_RELEASED = __("This object has been released")
 OBJECT_IS_DOWNLINED = __("This object has been downlined")
 ERROR_URL = __("Error request url")
 ERROR_REQUEST_PARAM = __("Error request parameter")
+ERROR_CLASS_TYPE = __("Error model type")
 
 
 def get_database_access_error_msg(database_name):
@@ -2968,13 +2969,19 @@ class Home(BaseSupersetView):
         self.status = 201
         self.message = []
 
-    def get_object_count(self, type_, all_user=False):
+    def get_obj_class(self, type_):
         try:
             model = str_to_model[type_.lower()]
         except KeyError:
             self.status = 400 if str(self.status)[0] < '4' else self.status
-            self.message.append('{}: {} passed to {}'
-                                .format(ERROR_REQUEST_PARAM, type_, 'get_object_count()'))
+            self.message.append('{}: {}'.format(ERROR_CLASS_TYPE, type_))
+            return False, None
+        else:
+            return True, model
+
+    def get_object_count(self, type_, all_user=False):
+        success, model = self.get_obj_class(type_)
+        if not success:
             return 0
         if all_user:
             return db.session.query(model).count()
@@ -3093,13 +3100,9 @@ class Home(BaseSupersetView):
 
     def get_edited_object(self, obj_type, limit=10, all_user=False):
         """The records of slices be modified"""
-        obj_class = None
-        try:
-            obj_class = str_to_model[obj_type]
-        except KeyError:
-            self.status = 400 if str(self.status)[0] < '4' else self.status
-            self.message.append('{}: {} passed to {}'
-                                .format(ERROR_REQUEST_PARAM, obj_type, 'get_edited_object()'))
+        success, obj_class = self.get_obj_class(obj_type)
+        if not success:
+            return []
         #
         query_created = db.session.query(obj_class)
         if not all_user:
@@ -3250,7 +3253,7 @@ class Home(BaseSupersetView):
             return Response(json.dumps(message_),
                             status=400,
                             mimetype='application/json')
-        
+
         rs = self.get_user_actions(types=types, limit=int(limit))
         status_ = self.status
         message_ = self.message
