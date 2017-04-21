@@ -1,0 +1,193 @@
+.data-tendency{
+    border-radius: 4px;
+    padding:0 20px;
+    margin:20px 0;
+    .data-title{
+        display:flex;
+        justify-content:center;
+        padding:25px 0;
+        h2{
+            border-right:1px solid #edf1f5;
+            padding:0 45px;
+            text-align:center;
+            dt{
+                svg{
+                    width:22px;
+                    height:22px;
+                    fill:orange;
+                }
+                span{
+                    font-size:36px;
+                    color:#1d2531;
+                }
+            }
+            dd{
+                color:#9fa9ba;
+            }
+        }
+        .current{
+            dl{
+                dd{
+                    color:#0083f8;
+                }
+            }
+        }
+    }
+    .dashboard-linechart{
+        height:400px;
+    }
+}
+
+.top10-and-worktimes{
+    display:flex;
+    overflow: hidden;
+    .top10{
+        overflow: hidden;
+        flex:1;
+        @include border();
+        margin-right:18px;
+        .index-title-module{
+            .transparent{
+                width:138px;
+            }
+        }
+
+    }
+
+    .worktimes{
+        @include border();
+        flex:1;
+        overflow:hidden;
+    }
+}
+.recentedit-and-event{
+    margin:20px 0;
+    display:flex;
+    .recentedit{
+        flex:1;
+        margin-right:18px;
+        .edit-list{
+            ul{
+                display:flex;
+                border-bottom:$borderStyle;
+                height:31px;
+                background-color:#f5f8fa;
+                align-items:center;
+                li{
+                    flex:1;
+                    cursor:pointer;
+                    svg{
+                        width:6px;
+                        height:7px;
+                        fill:#8492b6；
+                    }
+                }
+                li:first-child{
+                    padding-left:20px;
+                }
+
+            }
+            dl{
+                display: flex;
+                height:40px;
+                align-items:center;
+                border-bottom:$borderStyle;
+                border-left:2px solid transparent;
+                font-size:14px;
+                dt{
+                    flex:1;
+                    padding-left:20px;
+                    color:#2499f2;
+                }
+                dd{
+                    flex:1;
+                    color:#333c48;
+                }
+
+            }
+            dl:hover{
+                border-left:2px solid #289df5;
+            }
+            dl:last-child{
+                border-bottom:0;
+            }
+        }
+    }
+    .event{
+        flex:1;
+        .event-list{
+            ul{
+                display:flex;
+                height:53px;
+                align-items:center;
+                border-bottom:$borderStyle;
+                li{
+                    flex:1;
+                    color:#333c48;
+                    .round-bg{
+                        display:inline-block;
+                        margin-left:20px;
+                         width:18px;
+                         height:18px;
+                         border-radius:50%;
+                         background-color:#e6f2ff;
+                         text-align:center;
+                         position:relative;
+                         top:2px;
+                         svg{
+                            width:9px;
+                            height:11px;
+                            fill:#2a9ef5;
+                         }
+                    }
+
+                    .explore_json-type{
+                        dl{
+                            dt{
+                                font-size:14px;
+                                padding-left:20px;
+
+                            }
+                            dd{
+                                svg{
+                                    width:16px;
+                                    height:16px;
+                                    fill:orange;
+                                    position:relative;
+                                    top:3px;
+                                }
+                                strong{
+                                    color:#7c8ca5;
+                                }
+                            }
+                        }
+                    }
+                }
+                li:first-child{
+                    color:#2499f2;
+                    font-size:14px;
+                }
+                li:last-child{
+                    font:12px Arial;
+                }
+            }
+            ul:last-child{
+                border:0;
+            }
+        }
+    }
+    .more{
+        width:77px;
+        padding-right:15px;
+        text-align:right;
+        svg{
+            width:20px;
+            height:20px;
+            fill:#aeb7bc;
+            cursor:pointer;
+        }
+    }
+}
+.times-barchart{
+    height:410px;
+}

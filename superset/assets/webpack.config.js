@@ -13,6 +13,8 @@ const VERSION_STRING = JSON.parse(fs.readFileSync('package.json')).version;
 const config = {
   entry: {
     'css-theme': APP_DIR + '/javascripts/css-theme.js',
+    home: ['babel-polyfill', APP_DIR + '/javascripts/home.js'],
+
     common: APP_DIR + '/javascripts/common.js',
     dashboard: ['babel-polyfill', APP_DIR + '/javascripts/dashboard/Dashboard.jsx'],
     explore: ['babel-polyfill', APP_DIR + '/javascripts/explore/explore.jsx'],
@@ -26,6 +28,7 @@ const config = {
     path: BUILD_DIR,
     filename: `[name].${VERSION_STRING}.entry.js`,
   },
+  watch: true,
   resolve: {
     extensions: [
       '',
@@ -44,6 +47,10 @@ const config = {
     noParse: /mapbox-gl\/dist/,
     loaders: [
       {
+        test: /\.scss$/,
+        loaders: ["style-loader", "css-loader", "sass-loader"]
+      },
+      {
         test: /datatables\.net.*/,
         loader: 'imports?define=>false',
       },
@@ -55,7 +62,7 @@ const config = {
           presets: [
             'airbnb',
             'es2015',
-            'react',
+            'react', 'stage-0'
           ],
         },
       },

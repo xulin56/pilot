@@ -43,7 +43,9 @@ CUSTOM_SECURITY_MANAGER = None
 SECRET_KEY = '=== Transwarp Studio Inceptor ==='  # noqa
 
 # The SQLAlchemy connection string.
+
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(DATA_DIR, 'pilot.db')
+
 # If use mysql, the database should be existed and change its charset to 'utf8':
 # 'alter database db character set utf8'
 # and  'charset=utf8' should be in uri
