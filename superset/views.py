@@ -124,6 +124,7 @@ ERROR_URL = __("Error request url")
 ERROR_REQUEST_PARAM = __("Error request parameter")
 ERROR_CLASS_TYPE = __("Error model type")
 NO_USER = __("Can't get user")
+NO_PERMISSION = __("No permission")
 
 
 def get_database_access_error_msg(database_name):
@@ -2895,6 +2896,9 @@ class Superset(BaseSupersetView):
         status = 201
         if not obj:
             message = OBJECT_NOT_FOUND
+            status = 404
+        elif obj.created_by_fk != int(g.user.get_id()):
+            message = NO_PERMISSION
             status = 404
         elif action.lower() == 'release':
             if obj.online is True:
