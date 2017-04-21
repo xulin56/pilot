@@ -1096,6 +1096,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                         models.Dashboard.online == 1
                     )
             )
+            .order_by(models.Dashboard.changed_on.desc())
             .all()
         )
         rows = []
