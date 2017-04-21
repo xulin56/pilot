@@ -16,12 +16,10 @@ class HomeTests(unittest.TestCase):
         db.session.query(models.Query).delete()
         db.session.commit()
 
-    def test_get_object_count(self):
+    def test_get_object_counts(self):
         types = ['dashboard', 'slice', 'table', 'database']
-        for index, value in enumerate(types):
-            except_ = db.session.query(str_to_model[value]).count()
-            acture_ = self.home.get_object_count(value, all_user=True)
-            self.assertEquals(except_, acture_)
+        response = self.home.get_object_counts(types, 0)
+        print(response)
 
     def test_log_number(self):
         from superset.models import DailyNumber

@@ -2979,21 +2979,34 @@ class Home(BaseSupersetView):
         else:
             return True, model
 
-    def get_object_count(self, type_, all_user=False):
+    def get_object_count(self, type_, user_id):
         success, model = self.get_obj_class(type_)
         if not success:
             return 0
-        if all_user:
-            return db.session.query(model).count()
+        count = 0
+        if user_id == 0:
+            count = db.session.query(model).count()
         else:
-            return db.session.query(model)\
-                .filter_by(created_by_fk=g.user.get_id())\
-                .count()
+            if hasattr(model, 'online'):
+                count = (
+                    db.session.query(model)
+                    .filter(
+                        sqla.or_(
+                            model.created_by_fk == user_id,
+                            model.online == 1
+                        )
+                    )
+                    .count())
+            else:
+                count = db.session.query(model)\
+                    .filter(model.created_by_fk == user_id)\
+                    .count()
+        return count
 
-    def get_object_counts(self, types, all_user=False):
+    def get_object_counts(self, types, user_id):
         dt = {}
         for type_ in types:
-            count = self.get_object_count(type_, all_user=all_user)
+            count = self.get_object_count(type_, user_id)
             dt[type_] = count
         return dt
 
@@ -3325,35 +3338,36 @@ class Home(BaseSupersetView):
 
     @expose('/')
     def get_all_statistics_data(self):
+        user_id = g.user.get_id()
         response = {}
         #
         types = self.default_types.get('counts')
-        result = self.get_object_counts(types)
+        result = self.get_object_counts(types, user_id)
         response['counts'] = result
         #
-        types = self.default_types.get('trends')
-        limit = self.default_limit.get('trends')
-        result = self.get_object_number_trends(types, limit=limit)
-        response['trends'] = result
-        #
-        types = self.default_types.get('favorits')
-        limit = self.default_limit.get('favorits')
-        result = self.get_fav_objects(types, limit)
-        response['favorits'] = result
-        #
-        limit = self.default_limit.get('refers')
-        result = self.get_refered_slices(limit)
-        response['refers'] = result
-        #
-        types = self.default_types.get('edits')
-        limit = self.default_limit.get('edits')
-        result = self.get_edited_objects(types=types, limit=limit)
-        response['edits'] = result
-        #
-        limit = self.default_limit.get('actions')
-        types = self.default_types.get('actions')
-        result = self.get_user_actions(types=types, limit=limit)
-        response['actions'] = result
+        # types = self.default_types.get('trends')
+        # limit = self.default_limit.get('trends')
+        # result = self.get_object_number_trends(types, limit=limit)
+        # response['trends'] = result
+        # #
+        # types = self.default_types.get('favorits')
+        # limit = self.default_limit.get('favorits')
+        # result = self.get_fav_objects(types, limit)
+        # response['favorits'] = result
+        # #
+        # limit = self.default_limit.get('refers')
+        # result = self.get_refered_slices(limit)
+        # response['refers'] = result
+        # #
+        # types = self.default_types.get('edits')
+        # limit = self.default_limit.get('edits')
+        # result = self.get_edited_objects(types=types, limit=limit)
+        # response['edits'] = result
+        # #
+        # limit = self.default_limit.get('actions')
+        # types = self.default_types.get('actions')
+        # result = self.get_user_actions(types=types, limit=limit)
+        # response['actions'] = result
 
         status_ = self.status
         if len(self.message) > 0:
