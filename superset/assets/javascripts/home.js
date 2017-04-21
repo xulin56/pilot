@@ -99,7 +99,6 @@ $(function () {
           current = {store.getState()}
           switchLatestEdits = {(action) => {
             store.dispatch(action);
-            console.log('fuck:', store.getState());
           } }
         />, document.querySelector('#home'));
     }

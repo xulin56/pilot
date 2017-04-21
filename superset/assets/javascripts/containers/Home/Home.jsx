@@ -16,7 +16,7 @@ class Home extends Component { // eslint-disable-line
 
     const { param, current, switchLatestEdits } = this.props;
     let counts = param.counts;
-    console.log('in Home.render();')
+    param.current = current;
 
     return (
       <div>
