@@ -3095,17 +3095,17 @@ class Home(BaseSupersetView):
             rows.append({'name': row[0], 'count': row[1]})
         return rows
 
-    def get_edited_object(self, obj_type, limit=10, all_user=False):
+    def get_edited_object(self, user_id, obj_type, limit=10):
         """The records of slices be modified"""
         success, obj_class = self.get_obj_class(obj_type)
         if not success:
             return []
         #
         query_created = db.session.query(obj_class)
-        if not all_user:
+        if user_id > 0:
             query_created = query_created.filter(
-                sqla.or_(
-                    obj_class.created_by_fk == g.user.get_id(),
+                or_(
+                    obj_class.created_by_fk == user_id,
                     obj_class.online == 1
                 )
             )
@@ -3116,10 +3116,10 @@ class Home(BaseSupersetView):
         #
         query_edited = db.session.query(obj_class) \
             .filter(obj_class.changed_on > obj_class.created_on)
-        if not all_user:
+        if user_id > 0:
             query_edited = query_edited.filter(
-                sqla.or_(
-                    obj_class.changed_by_fk == g.user.get_id(),
+                or_(
+                    obj_class.changed_by_fk == user_id,
                     obj_class.online == 1
                 )
             )
@@ -3162,14 +3162,15 @@ class Home(BaseSupersetView):
         rows = sorted(rows, key=lambda x: x['time'], reverse=True)
         return rows[0:limit]
 
-    def get_edited_objects(self, types=None, limit=10, all_user=False):
+    def get_edited_objects(self, user_id=0, types=None, limit=10):
         dt = {}
         for type_ in types:
-            dt[type_] = self.get_edited_object(type_, limit=limit, all_user=all_user)
+            dt[type_] = self.get_edited_object(user_id, type_, limit=limit)
         return dt
 
     @expose('/edits/')
     def get_edited_objects_by_url(self):
+        user_id = int(g.user.get_id())
         args = request.args
         if 'limit' in args.keys():
             limit = request.args.get('limit')
@@ -3186,7 +3187,7 @@ class Home(BaseSupersetView):
                             status=400,
                             mimetype='application/json')
 
-        rs = self.get_edited_objects(types=types, limit=int(limit))
+        rs = self.get_edited_objects(user_id, types=types, limit=int(limit))
         status_ = self.status
         message_ = self.message
         self.status = 201
@@ -3343,10 +3344,10 @@ class Home(BaseSupersetView):
         result = self.get_refered_slices(user_id, limit)
         response['refers'] = result
         #
-        # types = self.default_types.get('edits')
-        # limit = self.default_limit.get('edits')
-        # result = self.get_edited_objects(types=types, limit=limit)
-        # response['edits'] = result
+        types = self.default_types.get('edits')
+        limit = self.default_limit.get('edits')
+        result = self.get_edited_objects(user_id, types=types, limit=limit)
+        response['edits'] = result
         # #
         # limit = self.default_limit.get('actions')
         # types = self.default_types.get('actions')

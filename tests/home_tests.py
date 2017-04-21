@@ -57,7 +57,7 @@ class HomeTests(unittest.TestCase):
 
     def test_get_edited_objects(self):
         types = ['dashboard', 'slice']
-        response = self.home.get_edited_objects(types, limit=5, all_user=True)
+        response = self.home.get_edited_objects(1, types, limit=5)
         print(response)
 
     def test_get_user_actions(self):
