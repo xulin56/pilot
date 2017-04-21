@@ -45,7 +45,7 @@ from superset.sql_parse import SupersetQuery
 
 from superset.models import Database, SqlaTable, Slice, \
     Dashboard, FavStar, Log, DailyNumber, str_to_model
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, or_
 from flask_appbuilder.security.sqla.models import User
 
 config = app.config
@@ -122,6 +122,9 @@ OBJECT_IS_RELEASED = __("This object has been released")
 OBJECT_IS_DOWNLINED = __("This object has been downlined")
 ERROR_URL = __("Error request url")
 ERROR_REQUEST_PARAM = __("Error request parameter")
+ERROR_CLASS_TYPE = __("Error model type")
+NO_USER = __("Can't get user")
+NO_PERMISSION = __("No permission")
 
 
 def get_database_access_error_msg(database_name):
@@ -892,6 +895,11 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         check_ownership(obj)
 
     def post_delete(self, obj):
+        db.session.query(models.FavStar) \
+            .filter(models.FavStar.class_name.ilike('slice'),
+                    models.FavStar.obj_id == obj.id) \
+            .delete(synchronize_session=False)
+        db.session.commit()
         # log user action
         action_str = 'Delete slice: {}'.format(repr(obj))
         log_action('delete', action_str, 'slice', obj.id)
@@ -916,31 +924,45 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return redirect(redirect_url)
 
     @classmethod
-    def list_with_fav(cls, present_user=False):
-        """return the slices with column 'like' showing if liked by user"""
-        SC = models.Slice
-        FS = models.FavStar
-        like_pr = case([(FS.id > 0, True), ], else_=False).label('like')
-        if present_user:
-            query = (
-                db.session.query(SC.id, SC.slice_name, like_pr)
-                    .outerjoin(FS, sqla.and_(
-                    SC.id == FS.obj_id,
-                    FS.class_name.ilike('slice')),
-                               FS.user_id == g.user.get_id()
-                               )
-                    .all()
+    def get_slice_list(cls):
+        """return the slices with column 'favorite' and 'online'r"""
+        user_id = g.user.get_id()
+        rs = (
+            db.session.query(models.Slice, User.username)
+            .filter(
+                models.Slice.created_by_fk == User.id,
+                or_(
+                    models.Slice.created_by_fk == user_id,
+                    models.Slice.online == 1
+                )
             )
-        else:
-            query = (
-                db.session.query(SC.id, SC.slice_name, like_pr)
-                    .outerjoin(FS, sqla.and_(
-                    SC.id == FS.obj_id,
-                    FS.class_name.ilike('slice'))
-                               )
-                    .all()
+            .order_by(models.Slice.changed_on.desc())
+            .all()
+        )
+        rows = []
+        for obj, owner in rs:
+            like_obj = (
+                db.session.query(models.FavStar)
+                .filter(
+                    and_(
+                        models.FavStar.user_id == user_id,
+                        models.FavStar.class_name.ilike('slice'))
+                )
+                .first()
             )
-        return query
+            favorite = True if like_obj else False
+            rows.append({
+                'id': obj.id,
+                'title': obj.slice_name,
+                'description': obj.description,
+                'viz_type': obj.viz_type,
+                'table': obj.datasource_name,
+                'release': obj.online,
+                'owner': owner,
+                'time': str(obj.changed_on),
+                'favorite': favorite
+            })
+        return json.dumps(rows)
     
 
 class SliceAsync(SliceModelView):  # noqa
@@ -1041,6 +1063,11 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         check_ownership(obj)
 
     def post_delete(self, obj):
+        db.session.query(models.FavStar)\
+            .filter(models.FavStar.class_name.ilike('dashboard'),
+                    models.FavStar.obj_id == obj.id)\
+            .delete(synchronize_session=False)
+        db.session.commit()
         # log user action
         action_str = 'Delete dashboard: {}'.format(repr(obj))
         log_action('delete', action_str, 'dashboard', obj.id)
@@ -1067,31 +1094,43 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         )
 
     @classmethod
-    def list_with_fav(cls, present_user=False):
+    def get_dashboard_list(cls):
         """return the dashboards with column 'like' showing if liked by user"""
-        DB = models.Dashboard
-        FS = models.FavStar
-        like_pr = case([(FS.id > 0, True), ], else_=False).label('like')
-        if present_user:
-            query = (
-                db.session.query(DB.id, DB.dashboard_title, like_pr)
-                .outerjoin(FS, sqla.and_(
-                    DB.id == FS.obj_id,
-                    FS.class_name.ilike('dashboard')),
-                    FS.user_id == g.user.get_id()
-                )
-                .all()
+        user_id = g.user.get_id()
+        rs = (
+            db.session.query(models.Dashboard, User.username)
+                .filter(
+                    models.Dashboard.created_by_fk == User.id,
+                    or_(
+                        models.Dashboard.created_by_fk == user_id,
+                        models.Dashboard.online == 1
+                    )
             )
-        else:
-            query = (
-                db.session.query(DB, like_pr)
-                .outerjoin(FS, sqla.and_(
-                    DB.id == FS.obj_id,
-                    FS.class_name.ilike('dashboard'))
+            .order_by(models.Dashboard.changed_on.desc())
+            .all()
+        )
+        rows = []
+        for obj, owner in rs:
+            like_obj = (
+                db.session.query(models.FavStar)
+                .filter(
+                    and_(
+                        models.FavStar.user_id == user_id,
+                        models.FavStar.class_name.ilike('dashboard'))
                 )
-                .all()
+                .first()
             )
-        return query
+            favorite = True if like_obj else False
+            rows.append({
+                'id': obj.id,
+                'title': obj.dashboard_title,
+                'description': obj.description,
+                'release': obj.online,
+                'owner': owner,
+                'time': str(obj.changed_on),
+                'favorite': favorite
+            })
+        return json.dumps(rows)
 
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
@@ -2890,6 +2929,9 @@ class Superset(BaseSupersetView):
         if not obj:
             message = OBJECT_NOT_FOUND
             status = 404
+        elif obj.created_by_fk != int(g.user.get_id()):
+            message = NO_PERMISSION
+            status = 404
         elif action.lower() == 'release':
             if obj.online is True:
                 message = OBJECT_IS_RELEASED
@@ -2925,6 +2967,9 @@ class Superset(BaseSupersetView):
         if not obj:
             message = OBJECT_NOT_FOUND
             status = 404
+        elif obj.created_by_fk != int(g.user.get_id()):
+            message = NO_PERMISSION
+            status = 404
         elif action.lower() == 'release':
             if obj.online is True:
                 message = OBJECT_IS_RELEASED
@@ -2953,8 +2998,12 @@ class Superset(BaseSupersetView):
 
 
 class Home(BaseSupersetView):
-    """The api for the home page"""
-    # action_types could be: ['release', 'downline', 'add', 'edit', 'delete'...]
+    """The api for the home page
+
+    limit = 0: means not limit
+    default_types['actions'] could be: ['release', 'downline', 'add', 'edit', 'delete'...]
+    """
+
     default_types = {
         'counts': ['dashboard', 'slice', 'table', 'database'],
         'trends': ['dashboard', 'slice', 'table', 'database'],
@@ -2975,25 +3024,51 @@ class Home(BaseSupersetView):
         self.status = 201
         self.message = []
 
-    def get_object_count(self, type_, all_user=False):
+    def get_user_id(self):
+        if not g.user:
+            self.status = 401 if str(self.status)[0] < '4' else self.status
+            self.message.append(NO_USER)
+            return False, -1
+        return True, int(g.user.get_id())
+
+    def get_obj_class(self, type_):
         try:
             model = str_to_model[type_.lower()]
         except KeyError:
             self.status = 400 if str(self.status)[0] < '4' else self.status
-            self.message.append('{}: {} passed to {}'
-                                .format(ERROR_REQUEST_PARAM, type_, 'get_object_count()'))
-            return 0
-        if all_user:
-            return db.session.query(model).count()
+            self.message.append('{}: {}'.format(ERROR_CLASS_TYPE, type_))
+            return False, None
         else:
-            return db.session.query(model)\
-                .filter_by(created_by_fk=g.user.get_id())\
-                .count()
+            return True, model
 
-    def get_object_counts(self, types, all_user=False):
+    def get_object_count(self, user_id, type_):
+        success, model = self.get_obj_class(type_)
+        if not success:
+            return 0
+        count = 0
+        if user_id == 0:
+            count = db.session.query(model).count()
+        else:
+            if hasattr(model, 'online'):
+                count = (
+                    db.session.query(model)
+                    .filter(
+                        sqla.or_(
+                            model.created_by_fk == user_id,
+                            model.online == 1
+                        )
+                    )
+                    .count())
+            else:
+                count = db.session.query(model)\
+                    .filter(model.created_by_fk == user_id)\
+                    .count()
+        return count
+
+    def get_object_counts(self, user_id, types):
         dt = {}
         for type_ in types:
-            count = self.get_object_count(type_, all_user=all_user)
+            count = self.get_object_count(user_id, type_)
             dt[type_] = count
         return dt
 
@@ -3008,78 +3083,62 @@ class Home(BaseSupersetView):
         )
         return rs
 
-    def get_fav_dashboards(self, limit=10):
+    def get_fav_dashboards(self, user_id, limit=10):
         """Query the times of dashboard liked by users"""
-        rs = (
-            db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+        query = db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)\
             .filter(
                 and_(FavStar.class_name.ilike('dashboard'),
                     FavStar.obj_id == Dashboard.id)
             )
-            .group_by(FavStar.obj_id)
+        if user_id > 0:
+            query = query.filter(
+                or_(Dashboard.created_by_fk == user_id,
+                    Dashboard.online == 1)
+            )
+        query = query.group_by(FavStar.obj_id)\
             .order_by(func.count(FavStar.obj_id).desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return json.dumps({})
+        if limit > 0:
+            query = query.limit(limit)
+        rs = query.all()
+
         rows = []
         for count, name in rs:
             rows.append({'name': name, 'count': count})
         return rows
 
-    def get_fav_slices(self, limit=10):
+    def get_fav_slices(self, user_id, limit=10):
         """Query the times of slice liked by users"""
-        rs = (
-            db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
+        query = db.session.query(func.count(FavStar.obj_id), Slice.slice_name) \
             .filter(
                 and_(FavStar.class_name.ilike('slice'),
                     FavStar.obj_id == Slice.id)
             )
-            .group_by(FavStar.obj_id)
+        if user_id > 0:
+            query = query.filter(
+                or_(Slice.created_by_fk == user_id,
+                    Slice.online == 1)
+            )
+        query = query.group_by(FavStar.obj_id) \
             .order_by(func.count(FavStar.obj_id).desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return json.dumps({})
+        if limit > 0:
+            query = query.limit(limit)
+        rs = query.all()
+
         rows = []
         for count, name in rs:
             rows.append({'name': name, 'count': count})
         return rows
 
-    def get_fav_objects(self, types, limit):
+    def get_fav_objects(self, user_id, types, limit):
         dt = {}
         if 'dashboard' in types:
-            dt['dashboard'] = self.get_fav_dashboards(limit=limit)
+            dt['dashboard'] = self.get_fav_dashboards(user_id, limit=limit)
         if 'slice' in types:
-            dt['slice'] = self.get_fav_slices(limit=limit)
+            dt['slice'] = self.get_fav_slices(user_id, limit=limit)
         return dt
 
-    def get_refered_tables(self, limit=10):
-        """Query the times of table used by slices"""
-        rs = (
-            db.session.query(func.count(Slice.datasource_id), SqlaTable.table_name)
-            .filter(
-                and_(
-                    Slice.datasource_type == 'table',
-                    Slice.datasource_id == SqlaTable.id)
-            )
-            .group_by(Slice.datasource_id)
-            .order_by(func.count(Slice.datasource_id).desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return {}
-        rows = []
-        for count, name in rs:
-            rows.append({'name': name, 'count': count})
-        return rows
-
-    def get_refered_slices(self, limit=10):
+    def get_refered_slices(self, user_id, limit=10):
         """Query the times of slice used by dashboards"""
-        user_id = g.user.get_id()
         sql = """
             SELECT slices.slice_name, count(slices.slice_name)
             FROM slices, dashboards, dashboard_slices
@@ -3098,21 +3157,17 @@ class Home(BaseSupersetView):
             rows.append({'name': row[0], 'count': row[1]})
         return rows
 
-    def get_edited_object(self, obj_type, limit=10, all_user=False):
+    def get_edited_object(self, user_id, obj_type, limit=10):
         """The records of slices be modified"""
-        obj_class = None
-        try:
-            obj_class = str_to_model[obj_type]
-        except KeyError:
-            self.status = 400 if str(self.status)[0] < '4' else self.status
-            self.message.append('{}: {} passed to {}'
-                                .format(ERROR_REQUEST_PARAM, obj_type, 'get_edited_object()'))
+        success, obj_class = self.get_obj_class(obj_type)
+        if not success:
+            return []
         #
         query_created = db.session.query(obj_class)
-        if not all_user:
+        if user_id > 0:
             query_created = query_created.filter(
-                sqla.or_(
-                    obj_class.created_by_fk == g.user.get_id(),
+                or_(
+                    obj_class.created_by_fk == user_id,
                     obj_class.online == 1
                 )
             )
@@ -3123,10 +3178,10 @@ class Home(BaseSupersetView):
         #
         query_edited = db.session.query(obj_class) \
             .filter(obj_class.changed_on > obj_class.created_on)
-        if not all_user:
+        if user_id > 0:
             query_edited = query_edited.filter(
-                sqla.or_(
-                    obj_class.changed_by_fk == g.user.get_id(),
+                or_(
+                    obj_class.changed_by_fk == user_id,
                     obj_class.online == 1
                 )
             )
@@ -3169,14 +3224,19 @@ class Home(BaseSupersetView):
         rows = sorted(rows, key=lambda x: x['time'], reverse=True)
         return rows[0:limit]
 
-    def get_edited_objects(self, types=None, limit=10, all_user=False):
+    def get_edited_objects(self, user_id=0, types=None, limit=10):
         dt = {}
         for type_ in types:
-            dt[type_] = self.get_edited_object(type_, limit=limit, all_user=all_user)
+            dt[type_] = self.get_edited_object(user_id, type_, limit=limit)
         return dt
 
     @expose('/edits/')
     def get_edited_objects_by_url(self):
+        success, user_id = self.get_user_id()
+        if not success:
+            return Response(json.dumps(NO_USER),
+                            status=400,
+                            mimetype='application/json')
         args = request.args
         if 'limit' in args.keys():
             limit = request.args.get('limit')
@@ -3193,7 +3253,7 @@ class Home(BaseSupersetView):
                             status=400,
                             mimetype='application/json')
 
-        rs = self.get_edited_objects(types=types, limit=int(limit))
+        rs = self.get_edited_objects(user_id, types=types, limit=int(limit))
         status_ = self.status
         message_ = self.message
         self.status = 201
@@ -3207,7 +3267,7 @@ class Home(BaseSupersetView):
                             status=status_,
                             mimetype='application/json')
 
-    def get_user_actions(self, types=[], limit=10, all_user=True):
+    def get_user_actions(self, user_id=0, types=[], limit=10):
         """The actions of user"""
         if len(types) < 1 or limit < 0:
             self.status = 401 if str(self.status)[0] < '4' else self.status
@@ -3223,8 +3283,8 @@ class Home(BaseSupersetView):
                     Log.user_id == User.id)
                 )
             )
-        if not all_user:
-            query = query.filter(Log.user_id == g.user.get_id())
+        if user_id > 0:
+            query = query.filter(Log.user_id == user_id)
         rs = query.order_by(Log.dttm.desc()).limit(limit).all()
 
         rows = []
@@ -3242,6 +3302,11 @@ class Home(BaseSupersetView):
 
     @expose('/actions/')
     def get_user_actions_by_url(self):
+        success, user_id = self.get_user_id()
+        if not success:
+            return Response(json.dumps(NO_USER),
+                            status=400,
+                            mimetype='application/json')
         args = request.args
         if 'limit' in args.keys():
             limit = request.args.get('limit')
@@ -3252,7 +3317,13 @@ class Home(BaseSupersetView):
         else:
             types = self.default_types.get('actions')
 
-        rs = self.get_user_actions(types=types, limit=int(limit))
+        if not isinstance(types, list) or len(types) < 1:
+            message_ = '{}: {} '.format(ERROR_REQUEST_PARAM, args)
+            return Response(json.dumps(message_),
+                            status=400,
+                            mimetype='application/json')
+
+        rs = self.get_user_actions(user_id, types=types, limit=int(limit))
         status_ = self.status
         message_ = self.message
         self.status = 201
@@ -3266,15 +3337,14 @@ class Home(BaseSupersetView):
                             status=status_,
                             mimetype='application/json')
 
-    def get_object_number_trends(self, types, limit=30, all_user=False):
+    def get_object_number_trends(self, user_id=0, types=[], limit=30):
         dt = {}
         for type_ in types:
-            r = self.get_object_number_trend(type_, limit=limit, all_user=all_user)
+            r = self.get_object_number_trend(user_id, type_, limit)
             dt[type_.lower()] = r
         return dt
 
-    def get_object_number_trend(self, type_, limit=30, all_user=False):
-        user_id = -1 if all_user else g.user.get_id()
+    def get_object_number_trend(self, user_id, type_, limit):
         rows = (
             db.session.query(DailyNumber.count, DailyNumber.dt)
             .filter(
@@ -3323,34 +3393,39 @@ class Home(BaseSupersetView):
 
     @expose('/')
     def get_all_statistics_data(self):
+        success, user_id = self.get_user_id()
+        if not success:
+            return Response(json.dumps(NO_USER),
+                            status=400,
+                            mimetype='application/json')
         response = {}
         #
         types = self.default_types.get('counts')
-        result = self.get_object_counts(types)
+        result = self.get_object_counts(user_id, types)
         response['counts'] = result
         #
         types = self.default_types.get('trends')
         limit = self.default_limit.get('trends')
-        result = self.get_object_number_trends(types, limit=limit)
+        result = self.get_object_number_trends(user_id, types, limit=limit)
         response['trends'] = result
-        #
+        # #
         types = self.default_types.get('favorits')
         limit = self.default_limit.get('favorits')
-        result = self.get_fav_objects(types, limit)
+        result = self.get_fav_objects(user_id, types, limit)
         response['favorits'] = result
-        #
+        # #
         limit = self.default_limit.get('refers')
-        result = self.get_refered_slices(limit)
+        result = self.get_refered_slices(user_id, limit)
         response['refers'] = result
         #
         types = self.default_types.get('edits')
         limit = self.default_limit.get('edits')
-        result = self.get_edited_objects(types=types, limit=limit)
+        result = self.get_edited_objects(user_id, types=types, limit=limit)
         response['edits'] = result
-        #
+        # #
         limit = self.default_limit.get('actions')
         types = self.default_types.get('actions')
-        result = self.get_user_actions(types=types, limit=limit)
+        result = self.get_user_actions(user_id, types=types, limit=limit)
         response['actions'] = result
 
         status_ = self.status
