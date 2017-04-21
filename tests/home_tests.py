@@ -36,7 +36,7 @@ class HomeTests(unittest.TestCase):
 
     def test_get_object_number_trends(self):
         objs = ['slice', 'dashboard', 'table', 'database']
-        response = self.home.get_object_number_trends(objs)
+        response = self.home.get_object_number_trends(1, objs)
         print(response)
 
     def test_get_fav_dashboards(self):

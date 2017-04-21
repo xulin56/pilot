@@ -3283,15 +3283,14 @@ class Home(BaseSupersetView):
                             status=status_,
                             mimetype='application/json')
 
-    def get_object_number_trends(self, types, limit=30, all_user=False):
+    def get_object_number_trends(self, user_id=0, types=[], limit=30):
         dt = {}
         for type_ in types:
-            r = self.get_object_number_trend(type_, limit=limit, all_user=all_user)
+            r = self.get_object_number_trend(user_id, type_, limit)
             dt[type_.lower()] = r
         return dt
 
-    def get_object_number_trend(self, type_, limit=30, all_user=False):
-        user_id = -1 if all_user else g.user.get_id()
+    def get_object_number_trend(self, user_id, type_, limit):
         rows = (
             db.session.query(DailyNumber.count, DailyNumber.dt)
             .filter(
@@ -3351,10 +3350,10 @@ class Home(BaseSupersetView):
         result = self.get_object_counts(user_id, types)
         response['counts'] = result
         #
-        # types = self.default_types.get('trends')
-        # limit = self.default_limit.get('trends')
-        # result = self.get_object_number_trends(types, limit=limit)
-        # response['trends'] = result
+        types = self.default_types.get('trends')
+        limit = self.default_limit.get('trends')
+        result = self.get_object_number_trends(user_id, types, limit=limit)
+        response['trends'] = result
         # #
         types = self.default_types.get('favorits')
         limit = self.default_limit.get('favorits')
