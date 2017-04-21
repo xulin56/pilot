@@ -3245,6 +3245,12 @@ class Home(BaseSupersetView):
         else:
             types = self.default_types.get('actions')
 
+        if not isinstance(types, list) or len(types) < 1:
+            message_ = '{}: {} '.format(ERROR_REQUEST_PARAM, args)
+            return Response(json.dumps(message_),
+                            status=400,
+                            mimetype='application/json')
+        
         rs = self.get_user_actions(types=types, limit=int(limit))
         status_ = self.status
         message_ = self.message
