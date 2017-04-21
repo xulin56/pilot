@@ -41,7 +41,7 @@ from datetime import date
 from sqlalchemy import (
     Column, Integer, String, ForeignKey, Text, Boolean,
     DateTime, Date, Table, Numeric,
-    create_engine, MetaData, desc, asc, select, and_, func, update
+    create_engine, MetaData, desc, asc, select, and_, or_
 )
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.ext.declarative import declared_attr
@@ -2869,18 +2869,34 @@ class DailyNumber(Model):
         except KeyError as e:
             logging.error("Unrecognized object type in {}".format(obj_type.lower()))
             logging.exception(e)
+            return 0
 
         user_id = int(user_id)
         today_count = 0
-        if user_id > 0:   # present user's obect number
-            today_count = db.session.query(obj_model)\
-                .filter_by(created_by_fk=user_id)\
-                .count()
-        elif user_id == -1:
+        if user_id > 0:
+            # object number of present user or is_online
+            if hasattr(obj_model, 'online'):
+                today_count = (
+                    db.session.query(obj_model)
+                    .filter(
+                        or_(
+                            obj_model.created_by_fk == user_id,
+                            obj_model.online == 1
+                        )
+                    )
+                    .count())
+            else:
+                today_count = (
+                    db.session.query(obj_model)
+                    .filter(obj_model.created_by_fk == user_id)
+                    .count()
+                )
+        elif user_id == 0:
             today_count = db.session.query(obj_model).count()
         else:
-            logging.error("Error user_id value: {} tranformed to {}"
+            logging.error("Error user_id value: {} passed to {}"
                           .format(obj_type.lower(), 'log_number()'))
+            return 0
 
         today_record = (
             db.session.query(cls)

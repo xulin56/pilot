@@ -23,10 +23,10 @@ class HomeTests(unittest.TestCase):
 
     def test_log_number(self):
         from superset.models import DailyNumber
-        DailyNumber.log_number('slice')
-        # DailyNumber.log_number('dashboard')
-        # DailyNumber.log_number('table')
-        # DailyNumber.log_number('database')
+        DailyNumber.log_number('slice', 1)
+        # DailyNumber.log_number('dashboard', 1)
+        # DailyNumber.log_number('table', 1)
+        # DailyNumber.log_number('database', 1)
 
     def test_get_object_number_trend(self):
         objs = ['slice', 'dashboard', 'table', 'database']
