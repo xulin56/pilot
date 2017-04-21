@@ -62,7 +62,7 @@ class HomeTests(unittest.TestCase):
 
     def test_get_user_actions(self):
         types = ['release', 'downline']
-        response = self.home.get_user_actions(types=types, limit=5)
+        response = self.home.get_user_actions(1, types=types, limit=10)
         print(response)
 
 

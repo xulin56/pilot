@@ -123,6 +123,7 @@ OBJECT_IS_DOWNLINED = __("This object has been downlined")
 ERROR_URL = __("Error request url")
 ERROR_REQUEST_PARAM = __("Error request parameter")
 ERROR_CLASS_TYPE = __("Error model type")
+NO_USER = __("Can't get user")
 
 
 def get_database_access_error_msg(database_name):
@@ -3201,7 +3202,7 @@ class Home(BaseSupersetView):
                             status=status_,
                             mimetype='application/json')
 
-    def get_user_actions(self, types=[], limit=10, all_user=True):
+    def get_user_actions(self, user_id=0, types=[], limit=10):
         """The actions of user"""
         if len(types) < 1 or limit < 0:
             self.status = 401 if str(self.status)[0] < '4' else self.status
@@ -3217,8 +3218,8 @@ class Home(BaseSupersetView):
                     Log.user_id == User.id)
                 )
             )
-        if not all_user:
-            query = query.filter(Log.user_id == g.user.get_id())
+        if user_id > 0:
+            query = query.filter(Log.user_id == user_id)
         rs = query.order_by(Log.dttm.desc()).limit(limit).all()
 
         rows = []
@@ -3236,6 +3237,7 @@ class Home(BaseSupersetView):
 
     @expose('/actions/')
     def get_user_actions_by_url(self):
+        user_id = int(g.user.get_id())
         args = request.args
         if 'limit' in args.keys():
             limit = request.args.get('limit')
@@ -3252,7 +3254,7 @@ class Home(BaseSupersetView):
                             status=400,
                             mimetype='application/json')
 
-        rs = self.get_user_actions(types=types, limit=int(limit))
+        rs = self.get_user_actions(user_id, types=types, limit=int(limit))
         status_ = self.status
         message_ = self.message
         self.status = 201
@@ -3349,10 +3351,10 @@ class Home(BaseSupersetView):
         result = self.get_edited_objects(user_id, types=types, limit=limit)
         response['edits'] = result
         # #
-        # limit = self.default_limit.get('actions')
-        # types = self.default_types.get('actions')
-        # result = self.get_user_actions(types=types, limit=limit)
-        # response['actions'] = result
+        limit = self.default_limit.get('actions')
+        types = self.default_types.get('actions')
+        result = self.get_user_actions(user_id, types=types, limit=limit)
+        response['actions'] = result
 
         status_ = self.status
         if len(self.message) > 0:
