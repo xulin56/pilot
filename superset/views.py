@@ -775,7 +775,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 # class AccessRequestsModelView(SupersetModelView, DeleteMixin):
 #     datamodel = SQLAInterface(DAR)
 #     list_columns = [
-#         'username', 'user_roles', 'datasource_link',
+#         'username'FormWidget, 'user_roles', 'datasource_link',
 #         'roles_with_datasource', 'created_on']
 #     order_columns = ['username', 'datasource_link']
 #     base_order = ('changed_on', 'desc')

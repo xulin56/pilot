@@ -2,6 +2,7 @@ import React, { PropTypes } from 'react';
 import ReactHighcharts from 'react-highcharts';
 
 function Line(props) {
+
   if (!props.statistic) return <p>数据异常</p>;
 
   const { categories, series } = props.statistic.chart;
@@ -18,13 +19,11 @@ function Line(props) {
     //   text: '仪表板数量变化趋势',
     //   x: -20
     // },
-    xAxis: {
-      categories
-    },
+
     yAxis: {
-      // title: {
-      //   text: 'Temperature (°C)'
-      // }
+      title: {
+        // text: 'Temperature (°C)'
+      }
     },
     tooltip: {
       valueSuffix: ''
@@ -35,6 +34,10 @@ function Line(props) {
     //   verticalAlign: 'top',
     //   borderWidth: 1
     // },
+
+    xAxis: {
+      categories
+    },
     series
   };
   return (

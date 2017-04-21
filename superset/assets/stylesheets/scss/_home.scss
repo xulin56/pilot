@@ -1,5 +1,5 @@
 .data-tendency{
-    border-radius:3px;
+    border-radius: 4px;
     padding:0 20px;
     margin:20px 0;
     .data-title{
@@ -34,25 +34,30 @@
         }
     }
     .dashboard-linechart{
-        height:190px;
+        height:400px;
     }
 }
 
 .top10-and-worktimes{
     display:flex;
+    overflow: hidden;
     .top10{
+        overflow: hidden;
         flex:1;
+        @include border();
         margin-right:18px;
         .index-title-module{
             .transparent{
                 width:138px;
             }
         }
-        
+
     }
 
     .worktimes{
+        @include border();
         flex:1;
+        overflow:hidden;
     }
 }
 .recentedit-and-event{
@@ -70,7 +75,7 @@
                 align-items:center;
                 li{
                     flex:1;
-                    cursor:pointer; 
+                    cursor:pointer;
                     svg{
                         width:6px;
                         height:7px;
@@ -80,7 +85,7 @@
                 li:first-child{
                     padding-left:20px;
                 }
-                
+
             }
             dl{
                 display: flex;
@@ -98,7 +103,7 @@
                     flex:1;
                     color:#333c48;
                 }
-                
+
             }
             dl:hover{
                 border-left:2px solid #289df5;
@@ -135,7 +140,7 @@
                             fill:#2a9ef5;
                          }
                     }
-                    
+
                     .explore_json-type{
                         dl{
                             dt{

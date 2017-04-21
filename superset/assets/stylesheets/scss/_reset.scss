@@ -1,7 +1,10 @@
-body,div,button,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,code,form,figure,section,aside,fieldset,legend,input,textarea,p,blockquote,th,td {
+body,div,article,button,dl,dt,dd,,ol,ul,li,h1,h2,h3,h4,h5,h6,pre,code,form,figure,section,aside,sub,sup,svg,fieldset,legend,input,span,strong,a,textarea,p,blockquote,th,td {
 	margin:0;
 	padding:0;
 	border:0;
+}
+html{
+	font-size:62.5%;
 }
 table {
 	border-collapse:collapse;
@@ -14,7 +17,7 @@ address,caption,cite,code,dfn,em,strong,th,var {
 	font-style:normal;
 	font-weight:normal
 }
-ol,ul {
+ol,ul,li {
 	list-style:none
 }
 caption,th {

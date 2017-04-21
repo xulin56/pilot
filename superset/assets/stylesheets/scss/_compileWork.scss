@@ -2,15 +2,15 @@ input{
     padding-left:10px;
     box-sizing:border-box;
 }
-.compileWork-title{ 
+.compileWork-title{
     .title-btn{
         display:flex;
-        button{ 
+        button{
             display:flex;
             align-items:center;
             margin-right:10px;
-            border:$borderStyle;  
-            cursor:pointer;         
+            border:$borderStyle;
+            cursor:pointer;
             svg{
                 width:13px;
                 height:21px;
@@ -79,7 +79,7 @@ input{
                     }
                 }
             }
-            
+
         }
         .select-type-module:first-child{
             margin-bottom:28px;
@@ -102,7 +102,7 @@ input{
                                 color:#1d2531;
                                 font:14px/34px Miscrosoft YaHei;
                                 border:$borderStyle;
-                                border-radius:3px;
+                                border-radius: 4px;
                                 justify-content:space-between;
                                 box-sizing:border-box;
                                 padding:0 8px;
@@ -154,7 +154,7 @@ input{
                         height:34px;
                         flex:1;
                         border:$borderStyle;
-                        border-radius:3px;
+                        border-radius: 4px;
                         margin:0 10px;
                     }
                     .filter-set-close{
@@ -183,7 +183,7 @@ input{
                 height:72px;
                 border-bottom:$borderStyle;
                 h3{
-                    svg{
+                    .star{
                         fill:#0089f7;
                         position:relative;
                         top:3px;
@@ -217,7 +217,7 @@ input{
                 padding:20px 32px;
                 font-size:14px;
                 p{
-                    
+
                     color:#7f8fa4;
                 }
                 .Box-plot-list{
@@ -272,5 +272,114 @@ input{
                 }
             }
         }
+    }
+}
+.compileWork-shade{
+    .compile-connect{
+        padding-top:25px;
+        li{
+            .sel-type{
+                width:244px;
+                strong{
+                    color:#1d2531;
+                }
+                .pull-menu{
+                    padding:0;
+                }
+            }
+            .uploading{
+                width:127px;
+                height:34px;
+                border:$borderStyle;
+                border-radius: 4px;
+                position:relative;
+                overflow: hidden;
+                strong{
+                    position: absolute;
+                    top:50%;
+                    left:50%;
+                    font-size:14px;
+                    color:#1d2531;
+                    margin-left:-14px;
+                    margin-top:-10px;
+                }
+                input{
+                    height:34px;
+                    opacity: 0;
+                }
+            }
+            dl{
+                svg{
+                    width:14px;
+                    height:14px;
+                }
+                .progress-line{
+                    width:110px;
+                    height:4px;
+                    background-color:#e2e7ee;
+                    border-radius:2px;
+                    overflow: hidden;
+                    margin:0 10px;
+                    strong{
+                        height:100%;
+                        width:50%;
+                        display:block;
+                        background-color:#f9cc52;
+                    }
+                }
+                dt{
+                    display:flex;
+                    align-items: center;
+                    mark{
+                        background-color:transparent;
+                        color:#f9be00;
+                        padding-left:6px;
+                        margin:15px 0;
+
+                    }
+                }
+                dd{
+                    display:flex;
+                    mark{
+                        background-color:transparent;
+                        color:#7c8ca5;
+                        padding-left:6px;
+                    }
+                }
+
+            }
+            .attestation{
+                padding:0 37px 0 8px;
+            }
+            .active{
+                color:#1d2531;
+            }
+        }
+        .connect-author{
+            span{
+                color:#7c8ca5;
+            }
+            strong{
+                color:#1d2531;
+            }
+            .founder{
+                padding-right:217px;
+            }
+        }
+        li:nth-child(4){
+            align-items: flex-start;
+            span{
+                padding-top:10px;
+            }
+        }
+        li:last-child{
+            strong{
+                color:#1d2531;
+            }
+            .founder{
+                padding-right:80px;
+            }
+        }
+
     }
 }

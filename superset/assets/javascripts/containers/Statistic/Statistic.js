@@ -2,8 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Grid, Row, Col } from 'react-bootstrap';
 import Helmet from 'react-helmet';
-import { Line } from '../../components/home';
-// import { Line, Table } from '../../components/home';
+import { Line, Table } from '../../components/home';
 
 class Statistic extends Component { // eslint-disable-line
   render() {
