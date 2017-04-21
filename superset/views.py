@@ -2970,6 +2970,13 @@ class Home(BaseSupersetView):
         self.status = 201
         self.message = []
 
+    def get_user_id(self):
+        if not g.user:
+            self.status = 401 if str(self.status)[0] < '4' else self.status
+            self.message.append(NO_USER)
+            return False, -1
+        return True, int(g.user.get_id())
+
     def get_obj_class(self, type_):
         try:
             model = str_to_model[type_.lower()]
@@ -2980,7 +2987,7 @@ class Home(BaseSupersetView):
         else:
             return True, model
 
-    def get_object_count(self, type_, user_id):
+    def get_object_count(self, user_id, type_):
         success, model = self.get_obj_class(type_)
         if not success:
             return 0
@@ -3004,10 +3011,10 @@ class Home(BaseSupersetView):
                     .count()
         return count
 
-    def get_object_counts(self, types, user_id):
+    def get_object_counts(self, user_id, types):
         dt = {}
         for type_ in types:
-            count = self.get_object_count(type_, user_id)
+            count = self.get_object_count(user_id, type_)
             dt[type_] = count
         return dt
 
@@ -3171,7 +3178,11 @@ class Home(BaseSupersetView):
 
     @expose('/edits/')
     def get_edited_objects_by_url(self):
-        user_id = int(g.user.get_id())
+        success, user_id = self.get_user_id()
+        if not success:
+            return Response(json.dumps(NO_USER),
+                            status=400,
+                            mimetype='application/json')
         args = request.args
         if 'limit' in args.keys():
             limit = request.args.get('limit')
@@ -3237,7 +3248,11 @@ class Home(BaseSupersetView):
 
     @expose('/actions/')
     def get_user_actions_by_url(self):
-        user_id = int(g.user.get_id())
+        success, user_id = self.get_user_id()
+        if not success:
+            return Response(json.dumps(NO_USER),
+                            status=400,
+                            mimetype='application/json')
         args = request.args
         if 'limit' in args.keys():
             limit = request.args.get('limit')
@@ -3325,11 +3340,15 @@ class Home(BaseSupersetView):
 
     @expose('/')
     def get_all_statistics_data(self):
-        user_id = int(g.user.get_id())
+        success, user_id = self.get_user_id()
+        if not success:
+            return Response(json.dumps(NO_USER),
+                            status=400,
+                            mimetype='application/json')
         response = {}
         #
         types = self.default_types.get('counts')
-        result = self.get_object_counts(types, user_id)
+        result = self.get_object_counts(user_id, types)
         response['counts'] = result
         #
         # types = self.default_types.get('trends')
