@@ -118,6 +118,8 @@ DATASOURCE_ACCESS_ERR = __("You don't have access to this datasource")
 OBJECT_NOT_FOUND = __("Not found this object")
 RELEASE_SUCCESS = __("Release success")
 DOWNLINE_SUCCESS = __("Downline success")
+OBJECT_IS_RELEASED = __("This object has been released")
+OBJECT_IS_DOWNLINED = __("This object has been downlined")
 ERROR_URL = __("Error request url")
 ERROR_REQUEST_PARAM = __("Error request parameter")
 
@@ -2882,17 +2884,23 @@ class Superset(BaseSupersetView):
             message = OBJECT_NOT_FOUND
             status = 404
         elif action.lower() == 'release':
-            obj.online = True
-            db.session.commit()
-            message = RELEASE_SUCCESS
-            action_str = 'Release dashboard: {}'.format(repr(obj))
-            log_action('release', action_str, 'dashboard', dashboard_id)
+            if obj.online is True:
+                message = OBJECT_IS_RELEASED
+            else:
+                obj.online = True
+                db.session.commit()
+                message = RELEASE_SUCCESS
+                action_str = 'Release dashboard: {}'.format(repr(obj))
+                log_action('release', action_str, 'dashboard', dashboard_id)
         elif action.lower() == 'downline':
-            obj.online = False
-            db.session.commit()
-            message = DOWNLINE_SUCCESS
-            action_str = 'Downline dashboard: {}'.format(repr(obj))
-            log_action('downline', action_str, 'dashboard', dashboard_id)
+            if obj.online is False:
+                message = OBJECT_IS_DOWNLINED
+            else:
+                obj.online = False
+                db.session.commit()
+                message = DOWNLINE_SUCCESS
+                action_str = 'Downline dashboard: {}'.format(repr(obj))
+                log_action('downline', action_str, 'dashboard', dashboard_id)
         else:
             message = ERROR_URL
             status = 404
@@ -3282,14 +3290,11 @@ class Home(BaseSupersetView):
         # result = self.get_modified_objects(types=types, limit=limit)
         # response['edits'] = result
         # #
-        # actions_args = request.args.get('actions')
-        # if actions_args:
-        #     actions_args = eval(actions_args)
-        #     limit = int(actions_args['limit'])
-        # else:
-        #     limit = self.default_limit.get('actions')
-        # result = self.get_user_actions(limit=limit, all_user=False)
-        # response['actions'] = result
+
+        limit = self.default_limit.get('actions')
+        types = self.default_types.get('actions')
+        result = self.get_user_actions(types=types, limit=limit)
+        response['actions'] = result
 
         status_ = self.status
         if len(self.message) > 0:
