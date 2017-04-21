@@ -3075,30 +3075,8 @@ class Home(BaseSupersetView):
             dt['slice'] = self.get_fav_slices(user_id, limit=limit)
         return dt
 
-    def get_refered_tables(self, limit=10):
-        """Query the times of table used by slices"""
-        rs = (
-            db.session.query(func.count(Slice.datasource_id), SqlaTable.table_name)
-            .filter(
-                and_(
-                    Slice.datasource_type == 'table',
-                    Slice.datasource_id == SqlaTable.id)
-            )
-            .group_by(Slice.datasource_id)
-            .order_by(func.count(Slice.datasource_id).desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return {}
-        rows = []
-        for count, name in rs:
-            rows.append({'name': name, 'count': count})
-        return rows
-
-    def get_refered_slices(self, limit=10):
+    def get_refered_slices(self, user_id, limit=10):
         """Query the times of slice used by dashboards"""
-        user_id = g.user.get_id()
         sql = """
             SELECT slices.slice_name, count(slices.slice_name)
             FROM slices, dashboards, dashboard_slices
@@ -3361,10 +3339,10 @@ class Home(BaseSupersetView):
         result = self.get_fav_objects(user_id, types, limit)
         response['favorits'] = result
         # #
-        # limit = self.default_limit.get('refers')
-        # result = self.get_refered_slices(limit)
-        # response['refers'] = result
-        # #
+        limit = self.default_limit.get('refers')
+        result = self.get_refered_slices(user_id, limit)
+        response['refers'] = result
+        #
         # types = self.default_types.get('edits')
         # limit = self.default_limit.get('edits')
         # result = self.get_edited_objects(types=types, limit=limit)

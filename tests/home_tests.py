@@ -47,12 +47,8 @@ class HomeTests(unittest.TestCase):
         response = self.home.get_fav_slices(1, limit=10)
         print(response)
 
-    def test_get_refered_tables(self):
-        response = self.home.get_refered_tables(limit=5)
-        print(response)
-
     def test_get_refered_slices(self):
-        response = self.home.get_refered_slices(limit=5)
+        response = self.home.get_refered_slices(1, limit=5)
         print(response)
 
     def test_get_slice_types(self):
