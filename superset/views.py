@@ -919,31 +919,45 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return redirect(redirect_url)
 
     @classmethod
-    def list_with_fav(cls, present_user=False):
-        """return the slices with column 'like' showing if liked by user"""
-        SC = models.Slice
-        FS = models.FavStar
-        like_pr = case([(FS.id > 0, True), ], else_=False).label('like')
-        if present_user:
-            query = (
-                db.session.query(SC.id, SC.slice_name, like_pr)
-                    .outerjoin(FS, sqla.and_(
-                    SC.id == FS.obj_id,
-                    FS.class_name.ilike('slice')),
-                               FS.user_id == g.user.get_id()
-                               )
-                    .all()
+    def get_slice_list(cls):
+        """return the slices with column 'favorite' and 'online'r"""
+        user_id = g.user.get_id()
+        rs = (
+            db.session.query(models.Slice, User.username)
+            .filter(
+                models.Slice.created_by_fk == User.id,
+                or_(
+                    models.Slice.created_by_fk == user_id,
+                    models.Slice.online == 1
+                )
             )
-        else:
-            query = (
-                db.session.query(SC.id, SC.slice_name, like_pr)
-                    .outerjoin(FS, sqla.and_(
-                    SC.id == FS.obj_id,
-                    FS.class_name.ilike('slice'))
-                               )
-                    .all()
+            .order_by(models.Slice.changed_on.desc())
+            .all()
+        )
+        rows = []
+        for obj, owner in rs:
+            like_obj = (
+                db.session.query(models.FavStar)
+                .filter(
+                    and_(
+                        models.FavStar.user_id == user_id,
+                        models.FavStar.class_name.ilike('slice'))
+                )
+                .first()
             )
-        return query
+            favorite = True if like_obj else False
+            rows.append({
+                'id': obj.id,
+                'title': obj.slice_name,
+                'description': obj.description,
+                'viz_type': obj.viz_type,
+                'table': obj.datasource_name,
+                'release': obj.online,
+                'owner': owner,
+                'time': str(obj.changed_on),
+                'favorite': favorite
+            })
+        return json.dumps(rows)
     
 
 class SliceAsync(SliceModelView):  # noqa
