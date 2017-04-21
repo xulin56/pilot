@@ -40,11 +40,11 @@ class HomeTests(unittest.TestCase):
         print(response)
 
     def test_get_fav_dashboards(self):
-        response = self.home.get_fav_dashboards(limit=10)
+        response = self.home.get_fav_dashboards(2, limit=10)
         print(response)
 
     def test_get_fav_slices(self):
-        response = self.home.get_fav_slices(limit=10)
+        response = self.home.get_fav_slices(1, limit=10)
         print(response)
 
     def test_get_refered_tables(self):

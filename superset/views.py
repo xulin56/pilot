@@ -45,7 +45,7 @@ from superset.sql_parse import SupersetQuery
 
 from superset.models import Database, SqlaTable, Slice, \
     Dashboard, FavStar, Log, DailyNumber, str_to_model
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, or_
 from flask_appbuilder.security.sqla.models import User
 
 config = app.config
@@ -3021,52 +3021,58 @@ class Home(BaseSupersetView):
         )
         return rs
 
-    def get_fav_dashboards(self, limit=10):
+    def get_fav_dashboards(self, user_id, limit=10):
         """Query the times of dashboard liked by users"""
-        rs = (
-            db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)
+        query = db.session.query(func.count(FavStar.obj_id), Dashboard.dashboard_title)\
             .filter(
                 and_(FavStar.class_name.ilike('dashboard'),
                     FavStar.obj_id == Dashboard.id)
             )
-            .group_by(FavStar.obj_id)
+        if user_id > 0:
+            query = query.filter(
+                or_(Dashboard.created_by_fk == user_id,
+                    Dashboard.online == 1)
+            )
+        query = query.group_by(FavStar.obj_id)\
             .order_by(func.count(FavStar.obj_id).desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return json.dumps({})
+        if limit > 0:
+            query = query.limit(limit)
+        rs = query.all()
+
         rows = []
         for count, name in rs:
             rows.append({'name': name, 'count': count})
         return rows
 
-    def get_fav_slices(self, limit=10):
+    def get_fav_slices(self, user_id, limit=10):
         """Query the times of slice liked by users"""
-        rs = (
-            db.session.query(func.count(FavStar.obj_id), Slice.slice_name)
+        query = db.session.query(func.count(FavStar.obj_id), Slice.slice_name) \
             .filter(
                 and_(FavStar.class_name.ilike('slice'),
                     FavStar.obj_id == Slice.id)
             )
-            .group_by(FavStar.obj_id)
+        if user_id > 0:
+            query = query.filter(
+                or_(Slice.created_by_fk == user_id,
+                    Slice.online == 1)
+            )
+        query = query.group_by(FavStar.obj_id) \
             .order_by(func.count(FavStar.obj_id).desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return json.dumps({})
+        if limit > 0:
+            query = query.limit(limit)
+        rs = query.all()
+
         rows = []
         for count, name in rs:
             rows.append({'name': name, 'count': count})
         return rows
 
-    def get_fav_objects(self, types, limit):
+    def get_fav_objects(self, user_id, types, limit):
         dt = {}
         if 'dashboard' in types:
-            dt['dashboard'] = self.get_fav_dashboards(limit=limit)
+            dt['dashboard'] = self.get_fav_dashboards(user_id, limit=limit)
         if 'slice' in types:
-            dt['slice'] = self.get_fav_slices(limit=limit)
+            dt['slice'] = self.get_fav_slices(user_id, limit=limit)
         return dt
 
     def get_refered_tables(self, limit=10):
@@ -3338,7 +3344,7 @@ class Home(BaseSupersetView):
 
     @expose('/')
     def get_all_statistics_data(self):
-        user_id = g.user.get_id()
+        user_id = int(g.user.get_id())
         response = {}
         #
         types = self.default_types.get('counts')
@@ -3350,10 +3356,10 @@ class Home(BaseSupersetView):
         # result = self.get_object_number_trends(types, limit=limit)
         # response['trends'] = result
         # #
-        # types = self.default_types.get('favorits')
-        # limit = self.default_limit.get('favorits')
-        # result = self.get_fav_objects(types, limit)
-        # response['favorits'] = result
+        types = self.default_types.get('favorits')
+        limit = self.default_limit.get('favorits')
+        result = self.get_fav_objects(user_id, types, limit)
+        response['favorits'] = result
         # #
         # limit = self.default_limit.get('refers')
         # result = self.get_refered_slices(limit)
