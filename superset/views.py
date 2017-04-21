@@ -2919,17 +2919,23 @@ class Superset(BaseSupersetView):
             message = OBJECT_NOT_FOUND
             status = 404
         elif action.lower() == 'release':
-            obj.online = True
-            db.session.commit()
-            message = RELEASE_SUCCESS
-            action_str = 'Release slice: {}'.format(repr(obj))
-            log_action('release', action_str, 'slice', slice_id)
+            if obj.online is True:
+                message = OBJECT_IS_RELEASED
+            else:
+                obj.online = True
+                db.session.commit()
+                message = RELEASE_SUCCESS
+                action_str = 'Release slice: {}'.format(repr(obj))
+                log_action('release', action_str, 'slice', slice_id)
         elif action.lower() == 'downline':
-            obj.online = False
-            db.session.commit()
-            message = DOWNLINE_SUCCESS
-            action_str = 'Downline slice: {}'.format(repr(obj))
-            log_action('downline', action_str, 'slice', slice_id)
+            if obj.online is False:
+                message = OBJECT_IS_DOWNLINED
+            else:
+                obj.online = False
+                db.session.commit()
+                message = DOWNLINE_SUCCESS
+                action_str = 'Downline slice: {}'.format(repr(obj))
+                log_action('downline', action_str, 'slice', slice_id)
         else:
             message = ERROR_URL
             status = 404
