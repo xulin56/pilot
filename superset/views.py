@@ -2947,13 +2947,12 @@ class Superset(BaseSupersetView):
 
 class Home(BaseSupersetView):
     """The api for the home page"""
-
+    # action_types could be: ['release', 'downline', 'add', 'edit', 'delete'...]
     default_types = {
         'counts': ['dashboard', 'slice', 'table', 'database'],
         'trends': ['dashboard', 'slice', 'table', 'database'],
         'favorits': ['dashboard', 'slice'],
         'edits': ['dashboard', 'slice'],
-        # action_types could be: ['release', 'downline', 'add', 'edit', 'delete'...]
         'actions': ['release', 'downline']
     }
     default_limit = {
@@ -2976,7 +2975,6 @@ class Home(BaseSupersetView):
             self.status = 400 if str(self.status)[0] < '4' else self.status
             self.message.append('{}: {} passed to {}'
                                 .format(ERROR_REQUEST_PARAM, type_, 'get_object_count()'))
-            print(self.message)
             return 0
         if all_user:
             return db.session.query(model).count()
@@ -3093,61 +3091,114 @@ class Home(BaseSupersetView):
             rows.append({'name': row[0], 'count': row[1]})
         return rows
 
-    def get_modified_dashboards(self, limit=10):
-        """The records of dashboards be modified"""
-        rs = (
-            db.session.query(Dashboard.id, Dashboard.dashboard_title,
-                             User.username, Dashboard.changed_on)
-            .filter(Dashboard.changed_by_fk == User.id)
-            .order_by(Dashboard.changed_on.desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return {}
-        rows = []
-        for id, title, user, dttm in rs:
-            obj = db.session.query(Dashboard).filter_by(id=id).first()
-            link = obj.dashboard_link() if obj else None
-            rows.append({'name': title, 'user': user, 'time': str(dttm), 'link': link})
-        return rows
-
-    def get_modified_slices(self, limit=10):
+    def get_edited_object(self, obj_type, limit=10, all_user=False):
         """The records of slices be modified"""
-        rs = (
-            db.session.query(Slice.id, Slice.slice_name,
-                             User.username, Slice.changed_on)
-            .filter(Slice.changed_by_fk == User.id)
-            .order_by(Slice.changed_on.desc())
-            .limit(limit)
-            .all()
-        )
-        if not rs:
-            return {}
+        obj_class = None
+        try:
+            obj_class = str_to_model[obj_type]
+        except KeyError:
+            self.status = 400 if str(self.status)[0] < '4' else self.status
+            self.message.append('{}: {} passed to {}'
+                                .format(ERROR_REQUEST_PARAM, obj_type, 'get_edited_object()'))
+        #
+        query_created = db.session.query(obj_class)
+        if not all_user:
+            query_created = query_created.filter(
+                sqla.or_(
+                    obj_class.created_by_fk == g.user.get_id(),
+                    obj_class.online == 1
+                )
+            )
+        query_created = query_created.order_by(obj_class.created_on.desc())
+        if limit > 0:
+            query_created = query_created.limit(limit)
+        rs_created = query_created.all()
+        #
+        query_edited = db.session.query(obj_class) \
+            .filter(obj_class.changed_on > obj_class.created_on)
+        if not all_user:
+            query_edited = query_edited.filter(
+                sqla.or_(
+                    obj_class.changed_by_fk == g.user.get_id(),
+                    obj_class.online == 1
+                )
+            )
+        query_edited = query_edited.order_by(obj_class.changed_on.desc())
+        if limit > 0:
+            query_edited = query_edited.limit(limit)
+        rs_edited = query_edited.all()
+        #
         rows = []
-        for id, name, user, dttm in rs:
-            obj = db.session.query(Slice).filter_by(id=id).first()
-            link = obj.slice_link if obj else None
-            rows.append({'name': name, 'user': user, 'time': str(dttm), 'link': link})
-        return rows
+        if obj_type.lower() == 'slice':
+            if rs_created:
+                for obj in rs_created:
+                    rows.append({'name': obj.slice_name,
+                                 'action': 'create',
+                                 'time': str(obj.created_on),
+                                 'link': obj.slice_url})
+            if rs_edited:
+                for obj in rs_edited:
+                    rows.append({'name': obj.slice_name,
+                                 'action': 'edit',
+                                 'time': str(obj.changed_on),
+                                 'link': obj.slice_url})
+        elif obj_type.lower() == 'dashboard':
+            if rs_created:
+                for obj in rs_created:
+                    rows.append({'name': obj.dashboard_title,
+                                 'action': 'create',
+                                 'time': str(obj.created_on),
+                                 'link': obj.url})
+            if rs_edited:
+                for obj in rs_edited:
+                    rows.append({'name': obj.dashboard_title,
+                                 'action': 'edit',
+                                 'time': str(obj.changed_on),
+                                 'link': obj.url})
+        else:
+            self.status = 400 if str(self.status)[0] < '4' else self.status
+            self.message.append('{}: {} passed to {}'
+                                .format(ERROR_REQUEST_PARAM, obj_type, 'get_edited_object()'))
+        rows = sorted(rows, key=lambda x: x['time'], reverse=True)
+        return rows[0:limit]
+
+    def get_edited_objects(self, types=None, limit=10, all_user=False):
+        dt = {}
+        for type_ in types:
+            dt[type_] = self.get_edited_object(type_, limit=limit, all_user=all_user)
+        return dt
 
     @expose('/edits/')
-    def get_modified_objects(self, types=None, limit=10):
-        url_types = request.args.get('types')
-        url_limit = request.args.get('limit')
-        types = url_types if url_types is not None else types
-        limit = url_limit if url_limit is not None else limit
-
-        dt = {}
-        if 'dashboard' in types:
-            dt['dashboard'] = self.get_modified_dashboards(limit=limit)
-        if 'slice' in types:
-            dt['slice'] = self.get_modified_slices(limit=limit)
-
-        if url_limit is not None:
-            return Response(json.dumps({'edits': dt}))
+    def get_edited_objects_by_url(self):
+        args = request.args
+        if 'limit' in args.keys():
+            limit = request.args.get('limit')
         else:
-            return dt
+            limit = self.default_limit.get('edits')
+        if 'types' in args.keys():
+            types = request.args.get('types')
+        else:
+            types = self.default_types.get('edits')
+
+        if not isinstance(types, list) or len(types) < 1:
+            message_ = '{}: {} '.format(ERROR_REQUEST_PARAM, args)
+            return Response(json.dumps(message_),
+                            status=400,
+                            mimetype='application/json')
+
+        rs = self.get_edited_objects(types=types, limit=int(limit))
+        status_ = self.status
+        message_ = self.message
+        self.status = 201
+        self.message = []
+        if str(self.status)[0] != '2':
+            return Response(json.dumps(message_),
+                            status=status_,
+                            mimetype='application/json')
+        else:
+            return Response(json.dumps({'edits': rs}),
+                            status=status_,
+                            mimetype='application/json')
 
     def get_user_actions(self, types=[], limit=10, all_user=True):
         """The actions of user"""
@@ -3285,18 +3336,11 @@ class Home(BaseSupersetView):
         result = self.get_refered_slices(limit)
         response['refers'] = result
         #
-        # edits_args = request.args.get('edits')
-        # if edits_args:
-        #     edits_args = eval(edits_args)
-        #     types = edits_args['types']
-        #     limit = int(edits_args['limit'])
-        # else:
-        #     types = self.default_types.get('edits')
-        #     limit = self.default_limit.get('edits')
-        # result = self.get_modified_objects(types=types, limit=limit)
-        # response['edits'] = result
-        # #
-
+        types = self.default_types.get('edits')
+        limit = self.default_limit.get('edits')
+        result = self.get_edited_objects(types=types, limit=limit)
+        response['edits'] = result
+        #
         limit = self.default_limit.get('actions')
         types = self.default_types.get('actions')
         result = self.get_user_actions(types=types, limit=limit)

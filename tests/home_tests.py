@@ -61,12 +61,9 @@ class HomeTests(unittest.TestCase):
         response = self.home.get_slice_types()
         print(response)
 
-    def test_get_modified_dashboards(self):
-        response = self.home.get_modified_dashboards()
-        print(response)
-
-    def test_get_modified_slices(self):
-        response = self.home.get_modified_slices()
+    def test_get_edited_objects(self):
+        types = ['dashboard', 'slice']
+        response = self.home.get_edited_objects(types, limit=5, all_user=True)
         print(response)
 
     def test_get_user_actions(self):
