@@ -1069,31 +1069,42 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         )
 
     @classmethod
-    def list_with_fav(cls, present_user=False):
+    def get_dashboard_list(cls):
         """return the dashboards with column 'like' showing if liked by user"""
-        DB = models.Dashboard
-        FS = models.FavStar
-        like_pr = case([(FS.id > 0, True), ], else_=False).label('like')
-        if present_user:
-            query = (
-                db.session.query(DB.id, DB.dashboard_title, like_pr)
-                .outerjoin(FS, sqla.and_(
-                    DB.id == FS.obj_id,
-                    FS.class_name.ilike('dashboard')),
-                    FS.user_id == g.user.get_id()
-                )
-                .all()
+        user_id = g.user.get_id()
+        rs = (
+            db.session.query(models.Dashboard, User.username)
+                .filter(
+                    models.Dashboard.created_by_fk == User.id,
+                    or_(
+                        models.Dashboard.created_by_fk == user_id,
+                        models.Dashboard.online == 1
+                    )
             )
-        else:
-            query = (
-                db.session.query(DB, like_pr)
-                .outerjoin(FS, sqla.and_(
-                    DB.id == FS.obj_id,
-                    FS.class_name.ilike('dashboard'))
+            .all()
+        )
+        rows = []
+        for obj, owner in rs:
+            like_obj = (
+                db.session.query(models.FavStar)
+                .filter(
+                    and_(
+                        models.FavStar.user_id == user_id,
+                        models.FavStar.class_name.ilike('dashboard'))
                 )
-                .all()
+                .first()
             )
-        return query
+            favorite = True if like_obj else False
+            rows.append({
+                'id': obj.id,
+                'title': obj.dashboard_title,
+                'description': obj.description,
+                'release': obj.online,
+                'owner': owner,
+                'time': str(obj.changed_on),
+                'favorite': favorite
+            })
+        return json.dumps(rows)
 
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
@@ -2948,8 +2959,12 @@ class Superset(BaseSupersetView):
 
 
 class Home(BaseSupersetView):
-    """The api for the home page"""
-    # action_types could be: ['release', 'downline', 'add', 'edit', 'delete'...]
+    """The api for the home page
+
+    limit = 0: means not limit
+    default_types['actions'] could be: ['release', 'downline', 'add', 'edit', 'delete'...]
+    """
+
     default_types = {
         'counts': ['dashboard', 'slice', 'table', 'database'],
         'trends': ['dashboard', 'slice', 'table', 'database'],
