@@ -16,19 +16,17 @@ class HomeTests(unittest.TestCase):
         db.session.query(models.Query).delete()
         db.session.commit()
 
-    def test_get_object_count(self):
+    def test_get_object_counts(self):
         types = ['dashboard', 'slice', 'table', 'database']
-        for index, value in enumerate(types):
-            except_ = db.session.query(str_to_model[value]).count()
-            acture_ = self.home.get_object_count(value, all_user=True)
-            self.assertEquals(except_, acture_)
+        response = self.home.get_object_counts(types, 0)
+        print(response)
 
     def test_log_number(self):
         from superset.models import DailyNumber
-        DailyNumber.log_number('slice')
-        # DailyNumber.log_number('dashboard')
-        # DailyNumber.log_number('table')
-        # DailyNumber.log_number('database')
+        DailyNumber.log_number('slice', 1)
+        # DailyNumber.log_number('dashboard', 1)
+        # DailyNumber.log_number('table', 1)
+        # DailyNumber.log_number('database', 1)
 
     def test_get_object_number_trend(self):
         objs = ['slice', 'dashboard', 'table', 'database']
@@ -38,23 +36,19 @@ class HomeTests(unittest.TestCase):
 
     def test_get_object_number_trends(self):
         objs = ['slice', 'dashboard', 'table', 'database']
-        response = self.home.get_object_number_trends(objs)
+        response = self.home.get_object_number_trends(1, objs)
         print(response)
 
     def test_get_fav_dashboards(self):
-        response = self.home.get_fav_dashboards(limit=10)
+        response = self.home.get_fav_dashboards(2, limit=10)
         print(response)
 
     def test_get_fav_slices(self):
-        response = self.home.get_fav_slices(limit=10)
-        print(response)
-
-    def test_get_refered_tables(self):
-        response = self.home.get_refered_tables(limit=5)
+        response = self.home.get_fav_slices(1, limit=10)
         print(response)
 
     def test_get_refered_slices(self):
-        response = self.home.get_refered_slices(limit=5)
+        response = self.home.get_refered_slices(1, limit=5)
         print(response)
 
     def test_get_slice_types(self):
@@ -63,12 +57,12 @@ class HomeTests(unittest.TestCase):
 
     def test_get_edited_objects(self):
         types = ['dashboard', 'slice']
-        response = self.home.get_edited_objects(types, limit=5, all_user=True)
+        response = self.home.get_edited_objects(1, types, limit=5)
         print(response)
 
     def test_get_user_actions(self):
         types = ['release', 'downline']
-        response = self.home.get_user_actions(types=types, limit=5)
+        response = self.home.get_user_actions(1, types=types, limit=10)
         print(response)
 
 
