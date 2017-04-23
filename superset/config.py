@@ -17,7 +17,7 @@ from dateutil import tz
 from flask_appbuilder.security.manager import AUTH_DB
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DATA_DIR = os.path.join(os.path.expanduser('~'), '.superset')
+DATA_DIR = os.path.join(os.path.expanduser('~'), '.pilot')
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
@@ -40,16 +40,15 @@ CUSTOM_SECURITY_MANAGER = None
 # ---------------------------------------------------------
 
 # Your App secret key
-SECRET_KEY = '=== Transwarp Studio Inceptor ==='  # noqa
+SECRET_KEY = '=== Transwarp Studio Pilot ==='  # noqa
 
 # The SQLAlchemy connection string.
-
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(DATA_DIR, 'pilot.db')
 
 # If use mysql, the database should be existed and change its charset to 'utf8':
-# 'alter database db character set utf8'
-# and  'charset=utf8' should be in uri
-#SQLALCHEMY_DATABASE_URI = 'mysql://username:password@lcoalhost:3306/database?charset=utf8'
+# 'create/alter database db character set utf8'
+# and 'charset=utf8' should be in uri
+#SQLALCHEMY_DATABASE_URI = 'mysql://username:password@localhost:3306/db?charset=utf8'
 
 # The limit of queries fetched for query search
 QUERY_SEARCH_LIMIT = 1000
@@ -127,14 +126,14 @@ PUBLIC_ROLE_LIKE_GAMMA = False
 # Babel config for translations
 # ---------------------------------------------------
 # Setup default language
-BABEL_DEFAULT_LOCALE = 'en'
+BABEL_DEFAULT_LOCALE = 'zh'
 # Your application default translation path
 BABEL_DEFAULT_FOLDER = 'babel/translations'
 # The allowed translation for you app
 LANGUAGES = {
     'en': {'flag': 'us', 'name': 'English'},
     # 'fr': {'flag': 'fr', 'name': 'French'},
-    # 'zh': {'flag': 'cn', 'name': 'Chinese'},
+     'zh': {'flag': 'cn', 'name': 'Chinese'},
 }
 # ---------------------------------------------------
 # Image and file configuration
@@ -150,9 +149,9 @@ IMG_UPLOAD_URL = '/static/uploads/'
 # Setup image size default is (300, 200, True)
 # IMG_SIZE = (300, 200, True)
 
-CACHE_DEFAULT_TIMEOUT = 120
+CACHE_DEFAULT_TIMEOUT = 60 * 60
 CACHE_CONFIG = {'CACHE_TYPE': 'filesystem',
-                'CACHE_THRESHOLD': 200,
+                'CACHE_THRESHOLD': 500,
                 'CACHE_DIR': '/tmp/pilot_cache'}
 
 # CORS Options
