@@ -2919,39 +2919,32 @@ class Superset(BaseSupersetView):
     def release_or_downline_dashbaord(self, action, dashboard_id):
         obj = db.session.query(models.Dashboard) \
             .filter_by(id=dashboard_id).first()
-        message = None
-        status = 201
         if not obj:
-            message = OBJECT_NOT_FOUND
-            status = 404
+            flash(OBJECT_NOT_FOUND, 'danger')
         elif obj.created_by_fk != int(g.user.get_id()):
-            message = NO_PERMISSION
-            status = 404
+            flash(NO_PERMISSION + ': {}'.format(obj.dashboard_title), 'danger')
         elif action.lower() == 'release':
             if obj.online is True:
-                message = OBJECT_IS_RELEASED
+                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.dashboard_title), 'warning')
             else:
                 obj.online = True
                 db.session.commit()
-                message = RELEASE_SUCCESS
+                flash(RELEASE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
                 action_str = 'Release dashboard: {}'.format(repr(obj))
                 log_action('release', action_str, 'dashboard', dashboard_id)
         elif action.lower() == 'downline':
             if obj.online is False:
-                message = OBJECT_IS_DOWNLINED
+                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.dashboard_title), 'warning')
             else:
                 obj.online = False
                 db.session.commit()
-                message = DOWNLINE_SUCCESS
+                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
                 action_str = 'Downline dashboard: {}'.format(repr(obj))
                 log_action('downline', action_str, 'dashboard', dashboard_id)
         else:
-            message = ERROR_URL
-            status = 404
-        return Response(
-            json.dumps({'message': message}),
-            status=status,
-            mimetype="application/json")
+            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
+        redirect_url = '/dashboardmodelview/list/'
+        return redirect(redirect_url)
 
     @expose("/slice/<action>/<slice_id>")
     def release_or_downline_slice(self, action, slice_id):
