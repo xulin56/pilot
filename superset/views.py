@@ -909,18 +909,13 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     @expose('/add', methods=['GET', 'POST'])
     @has_access
     def add(self):
-        widget = self._add()
-        if not widget:
-            return redirect(self.get_redirect())
-
-        sources = SourceRegistry.sources
-        for source in sources:
-            ds = db.session.query(SourceRegistry.sources[source]).first()
-            if ds is not None:
-                url = "/{}/list/".format(ds.baselink)
-                msg = _("Click on a {} link to create a Slice".format(source))
-                break
-        redirect_url = "/r/msg/?url={}&msg={}".format(url, msg)
+        table = db.session.query(models.SqlaTable).first()
+        if not table:
+            # TODO modify 'explore(self, datasource_type, datasource_id)'
+            # TODO Not return when the table_id is nonexistent
+            redirect_url = '/superset/explore/table/0'
+        else:
+            redirect_url = table.explore_url
         return redirect(redirect_url)
 
     @classmethod
