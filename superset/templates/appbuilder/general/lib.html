@@ -35,12 +35,8 @@
 
 {% macro render_actions(actions, modelview_name) %}
 {% if actions %}
-<div class="btn-group">
-    <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
-    {{_('Actions')}}<span class="caret"></span>
-    </button>
-    <ul class="dropdown-menu" role="menu">
-    	{% for action_key in actions %}
+<ul class="dropdown-menu" role="menu">
+        {% for action_key in actions %}
             {% set action = actions.get(action_key) %}
                 <li>
                     <a href="javascript:void(0)"
@@ -51,6 +47,11 @@
                 </li>
         {% endfor %}
     </ul>
+<div class="btn-group">
+    <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
+    {{_('Actions')}}<span class="caret"></span>
+    </button>
+    
 </div>
 {% endif %}
 {% endmacro %}
