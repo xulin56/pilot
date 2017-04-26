@@ -42,7 +42,7 @@
                     <a href="javascript:void(0)"
                        onclick="return modelActions.execute_multiple('{{action.name}}','{{action.confirmation}}');">
                         <i class="fa {{action.icon}}"></i>
-                        {{ _(action.text) }}
+                       
                     </a>
                 </li>
         {% endfor %}
@@ -286,8 +286,8 @@
         &nbsp;{{ render_actions(actions, modelview_name) }}
         &nbsp;{{ lnk_back() }}
 
-        <span class="tit-parts f4">
-            <input style="width:200px; height:30px; background:#ddd;" id="search" placeholder="Hover"  />
+        <span class="tit-parts f4 search-input">
+            <input id="search" placeholder="Hover"  />
         </span>
 
 {% endmacro %}
