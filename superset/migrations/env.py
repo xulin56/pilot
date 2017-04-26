@@ -1,11 +1,8 @@
 from __future__ import with_statement
-
-import logging
-from logging.config import fileConfig
-
 from alembic import context
-from flask_appbuilder import Base
 from sqlalchemy import engine_from_config, pool
+from logging.config import fileConfig
+import logging
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -19,10 +16,11 @@ logger = logging.getLogger('alembic.env')
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
 from flask import current_app
 config.set_main_option('sqlalchemy.url',
                        current_app.config.get('SQLALCHEMY_DATABASE_URI'))
-target_metadata = Base.metadata
+target_metadata = current_app.extensions['migrate'].db.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -72,21 +70,10 @@ def run_migrations_online():
                                 poolclass=pool.NullPool)
 
     connection = engine.connect()
-    kwargs = {}
-    if engine.name in ('sqlite', 'mysql'):
-        kwargs = {
-            'transaction_per_migration': True,
-            'transactional_ddl': True,
-        }
-    configure_args = current_app.extensions['migrate'].configure_args
-    if configure_args:
-        kwargs.update(configure_args)
-
     context.configure(connection=connection,
                       target_metadata=target_metadata,
-                      #compare_type=True,
                       process_revision_directives=process_revision_directives,
-                      **kwargs)
+                      **current_app.extensions['migrate'].configure_args)
 
     try:
         with context.begin_transaction():
