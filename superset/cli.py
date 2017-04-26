@@ -114,11 +114,6 @@ def load_examples(load_test_data):
         print("Loading [Unicode test data]")
         data.load_unicode_test_data()
 
-    DailyNumber.log_number('slice')
-    DailyNumber.log_number('dashboard')
-    DailyNumber.log_number('table')
-    DailyNumber.log_number('database')
-
 
 @manager.option(
     '-d', '--datasource',
