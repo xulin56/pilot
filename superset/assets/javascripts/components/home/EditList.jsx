@@ -22,15 +22,9 @@ export default class EditList extends Component {
   */
   constructor(props) {
     super();
-
-    this.state = {
-      current: props.current
-    }
   }
 
-  componentWillMount() {
-    console.log('in componentWillMount:');
-  }
+  componentWillMount() {}
   componentWillUnmount() {}
 
   render() {
@@ -40,7 +34,7 @@ export default class EditList extends Component {
     const listDashboard = tables.dashboard;
     const listSlice = tables.slice;
 
-    const list = (this.state.current === 'dashboard'? listDashboard : listSlice);
+    const list = (this.props.state.edit === 'dashboard'? listDashboard : listSlice);
 
     const children = list.map((edit, key) =>
       <Edit key={key} {...edit} />
