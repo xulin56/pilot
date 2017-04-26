@@ -1038,6 +1038,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'department': _('Department')
     }
 
+    list_template = "appbuilder/superset/list.html"
+
     def pre_add(self, obj):
         if not obj.slug:
             obj.slug = obj.dashboard_title
