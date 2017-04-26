@@ -198,7 +198,7 @@ LOG_LEVEL = 'DEBUG'
 
 ENABLE_TIME_ROTATE = True
 TIME_ROTATE_LOG_LEVEL = 'DEBUG'
-FILENAME = '/home/pilot/log/pilot.log'
+FILENAME = '~/pilot.log'
 ROLLOVER = 'midnight'
 INTERVAL = 1
 BACKUP_COUNT = 30
