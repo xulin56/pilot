@@ -17,7 +17,7 @@ from dateutil import tz
 from flask_appbuilder.security.manager import AUTH_DB
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DATA_DIR = os.path.join(os.path.expanduser('~'), '.pilot')
+DATA_DIR = os.path.join(os.path.expanduser('~'), 'pilot')
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
@@ -30,10 +30,10 @@ with open(PACKAGE_FILE) as package_file:
     VERSION_STRING = json.load(package_file)['version']
 
 ROW_LIMIT = 50000
-SUPERSET_WORKERS = 2
+SUPERSET_WORKERS = 4
 
 SUPERSET_WEBSERVER_ADDRESS = '0.0.0.0'
-SUPERSET_WEBSERVER_PORT = 8088
+SUPERSET_WEBSERVER_PORT = 8086
 SUPERSET_WEBSERVER_TIMEOUT = 60
 
 CUSTOM_SECURITY_MANAGER = None
@@ -196,9 +196,9 @@ LOG_LEVEL = 'DEBUG'
 # ---------------------------------------------------
 # LOG_LEVEL = DEBUG, INFO, WARNING, ERROR, CRITICAL
 
-ENABLE_TIME_ROTATE = False
+ENABLE_TIME_ROTATE = True
 TIME_ROTATE_LOG_LEVEL = 'DEBUG'
-FILENAME = os.path.join(DATA_DIR, 'pilot.log')
+FILENAME = '/home/pilot/log/pilot.log'
 ROLLOVER = 'midnight'
 INTERVAL = 1
 BACKUP_COUNT = 30
