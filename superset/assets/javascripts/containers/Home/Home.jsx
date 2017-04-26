@@ -14,9 +14,9 @@ class Home extends Component { // eslint-disable-line
 
   render() {
 
-    const { param, current, switchLatestEdits } = this.props;
+    const { param, state, switchLatestEdits, switchFavorites } = this.props;
     let counts = param.counts;
-    param.current = current;
+    param.state = state;
 
     return (
       <div>
@@ -76,14 +76,20 @@ class Home extends Component { // eslint-disable-line
             <div className="index-title-module">
               <h3>收藏次数top10</h3>
               <div className="title-tab">
-                <ul>
-                  <li className="current">仪表板</li>
-                  <li>工作表</li>
+                <ul onClick={ () => {
+                    return switchFavorites({
+                      type: 'favorite',
+                      value: state.favorite
+                    })
+                  }}>
+                  <li className={state.favorite==='slice'?'':'current'}>仪表板</li>
+                  <li className={state.favorite==='slice'?'current':''}>工作表</li>
                 </ul>
               </div> 
               <div className="transparent"></div>
             </div>
             <div className="times-barchart" style={{background:'transparent'}}>
+
                 这里是条形图
             </div>
           </div>
@@ -103,11 +109,12 @@ class Home extends Component { // eslint-disable-line
                 <div className="title-tab">
                   <ul onClick={ () => {
                     return switchLatestEdits({
-                      type: current
+                      type: 'edit',
+                      value: state.edit
                     })
                   } }>
-                      <li className={this.props.current==='slice'?'':'current'}>仪表板</li>
-                      <li className={this.props.current==='slice'?'current':''}>工作表</li>
+                      <li className={state.edit==='slice'?'':'current'}>仪表板</li>
+                      <li className={state.edit==='slice'?'current':''}>工作表</li>
                   </ul>
                 </div> 
                 <div className="more">
@@ -157,8 +164,10 @@ class Home extends Component { // eslint-disable-line
 }
 
 Home.propTypes = {
-  current: PropTypes.string.isRequired,
-  param: PropTypes.any.isRequired
+  state: PropTypes.object.isRequired,
+  param: PropTypes.any.isRequired,
+  switchLatestEdits: PropTypes.any.isRequired,
+  switchFavorites: PropTypes.any.isRequired
 }
 
 export default Home;

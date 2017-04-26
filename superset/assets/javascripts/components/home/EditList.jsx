@@ -34,7 +34,7 @@ export default class EditList extends Component {
     const listDashboard = tables.dashboard;
     const listSlice = tables.slice;
 
-    const list = (this.props.current === 'dashboard'? listDashboard : listSlice);
+    const list = (this.props.state.edit === 'dashboard'? listDashboard : listSlice);
 
     const children = list.map((edit, key) =>
       <Edit key={key} {...edit} />

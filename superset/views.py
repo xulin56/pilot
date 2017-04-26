@@ -835,8 +835,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
     list_columns = [
-        'slice_link', 'description', 'online', 'viz_type', 'datasource_link',
-        'department', 'creator', 'modified']
+        'slice_link', 'viz_type', 'datasource_link', 'creator', 'online', 'modified']
     edit_columns = [
         'slice_name', 'description', 'online', 'viz_type', 'department',
         'dashboards',  'params']
@@ -882,6 +881,19 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_name': _("Datasource Name"),
         'datasource_type': _("Datasource Type"),
     }
+    list_template = "appbuilder/superset/list.html"
+
+
+    @expose('/list/')
+    @has_access
+    def list(self):
+        list = self.get_slice_list()
+        widgets = self._list()
+
+        return self.render_template(self.list_template,
+                                    title=self.list_title,
+                                    widgets=widgets)
+    # return list
 
     def pre_update(self, obj):
         check_ownership(obj)
@@ -909,18 +921,13 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     @expose('/add', methods=['GET', 'POST'])
     @has_access
     def add(self):
-        widget = self._add()
-        if not widget:
-            return redirect(self.get_redirect())
-
-        sources = SourceRegistry.sources
-        for source in sources:
-            ds = db.session.query(SourceRegistry.sources[source]).first()
-            if ds is not None:
-                url = "/{}/list/".format(ds.baselink)
-                msg = _("Click on a {} link to create a Slice".format(source))
-                break
-        redirect_url = "/r/msg/?url={}&msg={}".format(url, msg)
+        table = db.session.query(models.SqlaTable).first()
+        if not table:
+            # TODO modify 'explore(self, datasource_type, datasource_id)'
+            # TODO Not return when the table_id is nonexistent
+            redirect_url = '/superset/explore/table/0'
+        else:
+            redirect_url = table.explore_url
         return redirect(redirect_url)
 
     @classmethod
