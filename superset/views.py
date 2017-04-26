@@ -835,8 +835,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
     list_columns = [
-        'slice_link', 'description', 'online', 'viz_type', 'datasource_link',
-        'department', 'creator', 'modified']
+        'slice_link', 'viz_type', 'datasource_link', 'creator', 'online', 'modified']
     edit_columns = [
         'slice_name', 'description', 'online', 'viz_type', 'department',
         'dashboards',  'params']
@@ -882,6 +881,19 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_name': _("Datasource Name"),
         'datasource_type': _("Datasource Type"),
     }
+    list_template = "appbuilder/superset/list.html"
+
+
+    @expose('/list/')
+    @has_access
+    def list(self):
+        list = self.get_slice_list()
+        widgets = self._list()
+
+        return self.render_template(self.list_template,
+                                    title=self.list_title,
+                                    widgets=widgets)
+    # return list
 
     def pre_update(self, obj):
         check_ownership(obj)

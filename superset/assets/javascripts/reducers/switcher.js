@@ -1,12 +1,23 @@
 
-function switcher(state = 'dashboard', action) {
+function switcher(state = {
+	edit: 'dashboard',
+	favorite: 'dashboard'
+}, action) {
+	let local = {};
+	local.edit = state.edit;
+	local.favorite = state.favorite;
+
   switch (action.type) {
-    case 'dashboard':
-      return 'slice';
-    case 'slice':
-      return 'dashboard';
+    case 'edit':
+    	local.edit = (action.value==='dashboard'?'slice':'dashboard');
+    	return local;
+   
+    case 'favorite':
+    	local.favorite = (action.value==='dashboard'?'slice':'dashboard');
+    	return local;
+
     default:
-      return state;
+      return local;
   }
 }
 
