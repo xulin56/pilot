@@ -267,9 +267,11 @@
 {% endmacro %}
 
 {% macro render_list_header(can_add, page, page_size, count, filters, actions, modelview_name) %}
+        <span class="tit-parts f1">
+            工作表
+        </span>
 
-
-        <span>
+        <span class="tit-parts f1">
             <strong>{{ _('Record Count') }}:{{ count }}</strong>
         </span>
 
@@ -282,6 +284,10 @@
         {% endif %}
         &nbsp;{{ render_actions(actions, modelview_name) }}
         &nbsp;{{ lnk_back() }}
+
+        <span class="tit-parts f4">
+            <input style="width:200px; height:30px; background:#ddd;" id="search" placeholder="Hover"  />
+        </span>
 
 {% endmacro %}
 
