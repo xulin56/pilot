@@ -372,11 +372,6 @@ class SupersetModelView(ModelView):
 
     def _query_own_or_online(self, user_id=0, order_column=None,
                              order_direction=None, page=None, page_size=None):
-        page = page if page else self.page
-        page_size = page_size if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-
         query = (
             db.session.query(self.model, User.username)
             .filter(
@@ -974,6 +969,11 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         except Exception:
             order_column, order_direction = None, None
             page, page_size = None, None
+
+        page = page if page else self.page
+        page_size = page_size if page_size else self.page_size
+        order_column = order_column if order_column else self.order_column
+        order_direction = order_direction if order_direction else self.order_direction
 
         count = self._query_count(user_id)
         query = self._query_own_or_online(user_id, order_column, order_direction,
