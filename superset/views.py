@@ -1208,6 +1208,37 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             })
         return json.dumps(rows)
 
+    @expose("/<action>/<dashboard_id>")
+    def release_or_downline_dashbaord(self, action, dashboard_id):
+        obj = db.session.query(models.Dashboard) \
+            .filter_by(id=dashboard_id).first()
+        if not obj:
+            flash(OBJECT_NOT_FOUND, 'danger')
+        elif obj.created_by_fk != int(g.user.get_id()):
+            flash(NO_PERMISSION + ': {}'.format(obj.dashboard_title), 'danger')
+        elif action.lower() == 'release':
+            if obj.online is True:
+                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.dashboard_title), 'warning')
+            else:
+                obj.online = True
+                db.session.commit()
+                flash(RELEASE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
+                action_str = 'Release dashboard: {}'.format(repr(obj))
+                log_action('release', action_str, 'dashboard', dashboard_id)
+        elif action.lower() == 'downline':
+            if obj.online is False:
+                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.dashboard_title), 'warning')
+            else:
+                obj.online = False
+                db.session.commit()
+                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
+                action_str = 'Downline dashboard: {}'.format(repr(obj))
+                log_action('downline', action_str, 'dashboard', dashboard_id)
+        else:
+            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
+        redirect_url = '/dashboardmodelview/list/'
+        return redirect(redirect_url)
+
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
     list_columns = ['dashboard_link', 'creator', 'modified', 'dashboard_title']
@@ -2995,37 +3026,6 @@ class Superset(BaseSupersetView):
             'superset/sqllab.html',
             bootstrap_data=json.dumps(d, default=utils.json_iso_dttm_ser)
         )
-
-    @expose("/dashboard/<action>/<dashboard_id>")
-    def release_or_downline_dashbaord(self, action, dashboard_id):
-        obj = db.session.query(models.Dashboard) \
-            .filter_by(id=dashboard_id).first()
-        if not obj:
-            flash(OBJECT_NOT_FOUND, 'danger')
-        elif obj.created_by_fk != int(g.user.get_id()):
-            flash(NO_PERMISSION + ': {}'.format(obj.dashboard_title), 'danger')
-        elif action.lower() == 'release':
-            if obj.online is True:
-                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.dashboard_title), 'warning')
-            else:
-                obj.online = True
-                db.session.commit()
-                flash(RELEASE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
-                action_str = 'Release dashboard: {}'.format(repr(obj))
-                log_action('release', action_str, 'dashboard', dashboard_id)
-        elif action.lower() == 'downline':
-            if obj.online is False:
-                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.dashboard_title), 'warning')
-            else:
-                obj.online = False
-                db.session.commit()
-                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
-                action_str = 'Downline dashboard: {}'.format(repr(obj))
-                log_action('downline', action_str, 'dashboard', dashboard_id)
-        else:
-            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
-        redirect_url = '/dashboardmodelview/list/'
-        return redirect(redirect_url)
 
 
 class Home(BaseSupersetView):
