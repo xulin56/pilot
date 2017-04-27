@@ -918,19 +918,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_name': _("Datasource Name"),
         'datasource_type': _("Datasource Type"),
     }
-    list_template = "appbuilder/superset/list.html"
-
-
-    @expose('/list/')
-    @has_access
-    def list(self):
-        list = self.get_slice_list()
-        widgets = self._list()
-
-        return self.render_template(self.list_template,
-                                    title=self.list_title,
-                                    widgets=widgets)
-    # return list
+    list_template = "superset/list.html"
 
     def pre_update(self, obj):
         check_ownership(obj)
@@ -968,6 +956,16 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return redirect(redirect_url)
 
     @expose('/list/')
+    @has_access
+    def list(self):
+        list = self.get_slice_list()
+        widgets = self._list()
+
+
+        return self.render_template(self.list_template,
+                                    title=self.list_title,
+                                    widgets=widgets)
+
     def get_slice_list(self):
         """return the slices with column 'favorite' and 'online'r
         /list/?order_column=id&order_direction=desc&page=0&page_size=10
@@ -1118,6 +1116,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'description': _("Description"),
         'department': _('Department')
     }
+
+    list_template = "superset/list.html"
 
     def pre_add(self, obj):
         if not obj.slug:
