@@ -70,6 +70,7 @@
 
     {% block end_content scoped %}
         </table>
+            {{ lib.render_pagination(page, page_size, count, modelview_name) }}
         </div>
     {% endblock %}
 

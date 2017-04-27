@@ -26,7 +26,7 @@ app.config.from_object(CONFIG_MODULE)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 conf = app.config
 
-if not app.debug:
+if app.debug:
     # In production mode, add log handler to sys.stderr.
     app.logger.addHandler(logging.StreamHandler())
     app.logger.setLevel(logging.INFO)
@@ -45,11 +45,12 @@ logging.basicConfig(format=app.config.get('LOG_FORMAT'))
 logging.getLogger().setLevel(app.config.get('LOG_LEVEL'))
 
 if app.config.get('ENABLE_TIME_ROTATE'):
-    logging.getLogger().setLevel(app.config.get('TIME_ROTATE_LOG_LEVEL'))
     handler = TimedRotatingFileHandler(app.config.get('FILENAME'),
                                        when=app.config.get('ROLLOVER'),
                                        interval=app.config.get('INTERVAL'),
                                        backupCount=app.config.get('BACKUP_COUNT'))
+    handler.setFormatter(logging.Formatter(app.config.get('LOG_FORMAT')))
+    handler.setLevel(app.config.get('LOG_LEVEL'))
     logging.getLogger().addHandler(handler)
 
 if app.config.get('ENABLE_CORS'):
