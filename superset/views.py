@@ -918,7 +918,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_name': _("Datasource Name"),
         'datasource_type': _("Datasource Type"),
     }
-    list_template = "appbuilder/superset/list.html"
+    list_template = "superset/list.html"
 
     def pre_update(self, obj):
         check_ownership(obj)
@@ -1117,7 +1117,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'department': _('Department')
     }
 
-    list_template = "appbuilder/superset/list.html"
+    list_template = "superset/list.html"
 
     def pre_add(self, obj):
         if not obj.slug:

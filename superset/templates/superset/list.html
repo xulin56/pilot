@@ -17,12 +17,10 @@
     {% endblock %}
 {{ lib.panel_end() }}
 
+{% set VERSION_STRING = appbuilder.get_app.config.get("VERSION_STRING") %}
+<script src="/static/assets/dist/list.{{VERSION_STRING}}.entry.js"></script>
 {% endblock %}
 
-{% block search_js %}
-    {{ super() }}
-    {% with filename="list" %}
-        {% include "superset/partials/_script_tag.html" %}
-    {% endwith %}
-{% endblock %}
+
+
 
