@@ -35,7 +35,7 @@
         {% endfor %}
 
         {% if can_show or can_edit or can_delete %}
-            <th class="col-md-1 col-lg-1 col-sm-1" ></th>
+            <th class="hhhhh col-md-1 col-lg-1 col-sm-1" ></th>
         {% endif %}
         
         </tr>
@@ -59,7 +59,7 @@
                 {% endfor %}
 
                 {% if can_show or can_edit or can_delete %}
-                    <td><center>
+                    <td class="ssssss"><center>
                     {{ lib.btn_crud(can_show, can_edit, can_delete, pk, modelview_name, filters) }}
                     </center></td>
                 {% endif %}

@@ -372,11 +372,6 @@ class SupersetModelView(ModelView):
 
     def _query_own_or_online(self, user_id=0, order_column=None,
                              order_direction=None, page=None, page_size=None):
-        page = page if page else self.page
-        page_size = page_size if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-
         query = (
             db.session.query(self.model, User.username)
             .filter(
@@ -923,7 +918,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_name': _("Datasource Name"),
         'datasource_type': _("Datasource Type"),
     }
-    list_template = "appbuilder/superset/list.html"
+    list_template = "superset/list.html"
 
     def pre_update(self, obj):
         check_ownership(obj)
@@ -985,6 +980,11 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             order_column, order_direction = None, None
             page, page_size = None, None
 
+        page = page if page else self.page
+        page_size = page_size if page_size else self.page_size
+        order_column = order_column if order_column else self.order_column
+        order_direction = order_direction if order_direction else self.order_direction
+
         count = self._query_count(user_id)
         query = self._query_own_or_online(user_id, order_column, order_direction,
                                     page, page_size)
@@ -1018,7 +1018,38 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         response['page_size'] = page_size
         response['data'] = data
         return json.dumps(response)
-    
+
+    @expose("/<action>/<slice_id>")
+    def release_or_downline_slice(self, action, slice_id):
+        obj = db.session.query(models.Slice) \
+            .filter_by(id=slice_id).first()
+        if not obj:
+            flash(OBJECT_NOT_FOUND, 'danger')
+        elif obj.created_by_fk != int(g.user.get_id()):
+            flash(NO_PERMISSION + ': {}'.format(obj.slice_name), 'danger')
+        elif action.lower() == 'release':
+            if obj.online is True:
+                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.slice_name), 'warning')
+            else:
+                obj.online = True
+                db.session.commit()
+                flash(RELEASE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
+                action_str = 'Release slice: {}'.format(repr(obj))
+                log_action('release', action_str, 'slice', slice_id)
+        elif action.lower() == 'downline':
+            if obj.online is False:
+                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.slice_name), 'warning')
+            else:
+                obj.online = False
+                db.session.commit()
+                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
+                action_str = 'Downline slice: {}'.format(repr(obj))
+                log_action('downline', action_str, 'slice', slice_id)
+        else:
+            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
+        redirect_url = '/slicemodelview/list/'
+        return redirect(redirect_url)
+
 
 class SliceAsync(SliceModelView):  # noqa
     list_columns = [
@@ -1086,7 +1117,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'department': _('Department')
     }
 
-    list_template = "appbuilder/superset/list.html"
+    list_template = "superset/list.html"
 
     def pre_add(self, obj):
         if not obj.slug:
@@ -1188,6 +1219,37 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                 'favorite': favorite
             })
         return json.dumps(rows)
+
+    @expose("/<action>/<dashboard_id>")
+    def release_or_downline_dashbaord(self, action, dashboard_id):
+        obj = db.session.query(models.Dashboard) \
+            .filter_by(id=dashboard_id).first()
+        if not obj:
+            flash(OBJECT_NOT_FOUND, 'danger')
+        elif obj.created_by_fk != int(g.user.get_id()):
+            flash(NO_PERMISSION + ': {}'.format(obj.dashboard_title), 'danger')
+        elif action.lower() == 'release':
+            if obj.online is True:
+                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.dashboard_title), 'warning')
+            else:
+                obj.online = True
+                db.session.commit()
+                flash(RELEASE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
+                action_str = 'Release dashboard: {}'.format(repr(obj))
+                log_action('release', action_str, 'dashboard', dashboard_id)
+        elif action.lower() == 'downline':
+            if obj.online is False:
+                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.dashboard_title), 'warning')
+            else:
+                obj.online = False
+                db.session.commit()
+                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
+                action_str = 'Downline dashboard: {}'.format(repr(obj))
+                log_action('downline', action_str, 'dashboard', dashboard_id)
+        else:
+            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
+        redirect_url = '/dashboardmodelview/list/'
+        return redirect(redirect_url)
 
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
@@ -2976,68 +3038,6 @@ class Superset(BaseSupersetView):
             'superset/sqllab.html',
             bootstrap_data=json.dumps(d, default=utils.json_iso_dttm_ser)
         )
-
-    @expose("/dashboard/<action>/<dashboard_id>")
-    def release_or_downline_dashbaord(self, action, dashboard_id):
-        obj = db.session.query(models.Dashboard) \
-            .filter_by(id=dashboard_id).first()
-        if not obj:
-            flash(OBJECT_NOT_FOUND, 'danger')
-        elif obj.created_by_fk != int(g.user.get_id()):
-            flash(NO_PERMISSION + ': {}'.format(obj.dashboard_title), 'danger')
-        elif action.lower() == 'release':
-            if obj.online is True:
-                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.dashboard_title), 'warning')
-            else:
-                obj.online = True
-                db.session.commit()
-                flash(RELEASE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
-                action_str = 'Release dashboard: {}'.format(repr(obj))
-                log_action('release', action_str, 'dashboard', dashboard_id)
-        elif action.lower() == 'downline':
-            if obj.online is False:
-                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.dashboard_title), 'warning')
-            else:
-                obj.online = False
-                db.session.commit()
-                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
-                action_str = 'Downline dashboard: {}'.format(repr(obj))
-                log_action('downline', action_str, 'dashboard', dashboard_id)
-        else:
-            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
-        redirect_url = '/dashboardmodelview/list/'
-        return redirect(redirect_url)
-
-    @expose("/slice/<action>/<slice_id>")
-    def release_or_downline_slice(self, action, slice_id):
-        obj = db.session.query(models.Slice) \
-            .filter_by(id=slice_id).first()
-        if not obj:
-            flash(OBJECT_NOT_FOUND, 'danger')
-        elif obj.created_by_fk != int(g.user.get_id()):
-            flash(NO_PERMISSION + ': {}'.format(obj.slice_name), 'danger')
-        elif action.lower() == 'release':
-            if obj.online is True:
-                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.slice_name), 'warning')
-            else:
-                obj.online = True
-                db.session.commit()
-                flash(RELEASE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
-                action_str = 'Release slice: {}'.format(repr(obj))
-                log_action('release', action_str, 'slice', slice_id)
-        elif action.lower() == 'downline':
-            if obj.online is False:
-                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.slice_name), 'warning')
-            else:
-                obj.online = False
-                db.session.commit()
-                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
-                action_str = 'Downline slice: {}'.format(repr(obj))
-                log_action('downline', action_str, 'slice', slice_id)
-        else:
-            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
-        redirect_url = '/slicemodelview/list/'
-        return redirect(redirect_url)
 
 
 class Home(BaseSupersetView):
