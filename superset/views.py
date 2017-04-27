@@ -356,7 +356,48 @@ class DeleteMixin(object):
 
 
 class SupersetModelView(ModelView):
-    page_size = 500
+    page = 0
+    page_size = 10
+    order_column = 'changed_on'
+    order_direction = 'desc'
+
+    def _query_count(self, user_id=0):
+        return (db.session.query(self.model)
+                .filter(
+                    or_(
+                        self.model.created_by_fk == user_id,
+                        self.model.online == 1)
+                )
+                ).count()
+
+    def _query_own_or_online(self, user_id=0, order_column=None,
+                             order_direction=None, page=None, page_size=None):
+        page = page if page else self.page
+        page_size = page_size if page_size else self.page_size
+        order_column = order_column if order_column else self.order_column
+        order_direction = order_direction if order_direction else self.order_direction
+
+        query = (
+            db.session.query(self.model, User.username)
+            .filter(
+            self.model.created_by_fk == User.id,
+                or_(
+                    self.model.created_by_fk == user_id,
+                    self.model.online == 1)
+            )
+        )
+        if order_column and hasattr(self.model, order_column):
+            order_column = getattr(self.model, order_column)
+            if order_direction == 'desc':
+                query = query.order_by(order_column.desc())
+            else:
+                query = query.order_by(order_column)
+
+        if page:
+            query = query.offset(page * page_size)
+        if page_size:
+            query = query.limit(page_size)
+        return query
 
 
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
@@ -827,6 +868,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 
 
 class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
+    model = models.Slice
     datamodel = SQLAInterface(models.Slice)
     list_title = _("List Slice")
     show_title = _("Show Slice")
@@ -930,23 +972,26 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             redirect_url = table.explore_url
         return redirect(redirect_url)
 
-    @classmethod
-    def get_slice_list(cls):
-        """return the slices with column 'favorite' and 'online'r"""
-        user_id = g.user.get_id()
-        rs = (
-            db.session.query(models.Slice, User.username)
-            .filter(
-                models.Slice.created_by_fk == User.id,
-                or_(
-                    models.Slice.created_by_fk == user_id,
-                    models.Slice.online == 1
-                )
-            )
-            .order_by(models.Slice.changed_on.desc())
-            .all()
-        )
-        rows = []
+    @expose('/list/')
+    def get_slice_list(self):
+        """return the slices with column 'favorite' and 'online'r
+        /list/?order_column=id&order_direction=desc&page=0&page_size=10
+        """
+        user_id = int(g.user.get_id())
+        try:
+            order_column = request.args.get('order_column')
+            order_direction = request.args.get('order_direction')
+            page = request.args.get('page')
+            page_size = request.args.get('page_size')
+        except Exception:
+            order_column, order_direction = None, None
+            page, page_size = None, None
+
+        count = self._query_count(user_id)
+        query = self._query_own_or_online(user_id, order_column, order_direction,
+                                    page, page_size)
+        rs = query.all()
+        data = []
         for obj, owner in rs:
             like_obj = (
                 db.session.query(models.FavStar)
@@ -958,10 +1003,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                 .first()
             )
             favorite = True if like_obj else False
-            rows.append({
+            data.append({
                 'id': obj.id,
-                'title': obj.slice_name,
-                'description': obj.description,
+                'title': '<p>{}</p><p>{}</p>'.format(obj.slice_name, obj.description),
                 'viz_type': obj.viz_type,
                 'table': obj.datasource_name,
                 'release': obj.online,
@@ -969,7 +1013,13 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                 'time': str(obj.changed_on),
                 'favorite': favorite
             })
-        return json.dumps(rows)
+
+        response = {}
+        response['count'] = count
+        response['page'] = page
+        response['page_size'] = page_size
+        response['data'] = data
+        return json.dumps(response)
     
 
 class SliceAsync(SliceModelView):  # noqa
