@@ -1008,7 +1008,38 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         response['page_size'] = page_size
         response['data'] = data
         return json.dumps(response)
-    
+
+    @expose("/<action>/<slice_id>")
+    def release_or_downline_slice(self, action, slice_id):
+        obj = db.session.query(models.Slice) \
+            .filter_by(id=slice_id).first()
+        if not obj:
+            flash(OBJECT_NOT_FOUND, 'danger')
+        elif obj.created_by_fk != int(g.user.get_id()):
+            flash(NO_PERMISSION + ': {}'.format(obj.slice_name), 'danger')
+        elif action.lower() == 'release':
+            if obj.online is True:
+                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.slice_name), 'warning')
+            else:
+                obj.online = True
+                db.session.commit()
+                flash(RELEASE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
+                action_str = 'Release slice: {}'.format(repr(obj))
+                log_action('release', action_str, 'slice', slice_id)
+        elif action.lower() == 'downline':
+            if obj.online is False:
+                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.slice_name), 'warning')
+            else:
+                obj.online = False
+                db.session.commit()
+                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
+                action_str = 'Downline slice: {}'.format(repr(obj))
+                log_action('downline', action_str, 'slice', slice_id)
+        else:
+            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
+        redirect_url = '/slicemodelview/list/'
+        return redirect(redirect_url)
+
 
 class SliceAsync(SliceModelView):  # noqa
     list_columns = [
@@ -2994,37 +3025,6 @@ class Superset(BaseSupersetView):
         else:
             flash(ERROR_URL + ': {}'.format(request.url), 'danger')
         redirect_url = '/dashboardmodelview/list/'
-        return redirect(redirect_url)
-
-    @expose("/slice/<action>/<slice_id>")
-    def release_or_downline_slice(self, action, slice_id):
-        obj = db.session.query(models.Slice) \
-            .filter_by(id=slice_id).first()
-        if not obj:
-            flash(OBJECT_NOT_FOUND, 'danger')
-        elif obj.created_by_fk != int(g.user.get_id()):
-            flash(NO_PERMISSION + ': {}'.format(obj.slice_name), 'danger')
-        elif action.lower() == 'release':
-            if obj.online is True:
-                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.slice_name), 'warning')
-            else:
-                obj.online = True
-                db.session.commit()
-                flash(RELEASE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
-                action_str = 'Release slice: {}'.format(repr(obj))
-                log_action('release', action_str, 'slice', slice_id)
-        elif action.lower() == 'downline':
-            if obj.online is False:
-                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.slice_name), 'warning')
-            else:
-                obj.online = False
-                db.session.commit()
-                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
-                action_str = 'Downline slice: {}'.format(repr(obj))
-                log_action('downline', action_str, 'slice', slice_id)
-        else:
-            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
-        redirect_url = '/slicemodelview/list/'
         return redirect(redirect_url)
 
 
