@@ -194,7 +194,7 @@ LOG_LEVEL = 'DEBUG'
 # Enable Time Rotate Log Handler
 # ---------------------------------------------------
 # LOG_LEVEL = DEBUG, INFO, WARNING, ERROR, CRITICAL
-ENABLE_TIME_ROTATE = True
+ENABLE_TIME_ROTATE = False
 TIME_ROTATE_LOG_LEVEL = 'DEBUG'
 FILENAME = '/var/log/pilot/pilot.log'
 ROLLOVER = 'midnight'

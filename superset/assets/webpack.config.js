@@ -14,6 +14,7 @@ const config = {
   entry: {
     'css-theme': APP_DIR + '/javascripts/css-theme.js',
     home: ['babel-polyfill', APP_DIR + '/javascripts/home.js'],
+    list: ['babel-polyfill', APP_DIR + '/javascripts/list.js'],
 
     common: APP_DIR + '/javascripts/common.js',
     dashboard: ['babel-polyfill', APP_DIR + '/javascripts/dashboard/Dashboard.jsx'],

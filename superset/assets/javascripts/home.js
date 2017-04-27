@@ -16,7 +16,6 @@ const _ = require('lodash');
 /* eslint no-unused-vars: 0 */
 // const jQuery = window.jQuery = $;
 
-
 const store = createStore(switcher);
 
 $(function () {

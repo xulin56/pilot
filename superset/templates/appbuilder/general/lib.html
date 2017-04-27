@@ -54,7 +54,29 @@
 </div>
 {% endif %}
 {% endmacro %}
+{% macro render_actions2(actions, modelview_name) %}
+{% if actions %}
+<div class="btn-group">
+    <!--<button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">-->
+        <!--{{_('Actions')}}<span class="caret"></span>-->
+    <!--</button>-->
+    <!--<ul class="dropdown-menu" role="menu">-->
+        <!--{% for action_key in actions %}-->
+        <!--{% set action = actions.get(action_key) %}-->
+        <!--<li>-->
+            <!--<a href="javascript:void(0)"-->
+               <!--onclick="return modelActions.execute_multiple('{{action.name}}','{{action.confirmation}}');">-->
+                <!--<i class="fa {{action.icon}}"></i>-->
+                <!--{{ _(action.text) }}-->
+            <!--</a>-->
+        <!--</li>-->
+        <!--{% endfor %}-->
+    <!--</ul>-->
 
+    <a href="javascript:void(0)" onclick="return modelActions.execute_multiple('delete');">删除</a>
+</div>
+{% endif %}
+{% endmacro %}
 
 {% macro render_set_page_size(page, page_size, count, modelview_name) %}
 {% if not page %} {% set page = 0 %} {% endif %}
@@ -113,7 +135,7 @@
     {% if pages > 1 %}
     <ul class="pagination pagination-sm" style="display:inherit;">
 
-        {% set init_page = 0 %}  
+        {% set init_page = 0 %}
         {% set min = page - 3 %}
         {% set max = page + 3 + 1 %}
 
@@ -227,9 +249,9 @@
 
 {% macro panel_begin(title) %}
 <div class="panel panel-primary">
-	<div class="panel-heading">
-	<h4 class="panel-title">{{title}}</h4>
-	</div>
+	<!--<div class="panel-heading">-->
+	<!--<h4 class="panel-title">{{title}}</h4>-->
+	<!--</div>-->
 {% endmacro %}
 {% macro panel_end() %}
 </div>
@@ -267,22 +289,34 @@
 {% endmacro %}
 
 {% macro render_list_header(can_add, page, page_size, count, filters, actions, modelview_name) %}
+    <span class="tit-parts f1">
+        工作表
+    </span>
+&nbsp;
+    <span class="tit-parts f1">
+        <strong>{{ _('Record Count') }}:{{ count }}</strong>
+    </span>
 
-
-        <span>
-            <strong>{{ _('Record Count') }}:{{ count }}</strong>
+    <div class="btns">
+        {{ render_set_page_size(page, page_size, count, modelview_name) }}
+        {% if can_add %}
+            {% set path = url_for(modelview_name + '.add') %}
+            {% set path = path | set_link_filters(filters) %}
+            &nbsp;{{ lnk_add(path) }}
+        {% endif %}
+        &nbsp;
+        {{ render_actions2(actions, modelview_name) }}
+        <span class="tit-parts f3">
+            <button id="all">全部</button>
+            <button id="favo">收藏</button>
         </span>
 
-        {{ render_pagination(page, page_size, count, modelview_name) }}
-        {{ render_set_page_size(page, page_size, count, modelview_name) }}
-    	{% if can_add %}
-		    {% set path = url_for(modelview_name + '.add') %}
-			{% set path = path | set_link_filters(filters) %}
-			&nbsp;{{ lnk_add(path) }}
-        {% endif %}
-        &nbsp;{{ render_actions(actions, modelview_name) }}
         &nbsp;{{ lnk_back() }}
 
+        <span class="tit-parts f4">
+            <input style="width:200px; height:30px; background:#ddd;" id="search" placeholder="Hover"  />
+        </span>
+    </div>
 {% endmacro %}
 
 {% macro btn_crud(can_show, can_edit, can_delete, pk, modelview_name, filters) %}
