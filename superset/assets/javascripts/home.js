@@ -96,11 +96,13 @@ $(function () {
       render(
         <Home
           param = {param}
-          current = {store.getState()}
+          state = {store.getState()}
           switchLatestEdits = {(action) => {
             store.dispatch(action);
-            console.log('fuck:', store.getState());
-          } }
+          }}
+          switchFavorites = {(action) => {
+            store.dispatch(action);
+          }}
         />, document.querySelector('#home'));
     }
 

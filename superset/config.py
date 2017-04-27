@@ -132,7 +132,6 @@ BABEL_DEFAULT_FOLDER = 'babel/translations'
 # The allowed translation for you app
 LANGUAGES = {
     'en': {'flag': 'us', 'name': 'English'},
-    # 'fr': {'flag': 'fr', 'name': 'French'},
      'zh': {'flag': 'cn', 'name': 'Chinese'},
 }
 # ---------------------------------------------------
@@ -195,7 +194,6 @@ LOG_LEVEL = 'DEBUG'
 # Enable Time Rotate Log Handler
 # ---------------------------------------------------
 # LOG_LEVEL = DEBUG, INFO, WARNING, ERROR, CRITICAL
-
 ENABLE_TIME_ROTATE = True
 TIME_ROTATE_LOG_LEVEL = 'DEBUG'
 FILENAME = '/var/log/pilot/pilot.log'
