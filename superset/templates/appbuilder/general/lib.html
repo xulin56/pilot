@@ -281,7 +281,7 @@
 {% endmacro %}
 
 {% macro render_form_controls() %}
-    <div class="well well-sm">
+    <div class="well well-sm well-title clearfix fuckyou">
         <button type="submit" class="btn  btn-sm btn-primary">{{_("Save")}}
             <i class="fa fa-save"></i></button>
         {{ lnk_back() }}
@@ -306,8 +306,8 @@
         {% endif %}
         &nbsp;
         {{ render_actions2(actions, modelview_name) }}
-        <span class="tit-parts f3">
-            <button id="all">全部</button>
+        <span class="tit-parts f3 all-and-collect">
+            <button class="active" id="all">全部</button>
             <button id="favo">收藏</button>
         </span>
 
