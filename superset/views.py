@@ -116,15 +116,15 @@ ACCESS_REQUEST_MISSING_ERR = __(
 USER_MISSING_ERR = __("The user seems to have been deleted")
 DATASOURCE_ACCESS_ERR = __("You don't have access to this datasource")
 OBJECT_NOT_FOUND = __("Not found this object")
-RELEASE_SUCCESS = __("Release success")
-DOWNLINE_SUCCESS = __("Downline success")
-OBJECT_IS_RELEASED = __("This object has been released")
-OBJECT_IS_DOWNLINED = __("This object has been downlined")
+ONLINE_SUCCESS = __("Change to online success")
+OFFLINE_SUCCESS = __("Change to offline success")
+OBJECT_IS_ONLINE= __("This object is already online")
+OBJECT_IS_OFFLINE = __("This object is already offline")
 ERROR_URL = __("Error request url")
 ERROR_REQUEST_PARAM = __("Error request parameter")
 ERROR_CLASS_TYPE = __("Error model type")
 NO_USER = __("Can't get user")
-NO_PERMISSION = __("No permission for 'release' and 'downline'")
+NO_PERMISSION = __("No permission for 'online' and 'offline'")
 
 
 def get_database_access_error_msg(database_name):
@@ -1005,7 +1005,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                 'title': '<p>{}</p><p>{}</p>'.format(obj.slice_name, obj.description),
                 'viz_type': obj.viz_type,
                 'table': obj.datasource_name,
-                'release': obj.online,
+                'online': obj.online,
                 'owner': owner,
                 'time': str(obj.changed_on),
                 'favorite': favorite
@@ -1019,31 +1019,31 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return json.dumps(response)
 
     @expose("/<action>/<slice_id>")
-    def release_or_downline_slice(self, action, slice_id):
+    def slice_online_or_offline(self, action, slice_id):
         obj = db.session.query(models.Slice) \
             .filter_by(id=slice_id).first()
         if not obj:
             flash(OBJECT_NOT_FOUND, 'danger')
         elif obj.created_by_fk != int(g.user.get_id()):
             flash(NO_PERMISSION + ': {}'.format(obj.slice_name), 'danger')
-        elif action.lower() == 'release':
+        elif action.lower() == 'online':
             if obj.online is True:
-                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.slice_name), 'warning')
+                flash(OBJECT_IS_ONLINE + ': {}'.format(obj.slice_name), 'warning')
             else:
                 obj.online = True
                 db.session.commit()
-                flash(RELEASE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
-                action_str = 'Release slice: {}'.format(repr(obj))
-                log_action('release', action_str, 'slice', slice_id)
-        elif action.lower() == 'downline':
+                flash(ONLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
+                action_str = 'Change slice to online: {}'.format(repr(obj))
+                log_action('online', action_str, 'slice', slice_id)
+        elif action.lower() == 'offline':
             if obj.online is False:
-                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.slice_name), 'warning')
+                flash(OBJECT_IS_OFFLINE + ': {}'.format(obj.slice_name), 'warning')
             else:
                 obj.online = False
                 db.session.commit()
-                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
-                action_str = 'Downline slice: {}'.format(repr(obj))
-                log_action('downline', action_str, 'slice', slice_id)
+                flash(OFFLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
+                action_str = 'Change slice to offline: {}'.format(repr(obj))
+                log_action('offline', action_str, 'slice', slice_id)
         else:
             flash(ERROR_URL + ': {}'.format(request.url), 'danger')
         redirect_url = '/slicemodelview/list/'
@@ -1228,7 +1228,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             data.append({
                 'id': obj.id,
                 'title': '<p>{}</p><p>{}</p>'.format(obj.dashboard_title, obj.description),
-                'release': obj.online,
+                'online': obj.online,
                 'owner': owner,
                 'time': str(obj.changed_on),
                 'favorite': favorite
@@ -1241,30 +1241,30 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         return json.dumps(response)
 
     @expose("/<action>/<dashboard_id>")
-    def release_or_downline_dashbaord(self, action, dashboard_id):
+    def dashbaord_online_or_offline(self, action, dashboard_id):
         obj = db.session.query(models.Dashboard) \
             .filter_by(id=dashboard_id).first()
         if not obj:
             flash(OBJECT_NOT_FOUND, 'danger')
         elif obj.created_by_fk != int(g.user.get_id()):
             flash(NO_PERMISSION + ': {}'.format(obj.dashboard_title), 'danger')
-        elif action.lower() == 'release':
+        elif action.lower() == 'online':
             if obj.online is True:
-                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.dashboard_title), 'warning')
+                flash(OBJECT_IS_ONLINE + ': {}'.format(obj.dashboard_title), 'warning')
             else:
                 obj.online = True
                 db.session.commit()
-                flash(RELEASE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
-                action_str = 'Release dashboard: {}'.format(repr(obj))
-                log_action('release', action_str, 'dashboard', dashboard_id)
-        elif action.lower() == 'downline':
+                flash(ONLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
+                action_str = 'Change dashboard to online: {}'.format(repr(obj))
+                log_action('online', action_str, 'dashboard', dashboard_id)
+        elif action.lower() == 'offline':
             if obj.online is False:
-                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.dashboard_title), 'warning')
+                flash(OBJECT_IS_OFFLINE + ': {}'.format(obj.dashboard_title), 'warning')
             else:
                 obj.online = False
                 db.session.commit()
-                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
-                action_str = 'Downline dashboard: {}'.format(repr(obj))
+                flash(OFFLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
+                action_str = 'Change dashboard to offline: {}'.format(repr(obj))
                 log_action('downline', action_str, 'dashboard', dashboard_id)
         else:
             flash(ERROR_URL + ': {}'.format(request.url), 'danger')
@@ -3064,7 +3064,7 @@ class Home(BaseSupersetView):
     """The api for the home page
 
     limit = 0: means not limit
-    default_types['actions'] could be: ['release', 'downline', 'add', 'edit', 'delete'...]
+    default_types['actions'] could be: ['online', 'offline', 'add', 'edit', 'delete'...]
     """
 
     default_types = {
@@ -3072,7 +3072,7 @@ class Home(BaseSupersetView):
         'trends': ['dashboard', 'slice', 'table', 'database'],
         'favorits': ['dashboard', 'slice'],
         'edits': ['dashboard', 'slice'],
-        'actions': ['release', 'downline']
+        'actions': ['online', 'offline']
     }
     default_limit = {
         'trends': 30,
