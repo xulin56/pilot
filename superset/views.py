@@ -920,17 +920,32 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     }
     list_template = "appbuilder/superset/list.html"
 
-
     @expose('/list/')
     @has_access
     def list(self):
-        list = self.get_slice_list()
-        widgets = self._list()
+        """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
+        user_id = int(g.user.get_id())
+        try:
+            order_column = request.args.get('order_column')
+            order_direction = request.args.get('order_direction')
+            page = request.args.get('page')
+            page_size = request.args.get('page_size')
+        except Exception:
+            order_column, order_direction = None, None
+            page, page_size = None, None
 
+        page = page if page else self.page
+        page_size = page_size if page_size else self.page_size
+        order_column = order_column if order_column else self.order_column
+        order_direction = order_direction if order_direction else self.order_direction
+
+        list = self.get_slice_list(user_id, order_column, order_direction,
+                                   page, page_size)
+        widgets = {}
+        widgets['list'] = list
         return self.render_template(self.list_template,
                                     title=self.list_title,
                                     widgets=widgets)
-    # return list
 
     def pre_update(self, obj):
         check_ownership(obj)
@@ -967,29 +982,12 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             redirect_url = table.explore_url
         return redirect(redirect_url)
 
-    @expose('/list/')
-    def get_slice_list(self):
-        """return the slices with column 'favorite' and 'online'r
-        /list/?order_column=id&order_direction=desc&page=0&page_size=10
-        """
-        user_id = int(g.user.get_id())
-        try:
-            order_column = request.args.get('order_column')
-            order_direction = request.args.get('order_direction')
-            page = request.args.get('page')
-            page_size = request.args.get('page_size')
-        except Exception:
-            order_column, order_direction = None, None
-            page, page_size = None, None
-
-        page = page if page else self.page
-        page_size = page_size if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-
+    def get_slice_list(self, user_id, order_column, order_direction,
+                       page, page_size):
+        """ Return the slices with column 'favorite' and 'online' """
         count = self._query_count(user_id)
         query = self._query_own_or_online(user_id, order_column, order_direction,
-                                    page, page_size)
+                                          page, page_size)
         rs = query.all()
         data = []
         for obj, owner in rs:
