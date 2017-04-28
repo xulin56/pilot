@@ -3,6 +3,20 @@ import { render } from 'react-dom';
 import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
 import thunk from 'redux-thunk';
-import { operate } from './components/Slice';
 
 
+import { Operate } from './components/Slice';
+const $ = window.$ = require('jquery');
+$(function(){
+    let url = '/slicemodelview/listJson/';
+//    const $all = $('#j_all');
+//    const $fav = $('#j_fav')
+//    const $search = $('#j_search');
+
+    $.getJSON(url, function (response) {
+
+        let table = render( <Operate {...response.data}  />, document.querySelector('.table-responsive') );
+
+    });
+
+});
