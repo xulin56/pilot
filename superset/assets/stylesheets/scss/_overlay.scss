@@ -1,5 +1,9 @@
 
 /*xulin css*/
+$borderStyle:1px solid #e9eaed;
+
+
+
 
 .responsive-title{
   width:100%;
@@ -13,6 +17,7 @@
   width:100%;
   height:40px;
   border-bottom: 1px solid #e7e9ed;
+  align-items:center;
 }
 .responsive-title>tbody>tr{
   display:flex;
@@ -49,6 +54,7 @@
   border-radius: 4px;
   display: inline-block;
   overflow: hidden;
+  margin-right:10px;
 }
 .all-and-collect>button{
   width:80px;
@@ -78,25 +84,93 @@
   .well-sm{
     display:flex;
     align-items:center;
+    justify-content: space-between;
     padding:10px 0;
     margin:0;
     border:0;
     overflow: hidden;
+    .btnsLeft{
+        display:flex;
+        align-items:center;
+        .icon{
+            width:18px;
+            height:23px;
+            background-position:-291px -47px;
+            margin-right:10px;
+          }
+        .tit-parts:first-of-type{
+          font-size:18px;
+          color:#354052;
+          padding-right:10px;
+          
+        }
     .tit-parts{
-      font-size:18px;
-      color:#354052;
-      float:left;
-      
-      strong{ 
-        color:#7f8fa4;
-        font-size:14px;
+          strong{ 
+            color:#7f8fa4;
+            font-size:14px;
+         }
       }
     }
-    .tit-parts:first-child{
-        
+    .btnsRight{
+      display:flex;
+      align-items:center;
+      .addDelete{
+        display:flex;
+        margin-right:10px;
+        border:$borderStyle;
+        border-radius:4px;
+        overflow: hidden;
+        a{
+          display: flex;
+          width:40px;
+          height:30px;
+          background-color:#fff;
+          text-indent: -2000px;
+          justify-content: center;
+          align-items:center;
+          .icon{
+            width:16px;
+            background-position:-251px -172px;
+            height:16px;
+          }
+        }
+        .add{
+          border-right:$borderStyle;
+          .icon{
+            width:12px;
+            height:12px;
+            background-position:-214px -174px;
+          }
+        }
       }
+      .f4{
+        position:relative;
+        input{
+          background-color:#fff;
+          width:243px;
+          height:30px;
+          border:$borderStyle;
+          border-radius:4px;
+          color:#354052;
+          font-size:14px;
+        }
+        .icon{
+          background-position:-92px -212px;
+          width:14px;
+          height:14px;
+          position:absolute;
+          top:8px;
+          right:10px;
+        }
+      }
+    }
+    
     .btns{
       float:right;
     }
   }
+}
+.icon{
+  background-image:url(../../images/icon-img/icon.png);
+  display:block;
 }
