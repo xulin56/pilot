@@ -939,7 +939,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         order_direction = order_direction if order_direction else self.order_direction
 
         list = self.get_slice_list(user_id, order_column, order_direction,
-                                   page, page_size)
+                                   page, page_size, None)
         widgets = {}
         widgets['list'] = list
         return self.render_template(self.list_template,
@@ -981,8 +981,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             redirect_url = table.explore_url
         return redirect(redirect_url)
 
-    def _query_own_or_online(self, user_id=0, order_column=None,
-                             order_direction=None, page=None, page_size=None):
+    def _query_own_or_online(self, user_id=0, order_column=None, order_direction=None,
+                             page=None, page_size=None, filter=None):
         sql = """
             SELECT slices.id,
                    slices.slice_name,
@@ -999,10 +999,29 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             AND favstar.class_name = 'slice'
             AND favstar.user_id = {user_id}
             WHERE
-                slices.created_by_fk = {user_id}
+                (slices.created_by_fk = {user_id}
                 OR
-                slices.online = 1
+                slices.online = 1)
             """.format(**locals())
+
+        if filter:
+            sql += """AND (
+            slices.slice_name like \'%{filter}%\'
+            OR slices.description like \'%{filter}%\'
+            OR slices.viz_type like \'%{filter}%\'
+            OR slices.datasource_name like \'%{filter}%\'
+            OR CAST(slices.changed_on AS CHAR) like \'%{filter}%\'
+            OR ab_user.username like \'%{filter}%\'
+            """.format(filter=filter)
+            if filter.lower() == 'true':
+                sql += "\nOR  slices.online is true "
+            elif filter.lower() == 'false':
+                sql += "\nOR  slices.online is false "
+            else:
+                sql += ")"
+
+        rs_all = db.session.execute(sql)
+        count = rs_all.rowcount
 
         if order_column and hasattr(self.model, order_column):
             sql += "\nORDER BY slices.{} ".format(order_column)
@@ -1026,14 +1045,13 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                 'favorite': True if row[8] else False
             }
             data.append(line)
-        return data
+        return count, data
 
     def get_slice_list(self, user_id, order_column, order_direction,
-                       page, page_size):
+                       page, page_size, filter):
         """ Return the slices with column 'favorite' and 'online' """
-        count = self._query_count(user_id)
-        data = self._query_own_or_online(user_id, order_column, order_direction,
-                                          page, page_size)
+        count, data = self._query_own_or_online(user_id, order_column, order_direction,
+                                          page, page_size, filter)
         response = {}
         response['count'] = count
         response['page'] = page
