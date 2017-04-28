@@ -301,22 +301,25 @@
 
     <div class="btnsRight">
         {{ render_set_page_size(page, page_size, count, modelview_name) }}
-        {% if can_add %}
-            {% set path = url_for(modelview_name + '.add') %}
-            {% set path = path | set_link_filters(filters) %}
-            &nbsp;{{ lnk_add(path) }}
-        {% endif %}
-        &nbsp;
-        {{ render_actions2(actions, modelview_name) }}
+
+        <span class="addDelete">
+            {% if can_add %}
+                {% set path = url_for(modelview_name + '.add') %}
+                {% set path = path | set_link_filters(filters) %}
+                &nbsp;{{ lnk_add(path) }}
+            {% endif %}
+
+            {{ render_actions2(actions, modelview_name) }}
+        </span>
         <span class="tit-parts f3 all-and-collect">
-            <button class="active" id="all">全部</button>
-            <button id="favo">收藏</button>
+            <button class="active j_all">全部</button>
+            <button class="j_fav">收藏</button>
         </span>
 
         <!-- {{ lnk_back() }}-->
 
         <span class="tit-parts f4">
-            <input style="width:200px; height:30px; background:#ddd;" id="search" placeholder="Hover"  />
+            <input class="j_search" style="width:200px; height:30px; background:#ddd;" placeholder="Hover"  />
         </span>
     </div>
 {% endmacro %}
