@@ -6,7 +6,7 @@ import thunk from 'redux-thunk';
 import switcher from './reducers';
 
 // import Statistic from './containers/Statistic/Statistic';
-import {  Home } from './containers';
+import { Home } from './containers';
 
 import { loadStatistic } from './actions/statistic';
 import { Table } from './components/home';
