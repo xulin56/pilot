@@ -1230,7 +1230,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                                     widgets=widgets)
 
     def _query_own_or_online(self, user_id=0, order_column=None,
-                                 order_direction=None, page=None, page_size=None):
+                             order_direction=None, page=None, page_size=None):
         sql = """
             SELECT dashboards.id,
                    dashboards.dashboard_title,
@@ -1311,7 +1311,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                 db.session.commit()
                 flash(OFFLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
                 action_str = 'Change dashboard to offline: {}'.format(repr(obj))
-                log_action('downline', action_str, 'dashboard', dashboard_id)
+                log_action('offline', action_str, 'dashboard', dashboard_id)
         else:
             flash(ERROR_URL + ': {}'.format(request.url), 'danger')
         redirect_url = '/dashboardmodelview/list/'
