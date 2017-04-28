@@ -1,1 +1,1 @@
-export operate from './operate';
+export Operate from './Operate';
