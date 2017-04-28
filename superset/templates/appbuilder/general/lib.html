@@ -289,15 +289,17 @@
 {% endmacro %}
 
 {% macro render_list_header(can_add, page, page_size, count, filters, actions, modelview_name) %}
-    <span class="tit-parts f1">
-        工作表
-    </span>
-&nbsp;
-    <span class="tit-parts f1">
-        <strong>{{ _('Record Count') }}:{{ count }}</strong>
-    </span>
+    <div class="btnsLeft">
+        <i></i>
+        <span class="tit-parts f1">
+            工作表
+        </span>
+            <span class="tit-parts f1">
+            <strong>{{ _('Record Count') }}:{{ count }}</strong>
+        </span>
+    </div>
 
-    <div class="btns">
+    <div class="btnsRight">
         {{ render_set_page_size(page, page_size, count, modelview_name) }}
         {% if can_add %}
             {% set path = url_for(modelview_name + '.add') %}
@@ -311,7 +313,7 @@
             <button id="favo">收藏</button>
         </span>
 
-        &nbsp;{{ lnk_back() }}
+        <!-- {{ lnk_back() }}-->
 
         <span class="tit-parts f4">
             <input style="width:200px; height:30px; background:#ddd;" id="search" placeholder="Hover"  />

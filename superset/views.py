@@ -965,7 +965,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return self.render_template(self.list_template,
                                     title=self.list_title,
                                     widgets=widgets)
-
+    @expose('/listJson/')
+    @has_access
     def get_slice_list(self):
         """return the slices with column 'favorite' and 'online'r
         /list/?order_column=id&order_direction=desc&page=0&page_size=10
