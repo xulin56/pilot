@@ -81,6 +81,59 @@ $borderStyle:1px solid #e9eaed;
 }
 
 .panel-primary{
+  .table-responsive{
+    border:$borderStyle;
+    border-radius:4px;
+    overflow: hidden;
+    .responsive-title{
+      thead{
+        tr{
+          th{
+            a{
+              color:#7f8fa4;
+              .icon{
+                display:inline-block;
+                width:6px;
+                height:7px;
+                background-position:-216px -97px;
+              }
+            }
+          }
+        }
+      }
+      tbody{
+        .btn-group-xs{
+          display:flex;
+          a{
+            margin-right:24px;
+
+          }
+          a:nth-of-type(1){
+            .icon{
+              width:15px;
+              height:14px;
+              background-position:-253px  -134px;
+            }
+          }
+          a:nth-of-type(2){
+            .icon{
+              width:17px;
+              height:15px;
+              background-position:-291px  -133px;
+            }
+          }
+          a:nth-of-type(3){
+            .icon{
+              width:14px;
+              height:16px;
+              background-position:-12px  -172px;
+            }
+          }
+          
+        }
+      }
+    }
+  }
   .well-sm{
     display:flex;
     align-items:center;
