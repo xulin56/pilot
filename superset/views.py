@@ -918,33 +918,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_name': _("Datasource Name"),
         'datasource_type': _("Datasource Type"),
     }
-    list_template = "appbuilder/superset/list.html"
-
-    #@expose('/list/')
-    def list(self):
-        """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
-        user_id = int(g.user.get_id())
-        try:
-            order_column = request.args.get('order_column')
-            order_direction = request.args.get('order_direction')
-            page = request.args.get('page')
-            page_size = request.args.get('page_size')
-        except Exception:
-            order_column, order_direction = None, None
-            page, page_size = None, None
-
-        page = page if page else self.page
-        page_size = page_size if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-
-        list = self.get_slice_list(user_id, order_column, order_direction,
-                                   page, page_size)
-        widgets = {}
-        widgets['list'] = list
-        return self.render_template(self.list_template,
-                                    title=self.list_title,
-                                    widgets=widgets)
+    list_template = "superset/list.html"
 
     def pre_update(self, obj):
         check_ownership(obj)
@@ -981,12 +955,40 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             redirect_url = table.explore_url
         return redirect(redirect_url)
 
-    def get_slice_list(self, user_id, order_column, order_direction,
-                       page, page_size):
-        """ Return the slices with column 'favorite' and 'online' """
+    @expose('/list/')
+    @has_access
+    def list(self):
+        list = self.get_slice_list()
+        widgets = self._list()
+
+
+        return self.render_template(self.list_template,
+                                    title=self.list_title,
+                                    widgets=widgets)
+    @expose('/listJson/')
+    @has_access
+    def get_slice_list(self):
+        """return the slices with column 'favorite' and 'online'r
+        /list/?order_column=id&order_direction=desc&page=0&page_size=10
+        """
+        user_id = int(g.user.get_id())
+        try:
+            order_column = request.args.get('order_column')
+            order_direction = request.args.get('order_direction')
+            page = request.args.get('page')
+            page_size = request.args.get('page_size')
+        except Exception:
+            order_column, order_direction = None, None
+            page, page_size = None, None
+
+        page = page if page else self.page
+        page_size = page_size if page_size else self.page_size
+        order_column = order_column if order_column else self.order_column
+        order_direction = order_direction if order_direction else self.order_direction
+
         count = self._query_count(user_id)
         query = self._query_own_or_online(user_id, order_column, order_direction,
-                                          page, page_size)
+                                    page, page_size)
         rs = query.all()
         data = []
         for obj, owner in rs:
@@ -1067,7 +1069,6 @@ class SliceAddView(SliceModelView):  # noqa
 
 
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
-    model = models.Dashboard
     datamodel = SQLAInterface(models.Dashboard)
     list_title = _("List Dashboard")
     show_title = _("Show Dashboard")
@@ -1116,6 +1117,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'description': _("Description"),
         'department': _('Department')
     }
+
+    list_template = "superset/list.html"
 
     def pre_add(self, obj):
         if not obj.slug:
@@ -1179,41 +1182,23 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             dashboards_url='/dashboardmodelview/list'
         )
 
-    #@expose('/list/')
-    @has_access
-    def list(self):
-        """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
-        user_id = int(g.user.get_id())
-        try:
-            order_column = request.args.get('order_column')
-            order_direction = request.args.get('order_direction')
-            page = request.args.get('page')
-            page_size = request.args.get('page_size')
-        except Exception:
-            order_column, order_direction = None, None
-            page, page_size = None, None
-
-        page = page if page else self.page
-        page_size = page_size if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-
-        list = self.get_dashboard_list(user_id, order_column, order_direction,
-                                   page, page_size)
-        widgets = {}
-        widgets['list'] = list
-        return self.render_template(self.list_template,
-                                    title=self.list_title,
-                                    widgets=widgets)
-
-    def get_dashboard_list(self, user_id, order_column, order_direction,
-                           page, page_size):
-        """Return the slices with column 'favorite' and 'online'"""
-        count = self._query_count(user_id)
-        query = self._query_own_or_online(user_id, order_column, order_direction,
-                                          page, page_size)
-        rs = query.all()
-        data = []
+    @classmethod
+    def get_dashboard_list(cls):
+        """return the dashboards with column 'like' showing if liked by user"""
+        user_id = g.user.get_id()
+        rs = (
+            db.session.query(models.Dashboard, User.username)
+                .filter(
+                    models.Dashboard.created_by_fk == User.id,
+                    or_(
+                        models.Dashboard.created_by_fk == user_id,
+                        models.Dashboard.online == 1
+                    )
+            )
+            .order_by(models.Dashboard.changed_on.desc())
+            .all()
+        )
+        rows = []
         for obj, owner in rs:
             like_obj = (
                 db.session.query(models.FavStar)
@@ -1225,20 +1210,16 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                 .first()
             )
             favorite = True if like_obj else False
-            data.append({
+            rows.append({
                 'id': obj.id,
-                'title': '<p>{}</p><p>{}</p>'.format(obj.dashboard_title, obj.description),
+                'title': obj.dashboard_title,
+                'description': obj.description,
                 'release': obj.online,
                 'owner': owner,
                 'time': str(obj.changed_on),
                 'favorite': favorite
             })
-        response = {}
-        response['count'] = count
-        response['page'] = page
-        response['page_size'] = page_size
-        response['data'] = data
-        return json.dumps(response)
+        return json.dumps(rows)
 
     @expose("/<action>/<dashboard_id>")
     def release_or_downline_dashbaord(self, action, dashboard_id):
