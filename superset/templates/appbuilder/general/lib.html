@@ -73,7 +73,8 @@
         <!--{% endfor %}-->
     <!--</ul>-->
 
-    <a href="javascript:void(0)" onclick="return modelActions.execute_multiple('delete');">删除</a>
+    <a href="javascript:void(0)" onclick="return modelActions.execute_multiple('delete');"><i class="icon"></i></a>
+<!--删除-->
 <!--</div>-->
 {% endif %}
 {% endmacro %}
@@ -290,7 +291,7 @@
 
 {% macro render_list_header(can_add, page, page_size, count, filters, actions, modelview_name) %}
     <div class="btnsLeft">
-        <i></i>
+        <i class="icon"></i>
         <span class="tit-parts f1">
             工作表
         </span>
@@ -300,7 +301,7 @@
     </div>
 
     <div class="btnsRight">
-        {{ render_set_page_size(page, page_size, count, modelview_name) }}
+        <!--{{ render_set_page_size(page, page_size, count, modelview_name) }}-->
 
         <span class="addDelete">
             {% if can_add %}
@@ -319,7 +320,7 @@
         <!-- {{ lnk_back() }}-->
 
         <span class="tit-parts f4">
-            <input class="j_search" style="width:200px; height:30px; background:#ddd;" placeholder="Hover"  />
+            <input class="j_search" placeholder="Hover"  /><i class="icon"></i>
         </span>
     </div>
 {% endmacro %}
@@ -357,9 +358,9 @@
 
 
 {% macro lnk_add(my_href) %}
-    <a href="{{my_href}}" class="btn btn-sm btn-primary" data-toggle="tooltip" rel="tooltip"
+    <a href="{{my_href}}" class="add" data-toggle="tooltip" rel="tooltip"
        title="{{_('Add a new record')}}">
-        <i class="fa fa-plus"></i>
+        <i class="icon"></i>
     </a>
 {% endmacro %}
 
