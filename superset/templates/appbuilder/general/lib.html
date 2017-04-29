@@ -313,16 +313,17 @@
 
             {{ render_actions2(actions, modelview_name) }}
         </span>
-        <span class="tit-parts f3 all-and-collect">
-            <button class="active j_all">全部</button>
-            <button class="j_fav">收藏</button>
-        </span>
+        <form >
+            <span class="tit-parts f3 all-and-collect">
+                <button class="active j_all">全部</button>
+                <button class="j_fav">收藏</button>
+            </span>
 
-        <!-- {{ lnk_back() }}-->
-
-        <span class="tit-parts f4">
-            <input class="j_search" placeholder="Hover"  /><i class="icon"></i>
-        </span>
+            <!-- {{ lnk_back() }}-->
+            <span class="tit-parts f4">
+                <input class="j_search" name="filter" placeholder="Hover"  /><button type="submit" class="icon"></button>
+            </span>
+        </form>
     </div>
 {% endmacro %}
 
