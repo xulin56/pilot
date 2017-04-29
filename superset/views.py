@@ -658,6 +658,14 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         log_action('add', action_str, 'database', obj.id)
         # log database number
         log_number('database', g.user.get_id())
+        self.add_database_account(obj)
+
+    def add_database_account(self, obj):
+        url = sqla.engine.url.make_url(obj.sqlalchemy_uri_decrypted)
+        user_id = g.user.get_id()
+        db_account = models.DatabaseAccount
+        db_account.insert_or_update_account(
+            user_id, obj.id, url.username, url.password)
 
     def pre_update(self, db):
         self.pre_add(db)
@@ -673,6 +681,10 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         log_action('delete', action_str, 'database', obj.id)
         # log database number
         log_number('database', g.user.get_id())
+        db.session.query(models.DatabaseAccount) \
+            .filter(models.DatabaseAccount.database_id == obj.id) \
+            .delete(synchronize_session=False)
+        db.session.commit()
 
 # appbuilder.add_link(
 #     'Import Dashboards',
