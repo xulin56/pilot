@@ -360,39 +360,7 @@ class SupersetModelView(ModelView):
     page_size = 10
     order_column = 'changed_on'
     order_direction = 'desc'
-
-    def _query_count(self, user_id=0):
-        return (db.session.query(self.model)
-                .filter(
-                    or_(
-                        self.model.created_by_fk == user_id,
-                        self.model.online == 1)
-                )
-                ).count()
-
-    def _query_own_or_online(self, user_id=0, order_column=None,
-                             order_direction=None, page=None, page_size=None):
-        query = (
-            db.session.query(self.model, User.username)
-            .filter(
-            self.model.created_by_fk == User.id,
-                or_(
-                    self.model.created_by_fk == user_id,
-                    self.model.online == 1)
-            )
-        )
-        if order_column and hasattr(self.model, order_column):
-            order_column = getattr(self.model, order_column)
-            if order_direction == 'desc':
-                query = query.order_by(order_column.desc())
-            else:
-                query = query.order_by(order_column)
-
-        if page:
-            query = query.offset(page * page_size)
-        if page_size:
-            query = query.limit(page_size)
-        return query
+    filter = None
 
 
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
@@ -933,7 +901,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     list_template = "appbuilder/superset/list.html"
 
     #@expose('/list/')
-    def list(self):
+    def list_(self):
         """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
         user_id = int(g.user.get_id())
         try:
@@ -941,17 +909,19 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             order_direction = request.args.get('order_direction')
             page = request.args.get('page')
             page_size = request.args.get('page_size')
+            filter = request.args.get('filter')
         except Exception:
             order_column, order_direction = None, None
-            page, page_size = None, None
+            page, page_size, filter = None, None, None
 
         page = page if page else self.page
         page_size = page_size if page_size else self.page_size
         order_column = order_column if order_column else self.order_column
         order_direction = order_direction if order_direction else self.order_direction
+        filter = filter if filter else self.filter
 
         list = self.get_slice_list(user_id, order_column, order_direction,
-                                   page, page_size, None)
+                                   page, page_size, filter)
         widgets = {}
         widgets['list'] = list
         return self.render_template(self.list_template,
@@ -1071,7 +1041,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         response['data'] = data
         return json.dumps(response)
 
-    @expose("/<action>/<slice_id>")
+    @expose("/action/<action>/<slice_id>")
     def slice_online_or_offline(self, action, slice_id):
         obj = db.session.query(models.Slice) \
             .filter_by(id=slice_id).first()
@@ -1234,7 +1204,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
     #@expose('/list/')
     @has_access
-    def list(self):
+    def list_(self):
         """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
         user_id = int(g.user.get_id())
         try:
@@ -1316,7 +1286,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         response['data'] = data
         return json.dumps(response)
 
-    @expose("/<action>/<dashboard_id>")
+    @expose("/action/<action>/<dashboard_id>")
     def dashbaord_online_or_offline(self, action, dashboard_id):
         obj = db.session.query(models.Dashboard) \
             .filter_by(id=dashboard_id).first()
