@@ -13,10 +13,16 @@ $(function(){
 //    const $fav = $('#j_fav')
 //    const $search = $('#j_search');
 
-    $.getJSON(url, function (response) {
-
-        let table = render( <Operate {...response.data}  />, document.querySelector('.table-responsive') );
-
+    const operate = new Operate({
+        btnAll: '.j_all',
+        btnFav: '.j_fav'
     });
+
+//    $.getJSON(url, function (response) {
+
+//        let table = render( <Operate {...response.data}  />, document.querySelector('.table-responsive') );
+
+//        console.log('Operate:', operate.fetchOptions() );
+//    });
 
 });
