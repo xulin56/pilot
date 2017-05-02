@@ -3,7 +3,7 @@
 
 <div class="navbar navbar-static-top {{menu.extra_classes}}" role="navigation">
   <div class="container{{ '-fluid' if not navbar_container else '' }}">
-    <div class="navbar-header">
+    <div class="navbar-logo">
       <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
@@ -16,19 +16,17 @@
         />
       </a>
     </div>
-    <div class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
+      <ul class="nav">
         {% include 'appbuilder/navbar_menu.html' %}
       </ul>
-      <ul class="nav navbar-nav navbar-right">
-        <li>
-          <a href="http://airbnb.io/superset" target="_blank" title="{{ _('Documentation') }}" >
-            <i class="fa fa-book"></i> &nbsp;
-          </a>
-        </li>
-        {% include 'appbuilder/navbar_right.html' %}
-      </ul>
-    </div>
+    <ul class="sub-nav">
+      <li>
+        <a href="http://airbnb.io/superset" target="_blank" title="{{ _('Documentation') }}" >
+          <i class="icon"></i> &nbsp;
+        </a>
+      </li>
+      {% include 'appbuilder/navbar_right.html' %}
+    </ul>
   </div>
 </div>
 
