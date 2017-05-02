@@ -358,7 +358,7 @@ class DeleteMixin(object):
 class SupersetModelView(ModelView):
     page = 0
     page_size = 10
-    order_column = 'changed_on'
+    order_column = 'time'
     order_direction = 'desc'
     filter = None
     only_favorite = False        # all or favorite
