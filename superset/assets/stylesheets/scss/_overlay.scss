@@ -227,3 +227,31 @@ $borderStyle:1px solid #e9eaed;
   background-image:url(../../images/icon-img/icon.png);
   display:block;
 }
+
+// 导航栏样式
+.navbar-inverse{
+  background-color:#0067a6;
+  border:0;
+  .nav-container{
+    display:flex;
+    padding:0 20px;
+    height:50px;
+    align-items:center;
+    justify-content: space-between;
+    .navbar-logo{
+      display: block;
+      .icon{
+        display:block;
+        width:165px;
+        height:36px;
+        background-position:-119px -640px;
+      }
+    }
+    .nav{
+      display:flex;
+      li{
+
+      }
+    }
+  }
+}
