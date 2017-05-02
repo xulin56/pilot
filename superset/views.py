@@ -116,15 +116,15 @@ ACCESS_REQUEST_MISSING_ERR = __(
 USER_MISSING_ERR = __("The user seems to have been deleted")
 DATASOURCE_ACCESS_ERR = __("You don't have access to this datasource")
 OBJECT_NOT_FOUND = __("Not found this object")
-RELEASE_SUCCESS = __("Release success")
-DOWNLINE_SUCCESS = __("Downline success")
-OBJECT_IS_RELEASED = __("This object has been released")
-OBJECT_IS_DOWNLINED = __("This object has been downlined")
+ONLINE_SUCCESS = __("Change to online success")
+OFFLINE_SUCCESS = __("Change to offline success")
+OBJECT_IS_ONLINE= __("This object is already online")
+OBJECT_IS_OFFLINE = __("This object is already offline")
 ERROR_URL = __("Error request url")
 ERROR_REQUEST_PARAM = __("Error request parameter")
 ERROR_CLASS_TYPE = __("Error model type")
 NO_USER = __("Can't get user")
-NO_PERMISSION = __("No permission for 'release' and 'downline'")
+NO_PERMISSION = __("No permission for 'online' and 'offline'")
 
 
 def get_database_access_error_msg(database_name):
@@ -360,38 +360,35 @@ class SupersetModelView(ModelView):
     page_size = 10
     order_column = 'changed_on'
     order_direction = 'desc'
+    filter = None
+    only_favorite = False        # all or favorite
 
-    def _query_count(self, user_id=0):
-        return (db.session.query(self.model)
-                .filter(
-                    or_(
-                        self.model.created_by_fk == user_id,
-                        self.model.online == 1)
-                )
-                ).count()
-
-    def _query_own_or_online(self, user_id=0, order_column=None,
-                             order_direction=None, page=None, page_size=None):
+    def query_own_or_online(self, class_name, user_id, only_favorite):
         query = (
-            db.session.query(self.model, User.username)
-            .filter(
-            self.model.created_by_fk == User.id,
-                or_(
-                    self.model.created_by_fk == user_id,
-                    self.model.online == 1)
-            )
+            db.session.query(self.model, User.username, FavStar.obj_id)
+            .join(User, self.model.created_by_fk == User.id)
         )
-        if order_column and hasattr(self.model, order_column):
-            order_column = getattr(self.model, order_column)
-            if order_direction == 'desc':
-                query = query.order_by(order_column.desc())
-            else:
-                query = query.order_by(order_column)
 
-        if page:
-            query = query.offset(page * page_size)
-        if page_size:
-            query = query.limit(page_size)
+        if only_favorite:
+            query = query.join(FavStar,
+                and_(
+                   self.model.id == FavStar.obj_id,
+                   FavStar.class_name.ilike(class_name),
+                   FavStar.user_id == user_id)
+            )
+        else:
+            query = query.outerjoin(FavStar,
+               and_(
+                   self.model.id == FavStar.obj_id,
+                   FavStar.class_name.ilike(class_name),
+                   FavStar.user_id == user_id)
+            )
+
+        query = query.filter(
+            or_(self.model.created_by_fk == user_id,
+                self.model.online == 1)
+            )
+
         return query
 
 
@@ -658,6 +655,14 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         log_action('add', action_str, 'database', obj.id)
         # log database number
         log_number('database', g.user.get_id())
+        self.add_database_account(obj)
+
+    def add_database_account(self, obj):
+        url = sqla.engine.url.make_url(obj.sqlalchemy_uri_decrypted)
+        user_id = g.user.get_id()
+        db_account = models.DatabaseAccount
+        db_account.insert_or_update_account(
+            user_id, obj.id, url.username, url.password)
 
     def pre_update(self, db):
         self.pre_add(db)
@@ -673,6 +678,10 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         log_action('delete', action_str, 'database', obj.id)
         # log database number
         log_number('database', g.user.get_id())
+        db.session.query(models.DatabaseAccount) \
+            .filter(models.DatabaseAccount.database_id == obj.id) \
+            .delete(synchronize_session=False)
+        db.session.commit()
 
 # appbuilder.add_link(
 #     'Import Dashboards',
@@ -918,7 +927,49 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_name': _("Datasource Name"),
         'datasource_type': _("Datasource Type"),
     }
+
     list_template = "superset/list.html"
+
+    # used for order column
+    str_to_column = {
+        'title': Slice.slice_name,
+        'description': Slice.description,
+        'viz_type': Slice.viz_type,
+        'table': Slice.datasource_name,
+        'time': Slice.changed_on,
+        'owner': User.username
+    }
+
+    #@expose('/list/')
+    def list_(self):
+        """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
+        user_id = int(g.user.get_id())
+        try:
+            order_column = request.args.get('order_column')
+            order_direction = request.args.get('order_direction')
+            page = request.args.get('page')
+            page_size = request.args.get('page_size')
+            filter = request.args.get('filter')
+            only_favorite = request.args.get('only_favorite')
+        except Exception:
+            order_column, order_direction = None, None
+            page, page_size = None, None
+            filter, only_favorite = None, False
+
+        page = int(page) if page else self.page
+        page_size = int(page_size) if page_size else self.page_size
+        order_column = order_column if order_column else self.order_column
+        order_direction = order_direction if order_direction else self.order_direction
+        filter = filter if filter else self.filter
+        only_favorite = bool(only_favorite) if only_favorite else self.only_favorite
+
+        list = self.get_slice_list(user_id, order_column, order_direction,
+                                   page, page_size, filter, only_favorite)
+        widgets = {}
+        widgets['list'] = list
+        return self.render_template(self.list_template,
+                                    title=self.list_title,
+                                    widgets=widgets)
 
     def pre_update(self, obj):
         check_ownership(obj)
@@ -955,97 +1006,93 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             redirect_url = table.explore_url
         return redirect(redirect_url)
 
-    @expose('/list/')
-    @has_access
-    def list(self):
-        list = self.get_slice_list()
-        widgets = self._list()
+    def get_slice_list(self, user_id, order_column, order_direction,
+                       page, page_size, filter_str, only_favorite):
+        """ Return the slices with column 'favorite' and 'online' """
+        query = self.query_own_or_online('slice', user_id, only_favorite)
+        if filter_str:
+            filter_str = '%{}%'.format(filter_str.lower())
+            query = query.filter(
+                or_(
+                    Slice.slice_name.ilike(filter_str),
+                    Slice.description.ilike(filter_str),
+                    Slice.viz_type.ilike(filter_str),
+                    Slice.datasource_name.ilike(filter_str),
+                    #str(Slice.changed_on).contains(filter_str),
+                    User.username.ilike(filter_str)
+                )
+            )
+        count = query.count()
 
+        if order_column:
+            try:
+                column = self.str_to_column.get(order_column)
+            except KeyError:
+                logging.error('Error order column name: \'{}\' passed to get_slice_list()'
+                              .format(order_column))
+            else:
+                if order_direction == 'desc':
+                    query = query.order_by(column.desc())
+                else:
+                    query = query.order_by(column)
 
-        return self.render_template(self.list_template,
-                                    title=self.list_title,
-                                    widgets=widgets)
+        if page is not None and page >= 0 and page_size and page_size > 0:
+            query = query.limit(page_size).offset(page * page_size)
 
-    @expose('/listJson/')
-    def get_slice_list(self):
-        """return the slices with column 'favorite' and 'online'r
-        /list/?order_column=id&order_direction=desc&page=0&page_size=10
-        """
-        user_id = int(g.user.get_id())
-        try:
-            order_column = request.args.get('order_column')
-            order_direction = request.args.get('order_direction')
-            page = request.args.get('page')
-            page_size = request.args.get('page_size')
-        except Exception:
-            order_column, order_direction = None, None
-            page, page_size = None, None
-
-        page = page if page else self.page
-        page_size = page_size if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-
-        count = self._query_count(user_id)
-        query = self._query_own_or_online(user_id, order_column, order_direction,
-                                    page, page_size)
         rs = query.all()
         data = []
-        for obj, owner in rs:
-            like_obj = (
-                db.session.query(models.FavStar)
-                .filter(
-                    and_(
-                        models.FavStar.user_id == user_id,
-                        models.FavStar.class_name.ilike('slice'))
-                )
-                .first()
-            )
-            favorite = True if like_obj else False
-            data.append({
+        for obj, username, fav_id in rs:
+            line = {
                 'id': obj.id,
-                'title': '<p>{}</p><p>{}</p>'.format(obj.slice_name, obj.description),
+                'title': obj.slice_name,
+                'description': obj.description,
+                'link': obj.slice_url,
                 'viz_type': obj.viz_type,
                 'table': obj.datasource_name,
-                'release': obj.online,
-                'owner': owner,
+                'online': obj.online,
                 'time': str(obj.changed_on),
-                'favorite': favorite
-            })
+                'owner': username,
+                'favorite': True if fav_id else False
+            }
+            data.append(line)
+
 
         response = {}
         response['count'] = count
+        response['order_column'] = order_column
+        response['order_direction'] = 'desc' if order_direction == 'desc' else 'asc'
         response['page'] = page
         response['page_size'] = page_size
+        response['only_favorite'] = only_favorite
         response['data'] = data
-        return json.dumps(response)
+        return response
 
-    @expose("/<action>/<slice_id>")
-    def release_or_downline_slice(self, action, slice_id):
+    @expose("/action/<action>/<slice_id>")
+    def slice_online_or_offline(self, action, slice_id):
         obj = db.session.query(models.Slice) \
             .filter_by(id=slice_id).first()
         if not obj:
             flash(OBJECT_NOT_FOUND, 'danger')
         elif obj.created_by_fk != int(g.user.get_id()):
             flash(NO_PERMISSION + ': {}'.format(obj.slice_name), 'danger')
-        elif action.lower() == 'release':
+        elif action.lower() == 'online':
             if obj.online is True:
-                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.slice_name), 'warning')
+                flash(OBJECT_IS_ONLINE + ': {}'.format(obj.slice_name), 'warning')
             else:
                 obj.online = True
                 db.session.commit()
-                flash(RELEASE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
-                action_str = 'Release slice: {}'.format(repr(obj))
-                log_action('release', action_str, 'slice', slice_id)
-        elif action.lower() == 'downline':
+                flash(ONLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
+                action_str = 'Change slice to online: {}'.format(repr(obj))
+                log_action('online', action_str, 'slice', slice_id)
+        elif action.lower() == 'offline':
             if obj.online is False:
-                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.slice_name), 'warning')
+                flash(OBJECT_IS_OFFLINE + ': {}'.format(obj.slice_name), 'warning')
             else:
                 obj.online = False
                 db.session.commit()
-                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
-                action_str = 'Downline slice: {}'.format(repr(obj))
-                log_action('downline', action_str, 'slice', slice_id)
+                flash(OFFLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
+                action_str = 'Change slice to offline: {}'.format(repr(obj))
+                log_action('offline', action_str, 'slice', slice_id)
         else:
             flash(ERROR_URL + ': {}'.format(request.url), 'danger')
         redirect_url = '/slicemodelview/list/'
@@ -1069,6 +1116,7 @@ class SliceAddView(SliceModelView):  # noqa
 
 
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
+    model = models.Dashboard
     datamodel = SQLAInterface(models.Dashboard)
     list_title = _("List Dashboard")
     show_title = _("Show Dashboard")
@@ -1119,6 +1167,14 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     }
 
     list_template = "superset/list.html"
+
+    # used for order column
+    str_to_column = {
+        'title': Dashboard.dashboard_title,
+        'description': Dashboard.description,
+        'time': Dashboard.changed_on,
+        'owner': User.username,
+    }
 
     def pre_add(self, obj):
         if not obj.slug:
@@ -1182,71 +1238,120 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             dashboards_url='/dashboardmodelview/list'
         )
 
-    @classmethod
-    def get_dashboard_list(cls):
-        """return the dashboards with column 'like' showing if liked by user"""
-        user_id = g.user.get_id()
-        rs = (
-            db.session.query(models.Dashboard, User.username)
-                .filter(
-                    models.Dashboard.created_by_fk == User.id,
-                    or_(
-                        models.Dashboard.created_by_fk == user_id,
-                        models.Dashboard.online == 1
-                    )
-            )
-            .order_by(models.Dashboard.changed_on.desc())
-            .all()
-        )
-        rows = []
-        for obj, owner in rs:
-            like_obj = (
-                db.session.query(models.FavStar)
-                .filter(
-                    and_(
-                        models.FavStar.user_id == user_id,
-                        models.FavStar.class_name.ilike('dashboard'))
+    #@expose('/list/')
+    def list_(self):
+        """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
+        user_id = int(g.user.get_id())
+        try:
+            order_column = request.args.get('order_column')
+            order_direction = request.args.get('order_direction')
+            page = request.args.get('page')
+            page_size = request.args.get('page_size')
+            filter = request.args.get('filter')
+            only_favorite = request.args.get('only_favorite')
+        except Exception:
+            order_column, order_direction = None, None
+            page, page_size = None, None
+            filter, only_favorite = None, None
+
+        page = int(page) if page else self.page
+        page_size = int(page_size) if page_size else self.page_size
+        order_column = order_column if order_column else self.order_column
+        order_direction = order_direction if order_direction else self.order_direction
+        filter = filter if filter else self.filter
+        only_favorite = bool(only_favorite) if only_favorite else self.only_favorite
+
+        list = self.get_dashboard_list(user_id, order_column, order_direction,
+                                       page, page_size, filter, only_favorite)
+        widgets = {}
+        widgets['list'] = list
+        return list
+        # return self.render_template(self.list_template,
+        #                             title=self.list_title,
+        #                             widgets=widgets)
+
+    def get_dashboard_list(self, user_id, order_column, order_direction,
+                           page, page_size, filter_str, only_favorite):
+        """Return the dashbaords with column 'favorite' and 'online'"""
+        query = self.query_own_or_online('dashboard', user_id, only_favorite)
+        if filter_str:
+            filter_str = '%{}%'.format(filter_str.lower())
+            query = query.filter(
+                or_(
+                    Dashboard.dashboard_title.ilike(filter_str),
+                    Dashboard.description.ilike(filter_str),
+                    #str(Slice.changed_on).contains(filter_str),
+                    User.username.ilike(filter_str)
                 )
-                .first()
             )
-            favorite = True if like_obj else False
-            rows.append({
+        count = query.count()
+
+        if order_column:
+            try:
+                column = self.str_to_column.get(order_column)
+            except KeyError:
+                logging.error('Error order column name: \'{}\' passed to get_dashboard_list()'
+                              .format(order_column))
+            else:
+                if order_direction == 'desc':
+                    query = query.order_by(column.desc())
+                else:
+                    query = query.order_by(column)
+
+        if page is not None and page >= 0 and page_size and page_size > 0:
+            query = query.limit(page_size).offset(page * page_size)
+
+        rs = query.all()
+        data = []
+        for obj, username, fav_id in rs:
+            line = {
                 'id': obj.id,
                 'title': obj.dashboard_title,
                 'description': obj.description,
-                'release': obj.online,
-                'owner': owner,
+                'link': obj.url,
+                'online': obj.online,
                 'time': str(obj.changed_on),
-                'favorite': favorite
-            })
-        return json.dumps(rows)
+                'owner': username,
+                'favorite': True if fav_id else False
+            }
+            data.append(line)
 
-    @expose("/<action>/<dashboard_id>")
-    def release_or_downline_dashbaord(self, action, dashboard_id):
+        response = {}
+        response['count'] = count
+        response['order_column'] = order_column
+        response['order_direction'] = 'desc' if order_direction == 'desc' else 'asc'
+        response['page'] = page
+        response['page_size'] = page_size
+        response['only_favorite'] = only_favorite
+        response['data'] = data
+        return response
+
+    @expose("/action/<action>/<dashboard_id>")
+    def dashbaord_online_or_offline(self, action, dashboard_id):
         obj = db.session.query(models.Dashboard) \
             .filter_by(id=dashboard_id).first()
         if not obj:
             flash(OBJECT_NOT_FOUND, 'danger')
         elif obj.created_by_fk != int(g.user.get_id()):
             flash(NO_PERMISSION + ': {}'.format(obj.dashboard_title), 'danger')
-        elif action.lower() == 'release':
+        elif action.lower() == 'online':
             if obj.online is True:
-                flash(OBJECT_IS_RELEASED + ': {}'.format(obj.dashboard_title), 'warning')
+                flash(OBJECT_IS_ONLINE + ': {}'.format(obj.dashboard_title), 'warning')
             else:
                 obj.online = True
                 db.session.commit()
-                flash(RELEASE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
-                action_str = 'Release dashboard: {}'.format(repr(obj))
-                log_action('release', action_str, 'dashboard', dashboard_id)
-        elif action.lower() == 'downline':
+                flash(ONLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
+                action_str = 'Change dashboard to online: {}'.format(repr(obj))
+                log_action('online', action_str, 'dashboard', dashboard_id)
+        elif action.lower() == 'offline':
             if obj.online is False:
-                flash(OBJECT_IS_DOWNLINED + ': {}'.format(obj.dashboard_title), 'warning')
+                flash(OBJECT_IS_OFFLINE + ': {}'.format(obj.dashboard_title), 'warning')
             else:
                 obj.online = False
                 db.session.commit()
-                flash(DOWNLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
-                action_str = 'Downline dashboard: {}'.format(repr(obj))
-                log_action('downline', action_str, 'dashboard', dashboard_id)
+                flash(OFFLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
+                action_str = 'Change dashboard to offline: {}'.format(repr(obj))
+                log_action('offline', action_str, 'dashboard', dashboard_id)
         else:
             flash(ERROR_URL + ': {}'.format(request.url), 'danger')
         redirect_url = '/dashboardmodelview/list/'
@@ -3045,7 +3150,7 @@ class Home(BaseSupersetView):
     """The api for the home page
 
     limit = 0: means not limit
-    default_types['actions'] could be: ['release', 'downline', 'add', 'edit', 'delete'...]
+    default_types['actions'] could be: ['online', 'offline', 'add', 'edit', 'delete'...]
     """
 
     default_types = {
@@ -3053,7 +3158,7 @@ class Home(BaseSupersetView):
         'trends': ['dashboard', 'slice', 'table', 'database'],
         'favorits': ['dashboard', 'slice'],
         'edits': ['dashboard', 'slice'],
-        'actions': ['release', 'downline']
+        'actions': ['online', 'offline']
     }
     default_limit = {
         'trends': 30,

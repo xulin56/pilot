@@ -28,6 +28,7 @@ from flask import escape, g, Markup, request
 from flask_appbuilder import Model
 from flask_appbuilder.models.mixins import AuditMixin
 from flask_appbuilder.models.decorators import renders
+from flask_appbuilder.security.sqla.models import User
 from flask_babel import lazy_gettext as _
 
 # from pydruid.client import PyDruid
@@ -760,9 +761,53 @@ class Database(Model, AuditMixinNullable):
         conn.password = password_mask if conn.password else None
         self.sqlalchemy_uri = str(conn)  # hides the password
 
-    def get_sqla_engine(self, schema=None):
+    def test_uri(self, url):
         extra = self.get_extra()
-        url = make_url(self.sqlalchemy_uri_decrypted)
+        params = extra.get('engine_params', {})
+        try:
+            inspector = sqla.inspect(create_engine(url, **params))
+            inspector.get_schema_names()
+        except Exception:
+            return False
+        else:
+            return True
+
+    def fill_sqlalchemy_uri(self, user_id=None):
+        try:
+            if not user_id:
+                user_id = g.user.get_id()
+        except Exception:
+            logging.error("Unable to get user's id when fill sqlalchmy uri")
+            # todo show in the frontend
+            return False
+        url = make_url(self.sqlalchemy_uri)
+        account = (
+            db.session.query(DatabaseAccount)
+            .filter(DatabaseAccount.user_id == user_id,
+                    DatabaseAccount.database_id == self.id)
+            .first()
+        )
+        if not account:
+            user = db.session.query(User).filter(User.id == user_id).first()
+            logging.error("User:{} do not have account for connection:{}"
+                          .format(user.username, self.database_name))
+            # todo the frontend need to mention user to add account
+            return False
+        url.username = account.username
+        url.password = account.password
+        if not self.test_uri(str(url)):
+            logging.error("Test connection failed, maybe need to modify your "
+                          "account for connection:{}".format(self.database_name))
+            # todo the frontend need to mention user to modify account
+            return False
+        return str(url)
+
+    def get_sqla_engine(self, schema=None):
+        if self.database_name == 'main':
+            url = make_url(self.sqlalchemy_uri_decrypted)
+        else:
+            url = make_url(self.fill_sqlalchemy_uri())
+        extra = self.get_extra()
         params = extra.get('engine_params', {})
         if self.backend == 'presto' and schema:
             if '/' in url.database:
@@ -928,6 +973,32 @@ class DatabaseAccount(Model):
     database_id = Column(Integer, ForeignKey('dbs.id'))
     username = Column(String(255))
     password = Column(EncryptedType(String(1024), config.get('SECRET_KEY')))
+
+    @classmethod
+    def insert_or_update_account(cls, user_id, db_id, username, password):
+        record = (
+            db.session.query(cls)
+            .filter(cls.user_id == user_id,
+                    cls.database_id == db_id)
+            .first()
+        )
+        if record:
+            record.username = username if username else record.username
+            record.password = password if password else record.password
+            db.session.commit()
+        else:
+            if not username or not password:
+                logging.error("The username or password of database account can't be none.")
+                return False
+            new_record = cls(user_id=user_id,
+                             database_id=db_id,
+                             username=username,
+                             password=password)
+            db.session.add(new_record)
+        db.session.commit()
+        logging.info("Update username or password of user:{} and database:{} success."
+                     .format(user_id, db_id))
+        return True
 
 
 class TableColumn(Model, AuditMixinNullable, ImportMixin):
