@@ -10,7 +10,7 @@
        </div>
     </a>
     <ul class="dropdown-menu">
-      <li class="dropdown">
+      <li class="dropdown ">
         {% for lang in languages %}
             {% if lang != locale %}
                 <a tabindex="-1" href="{{appbuilder.get_url_for_locale(lang)}}">
