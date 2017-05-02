@@ -361,22 +361,34 @@ class SupersetModelView(ModelView):
     order_column = 'changed_on'
     order_direction = 'desc'
     filter = None
+    only_favorite = False        # all or favorite
 
-    def query_own_or_online(self, class_name, user_id):
+    def query_own_or_online(self, class_name, user_id, only_favorite):
         query = (
             db.session.query(self.model, User.username, FavStar.obj_id)
             .join(User, self.model.created_by_fk == User.id)
-            .outerjoin(FavStar,
-                       and_(
-                           self.model.id == FavStar.obj_id,
-                           FavStar.class_name.ilike(class_name),
-                           FavStar.user_id == user_id)
-                       )
-            .filter(
-                or_(self.model.created_by_fk == user_id,
-                    self.model.online == 1)
-                )
         )
+
+        if only_favorite:
+            query = query.join(FavStar,
+                and_(
+                   self.model.id == FavStar.obj_id,
+                   FavStar.class_name.ilike(class_name),
+                   FavStar.user_id == user_id)
+            )
+        else:
+            query = query.outerjoin(FavStar,
+               and_(
+                   self.model.id == FavStar.obj_id,
+                   FavStar.class_name.ilike(class_name),
+                   FavStar.user_id == user_id)
+            )
+
+        query = query.filter(
+            or_(self.model.created_by_fk == user_id,
+                self.model.online == 1)
+            )
+
         return query
 
 
@@ -938,18 +950,21 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             page = request.args.get('page')
             page_size = request.args.get('page_size')
             filter = request.args.get('filter')
+            only_favorite = request.args.get('only_favorite')
         except Exception:
             order_column, order_direction = None, None
-            page, page_size, filter = None, None, None
+            page, page_size = None, None
+            filter, only_favorite = None, False
 
-        page = page if page else self.page
-        page_size = page_size if page_size else self.page_size
+        page = int(page) if page else self.page
+        page_size = int(page_size) if page_size else self.page_size
         order_column = order_column if order_column else self.order_column
         order_direction = order_direction if order_direction else self.order_direction
         filter = filter if filter else self.filter
+        only_favorite = bool(only_favorite) if only_favorite else self.only_favorite
 
         list = self.get_slice_list(user_id, order_column, order_direction,
-                                   page, page_size, filter)
+                                   page, page_size, filter, only_favorite)
         widgets = {}
         widgets['list'] = list
         return self.render_template(self.list_template,
@@ -992,9 +1007,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return redirect(redirect_url)
 
     def get_slice_list(self, user_id, order_column, order_direction,
-                       page, page_size, filter_str):
+                       page, page_size, filter_str, only_favorite):
         """ Return the slices with column 'favorite' and 'online' """
-        query = self.query_own_or_online('slice', user_id)
+        query = self.query_own_or_online('slice', user_id, only_favorite)
         if filter_str:
             filter_str = '%{}%'.format(filter_str.lower())
             query = query.filter(
@@ -1048,6 +1063,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         response['order_direction'] = 'desc' if order_direction == 'desc' else 'asc'
         response['page'] = page
         response['page_size'] = page_size
+        response['only_favorite'] = only_favorite
         response['data'] = data
         return response
 
