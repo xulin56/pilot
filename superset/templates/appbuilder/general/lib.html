@@ -56,7 +56,8 @@
 {% endmacro %}
 {% macro render_actions2(actions, modelview_name) %}
 {% if actions %}
-<div class="btn-group">
+
+<!--<div class="btn-group">-->
     <!--<button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">-->
         <!--{{_('Actions')}}<span class="caret"></span>-->
     <!--</button>-->
@@ -73,8 +74,9 @@
         <!--{% endfor %}-->
     <!--</ul>-->
 
-    <a href="javascript:void(0)" onclick="return modelActions.execute_multiple('delete');">删除</a>
-</div>
+    <a href="javascript:void(0)" onclick="return modelActions.execute_multiple('delete');"><i class="icon"></i></a>
+<!--删除-->
+<!--</div>-->
 {% endif %}
 {% endmacro %}
 
@@ -281,7 +283,7 @@
 {% endmacro %}
 
 {% macro render_form_controls() %}
-    <div class="well well-sm">
+    <div class="well well-sm well-title clearfix">
         <button type="submit" class="btn  btn-sm btn-primary">{{_("Save")}}
             <i class="fa fa-save"></i></button>
         {{ lnk_back() }}
@@ -289,38 +291,44 @@
 {% endmacro %}
 
 {% macro render_list_header(can_add, page, page_size, count, filters, actions, modelview_name) %}
-    <span class="tit-parts f1">
-        工作表
-    </span>
-&nbsp;
-    <span class="tit-parts f1">
-        <strong>{{ _('Record Count') }}:{{ count }}</strong>
-    </span>
-
-    <div class="btns">
-        {{ render_set_page_size(page, page_size, count, modelview_name) }}
-        {% if can_add %}
-            {% set path = url_for(modelview_name + '.add') %}
-            {% set path = path | set_link_filters(filters) %}
-            &nbsp;{{ lnk_add(path) }}
-        {% endif %}
-        &nbsp;
-        {{ render_actions2(actions, modelview_name) }}
-        <span class="tit-parts f3">
-            <button id="all">全部</button>
-            <button id="favo">收藏</button>
+    <div class="btnsLeft">
+        <i class="icon"></i>
+        <span class="tit-parts f1">
+            工作表
         </span>
-
-        &nbsp;{{ lnk_back() }}
-
-        <span class="tit-parts f4">
-            <input style="width:200px; height:30px; background:#ddd;" id="search" placeholder="Hover"  />
+            <span class="tit-parts f1">
+            <strong>{{ _('Record Count') }}:{{ count }}</strong>
         </span>
+    </div>
+
+    <div class="btnsRight">
+        <!--{{ render_set_page_size(page, page_size, count, modelview_name) }}-->
+
+        <span class="addDelete">
+            {% if can_add %}
+                {% set path = url_for(modelview_name + '.add') %}
+                {% set path = path | set_link_filters(filters) %}
+                &nbsp;{{ lnk_add(path) }}
+            {% endif %}
+
+            {{ render_actions2(actions, modelview_name) }}
+        </span>
+        <form >
+            <span class="tit-parts f3 all-and-collect">
+                <button class="active j_all">全部</button>
+                <button class="j_fav">收藏</button>
+            </span>
+
+            <!-- {{ lnk_back() }}-->
+            <span class="tit-parts f4">
+                <input class="j_search" name="filter" placeholder="Hover"  /><button type="submit" class="icon"></button>
+            </span>
+        </form>
     </div>
 {% endmacro %}
 
 {% macro btn_crud(can_show, can_edit, can_delete, pk, modelview_name, filters) %}
-    <div class="btn-group btn-group-xs" style="display: flex;">
+    <div class="btn-group btn-group-xs">
         {% if can_show %}
             {% set path = url_for(modelview_name + '.show',pk=pk) %}
             {% set path = path | set_link_filters(filters) %}
@@ -352,30 +360,30 @@
 
 
 {% macro lnk_add(my_href) %}
-    <a href="{{my_href}}" class="btn btn-sm btn-primary" data-toggle="tooltip" rel="tooltip"
+    <a href="{{my_href}}" class="add" data-toggle="tooltip" rel="tooltip"
        title="{{_('Add a new record')}}">
-        <i class="fa fa-plus"></i>
+        <i class="icon"></i>
     </a>
 {% endmacro %}
 
 {% macro lnk_edit(my_href) %}
-    <a href="{{my_href}}" class="btn btn-sm btn-primary" data-toggle="tooltip" rel="tooltip"
+    <a href="{{my_href}}" data-toggle="tooltip" rel="tooltip"
        title="{{_('Edit record')}}">
-        <i class="fa fa-edit"></i>
+        <i class="icon"></i>
     </a>
 {% endmacro %}
 
 {% macro lnk_show(my_href) %}
-    <a href="{{my_href}}" class="btn btn-sm btn-primary" data-toggle="tooltip" rel="tooltip"
+    <a href="{{my_href}}" data-toggle="tooltip" rel="tooltip"
        title="{{_('Show record')}}">
-        <i class="fa fa-search"></i>
+        <i class="icon"></i>
     </a>
 {% endmacro %}
 
 {% macro lnk_delete(my_href) %}
-    <a data-text="{{ _('You sure you want to delete this item?') }}" data-href="{{my_href}}" class="btn btn-sm btn-primary confirm" rel="tooltip"
+    <a data-text="{{ _('You sure you want to delete this item?') }}" data-href="{{my_href}}" rel="tooltip"
         title="{{_('Delete record')}}" data-toggle="modal" data-target="#modal-confirm" href="#">
-        <i class="fa fa-eraser"></i>
+        <i class="icon"></i>
     </a>
 {% endmacro %}
 

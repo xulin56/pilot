@@ -1,5 +1,6 @@
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
 import { Line, EditList, EventList } from '../../components/home';
+import PropTypes from 'prop-types';
 
 class Home extends Component { // eslint-disable-line
 

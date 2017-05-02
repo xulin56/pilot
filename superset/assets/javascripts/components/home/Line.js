@@ -1,5 +1,6 @@
-import React, { PropTypes } from 'react';
+import React from 'react';
 import ReactHighcharts from 'react-highcharts';
+import PropTypes from 'prop-types';
 
 function Line(props) {
 

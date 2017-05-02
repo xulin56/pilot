@@ -4,23 +4,17 @@
 {% block content %}
 {{ lib.panel_begin(title) }}
 
-    <!--{% block list_search scoped %}-->
-        <!--{% call lib.accordion_tag("accordion1",_("Search"), False) %}-->
-            <!--{{ widgets.get('search')()|safe }}-->
-        <!--{% endcall %}-->
-    <!--{% endblock %}-->
-
     {% block list_list scoped %}
         <div>
         {{ widgets.get('list')()|safe }}
         </div>
     {% endblock %}
+
 {{ lib.panel_end() }}
 
 {% set VERSION_STRING = appbuilder.get_app.config.get("VERSION_STRING") %}
 <script src="/static/assets/dist/list.{{VERSION_STRING}}.entry.js"></script>
+
 {% endblock %}
-
-
 
 

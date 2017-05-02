@@ -915,7 +915,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_name': _("Datasource Name"),
         'datasource_type': _("Datasource Type"),
     }
-    list_template = "appbuilder/superset/list.html"
+
+    list_template = "superset/list.html"
 
     # used for order column
     str_to_column = {
@@ -1040,6 +1041,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             }
             data.append(line)
 
+
         response = {}
         response['count'] = count
         response['order_column'] = order_column
@@ -1098,7 +1100,6 @@ class SliceAddView(SliceModelView):  # noqa
 
 
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
-    model = models.Dashboard
     datamodel = SQLAInterface(models.Dashboard)
     list_title = _("List Dashboard")
     show_title = _("Show Dashboard")
@@ -1147,6 +1148,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'description': _("Description"),
         'department': _('Department')
     }
+
+    list_template = "superset/list.html"
 
     # used for order column
     str_to_column = {
