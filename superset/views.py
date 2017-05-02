@@ -1116,6 +1116,7 @@ class SliceAddView(SliceModelView):  # noqa
 
 
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
+    model = models.Dashboard
     datamodel = SQLAInterface(models.Dashboard)
     list_title = _("List Dashboard")
     show_title = _("Show Dashboard")
@@ -1247,18 +1248,21 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             page = request.args.get('page')
             page_size = request.args.get('page_size')
             filter = request.args.get('filter')
+            only_favorite = request.args.get('only_favorite')
         except Exception:
             order_column, order_direction = None, None
-            page, page_size, filter = None, None, None
+            page, page_size = None, None
+            filter, only_favorite = None, None
 
-        page = page if page else self.page
-        page_size = page_size if page_size else self.page_size
+        page = int(page) if page else self.page
+        page_size = int(page_size) if page_size else self.page_size
         order_column = order_column if order_column else self.order_column
         order_direction = order_direction if order_direction else self.order_direction
         filter = filter if filter else self.filter
+        only_favorite = bool(only_favorite) if only_favorite else self.only_favorite
 
         list = self.get_dashboard_list(user_id, order_column, order_direction,
-                                       page, page_size, filter)
+                                       page, page_size, filter, only_favorite)
         widgets = {}
         widgets['list'] = list
         return list
@@ -1267,9 +1271,9 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         #                             widgets=widgets)
 
     def get_dashboard_list(self, user_id, order_column, order_direction,
-                           page, page_size, filter_str):
+                           page, page_size, filter_str, only_favorite):
         """Return the dashbaords with column 'favorite' and 'online'"""
-        query = self.query_own_or_online('dashboard', user_id)
+        query = self.query_own_or_online('dashboard', user_id, only_favorite)
         if filter_str:
             filter_str = '%{}%'.format(filter_str.lower())
             query = query.filter(
@@ -1318,6 +1322,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         response['order_direction'] = 'desc' if order_direction == 'desc' else 'asc'
         response['page'] = page
         response['page_size'] = page_size
+        response['only_favorite'] = only_favorite
         response['data'] = data
         return response
 
