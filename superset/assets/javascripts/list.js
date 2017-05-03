@@ -24,7 +24,8 @@ $(function(){
 
     const operate = new Operate({
         btnAll: '.j_all',
-        btnFav: '.j_fav'
+        btnFav: '.j_fav',
+        form: '.j_searchForm'
     });
 
 
