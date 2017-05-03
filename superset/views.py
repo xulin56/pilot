@@ -358,7 +358,7 @@ class DeleteMixin(object):
 class SupersetModelView(ModelView):
     page = 0
     page_size = 10
-    order_column = 'changed_on'
+    order_column = 'time'
     order_direction = 'desc'
     filter = None
     only_favorite = False        # all or favorite
@@ -940,7 +940,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username
     }
 
-    #@expose('/list/')
+    # @expose('/list/')
     def list_(self):
         """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
         user_id = int(g.user.get_id())
@@ -1928,8 +1928,11 @@ class Superset(BaseSupersetView):
         else:
             return self.render_template(
                 "superset/explore.html",
-                viz=viz_obj, slice=slc, datasources=datasources,
-                can_add=slice_add_perm, can_edit=slice_edit_perm,
+                viz=viz_obj,
+                slice=slc,
+                datasources=datasources,
+                can_add=slice_add_perm,
+                can_edit=slice_edit_perm,
                 can_download=slice_download_perm,
                 userid=g.user.get_id() if g.user else ''
             )

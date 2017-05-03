@@ -313,15 +313,15 @@
 
             {{ render_actions2(actions, modelview_name) }}
         </span>
-        <form >
-            <span class="tit-parts f3 all-and-collect">
-                <button class="active j_all">全部</button>
-                <button class="j_fav">收藏</button>
-            </span>
 
+        <span class="tit-parts f3 all-and-collect">
+            <button class="active j_all">全部</button>
+            <button class="j_fav">收藏</button>
+        </span>
+        <form id="filter_form" class="form-search" method="get">
             <!-- {{ lnk_back() }}-->
             <span class="tit-parts f4">
-                <input class="j_search" name="filter" placeholder="Hover"  /><button type="submit" class="icon"></button>
+                <input class="j_search  filter_val form-control" name="filter" placeholder="Hover"  /><button type="submit" class="icon"></button>
             </span>
         </form>
     </div>
@@ -337,7 +337,7 @@
         {% if can_edit %}
             {% set path = url_for(modelview_name + '.edit',pk=pk) %}
             {% set path = path | set_link_filters(filters) %}
-            {{ lnk_edit(path) }}
+            {{ lnk_edit_popup(path) }}
         {% endif %}
         {% if can_delete %}
             {{ lnk_delete(url_for(modelview_name + '.delete',pk=pk)) }}
@@ -368,6 +368,13 @@
 
 {% macro lnk_edit(my_href) %}
     <a href="{{my_href}}" data-toggle="tooltip" rel="tooltip"
+       title="{{_('Edit record')}}">
+        <i class="icon"></i>
+    </a>
+{% endmacro %}
+
+{% macro lnk_edit_popup(my_href) %}
+    <a class="slice-edit-popup" data-toggle="tooltip" rel="tooltip"
        title="{{_('Edit record')}}">
         <i class="icon"></i>
     </a>

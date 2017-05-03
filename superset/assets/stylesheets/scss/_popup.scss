@@ -1,0 +1,102 @@
+.popup {
+	position: fixed;
+	width: 100%;
+	height: 100vh;
+	background-color: rgba(0,0,0,0.5);
+	z-index: 1999;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	.popup-dialog {
+		height: auto;
+		z-index: 2000;
+		background-color: #ffffff;
+		border-radius: 4px;
+		opacity: 1;
+	}
+	.popup-lg {
+		width: 900px;
+	}
+
+	.popup-md {
+		width: 600px;
+	}
+
+	.popup-sm {
+		width: 300px;
+	}
+
+	.popup-content {
+		width: 100%;
+		height: 100%;
+	}
+
+	.popup-header {
+		width: 100%;
+		height: 40px;
+		background-color: #0000FF;
+		padding: 0 20px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: 14px;
+		color: #ffffff;
+		.header-left span {
+			margin-left: 10px;
+		}
+	}
+
+	.popup-body {
+		width: 100%;
+		min-height: 200px;
+		padding: 20px 40px;
+	}
+
+	.popup-footer {
+		width: 100%;
+		height: 40px;
+		background-color: #DDDDDD;
+		padding: 0 20px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		button {
+			height: 32px;
+			width: 120px;
+			padding: 5px 18px;
+		}
+	}
+	.dialog-item {
+		padding-bottom: 10px;
+		.item-left {
+			width: 15%;
+			text-align: right;
+			display: inline-block;
+		}
+		.item-right {
+			width: 85%;
+			display: inline-block;
+		}
+	}
+	.sub-item {
+		width: 50%;
+		display: inline-block;
+		.item-left {
+			width: 30%;
+			text-align: right;
+			display: inline-block;
+		}
+		.item-right {
+			width: 70%;
+			display: inline-block;
+		}
+	}
+
+	input.dialog-input {
+		height: 32px;
+	}
+
+	input.dialog-area {
+
+	}
+}
