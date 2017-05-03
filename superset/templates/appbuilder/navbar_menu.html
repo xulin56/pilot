@@ -1,7 +1,6 @@
 {% macro menu_item(item) %}
     <a tabindex="-1" href="{{item.get_url()}}">
        {% if item.icon %}
-        <i class="icon"></i>&nbsp;
     {% endif %}
     {{_(item.label)}}</a>
 {% endmacro %}

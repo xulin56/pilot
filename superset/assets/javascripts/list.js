@@ -8,8 +8,7 @@ import { operate, SliceEdit } from './components/Slice';
 const $ = window.$ = require('jquery');
 
 
-$(".slice-edit-popup").click(function () {
-	
+$(".slice-edit-popup").on('click',function () {
 	var popupEl = render(<SliceEdit />, document.getElementById('popup_root'));
 	if(popupEl) {
 		popupEl.showDialog();	

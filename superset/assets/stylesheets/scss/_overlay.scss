@@ -1,7 +1,16 @@
 
 /*xulin css*/
 $borderStyle:1px solid #e9eaed;
-
+@mixin dropdown{
+  box-sizing:border-box;
+  padding-left:15px;
+  background-color:#fff;
+  color:#1d2531;
+  width:158px;
+  border-bottom: 1px solid #c5d0de;
+  justify-content: flex-start;
+  height:40px;
+}
 
 
 
@@ -260,17 +269,12 @@ $borderStyle:1px solid #e9eaed;
         .dropdown-menu{
           padding:0;
           li{
+            margin:0;
             a{
-              box-sizing:border-box;
-              padding-left:10px;
-              background-color:#0067a6;
-              width:158px;
-              border-bottom: 1px solid #fff;
-              justify-content: flex-start;
-
+              @include dropdown;
             }
             a:hover{
-              background-color:#279cf2;
+              background-color:#f1f4f8;
             }
           }
         }
@@ -345,6 +349,21 @@ $borderStyle:1px solid #e9eaed;
       .open{
         .dropdown-menu{
           left:-134px;
+          padding:0;
+          li{
+            margin:0;
+            height:40px;
+            box-sizing:border-box;
+            padding:0;
+            a{
+              @include dropdown;
+              line-height:40px;
+              padding-top:0;
+            }
+            a:hover{
+              background-color:#f1f4f8;
+            }
+          }
         }
       }
       li:nth-of-type(1){
