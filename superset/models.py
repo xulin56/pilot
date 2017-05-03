@@ -1533,6 +1533,94 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
     def get_sqla_table_object(self):
         return self.database.get_table(self.table_name, schema=self.schema)
 
+    def get_columns_and_metrics(self):
+        """Get table's columns and metrics"""
+        try:
+            table = self.get_sqla_table_object()
+        except Exception:
+            raise Exception(
+                "Table doesn't seem to exist in the specified database, "
+                "couldn't fetch column information")
+
+        columns = []
+        metrics = []
+        any_date_col = None
+        for col in table.columns:
+            try:
+                datatype = "{}".format(col.type).upper()
+            except Exception as e:
+                datatype = "UNKNOWN"
+                logging.error(
+                    "Unrecognized data type in {}.{}".format(table, col.name))
+                logging.exception(e)
+
+            new_col = TableColumn()
+            new_col.column_name = col.name
+            new_col.type = datatype
+            new_col.groupby = new_col.is_string
+            new_col.filterable = new_col.is_string
+            new_col.sum = new_col.isnum
+            new_col.avg = new_col.isnum
+            new_col.is_dttm = new_col.is_time
+            columns.append(new_col)
+
+            if not any_date_col and new_col.is_time:
+                any_date_col = col.name
+
+            quoted = "{}".format(
+                column(new_col.column_name).compile(dialect=db.engine.dialect))
+            if new_col.sum:
+                new_metric = SqlMetric()
+                new_metric.table_id = self.id
+                new_metric.metric_name = 'sum__' + new_col.column_name
+                new_metric.verbose_name = 'sum__' + new_col.column_name
+                new_metric.metric_type = 'sum'
+                new_metric.expression = "SUM({})".format(quoted)
+                metrics.append(new_metric)
+            if new_col.avg:
+                new_metric = SqlMetric()
+                new_metric.table_id = self.id
+                new_metric.metric_name = 'avg__' + new_col.column_name
+                new_metric.verbose_name = 'avg__' + new_col.column_name
+                new_metric.metric_type = 'avg'
+                new_metric.expression = "AVG({})".format(quoted)
+                metrics.append(new_metric)
+            if new_col.max:
+                new_metric = SqlMetric()
+                new_metric.table_id = self.id
+                new_metric.metric_name = 'max__' + new_col.column_name
+                new_metric.verbose_name = 'max__' + new_col.column_name
+                new_metric.metric_type = 'max'
+                new_metric.expression = "MAX({})".format(quoted)
+                metrics.append(new_metric)
+            if new_col.min:
+                new_metric = SqlMetric()
+                new_metric.table_id = self.id
+                new_metric.metric_name = 'min__' + new_col.column_name
+                new_metric.verbose_name = 'min__' + new_col.column_name
+                new_metric.metric_type = 'min'
+                new_metric.expression = "MIN({})".format(quoted)
+                metrics.append(new_metric)
+            if new_col.count_distinct:
+                new_metric = SqlMetric()
+                new_metric.table_id = self.id
+                new_metric.metric_name = 'count_distinct__' + new_col.column_name
+                new_metric.verbose_name = 'count_distinct__' + new_col.column_name
+                new_metric.metric_type = 'count_distinct'
+                new_metric.expression = "COUNT(DISTINCT {})".format(quoted)
+                metrics.append(new_metric)
+
+        new_metric = SqlMetric()
+        new_metric.table_id = self.id
+        new_metric.metric_name = 'count'
+        new_metric.verbose_name = 'COUNT(*)'
+        new_metric.metric_type = 'count'
+        new_metric.expression = "COUNT(*)"
+        metrics.append(new_metric)
+        if not self.main_dttm_col:
+            self.main_dttm_col = any_date_col
+        return columns, metrics
+
     def fetch_metadata(self):
         """Fetches the metadata for the table and merges it in"""
         try:

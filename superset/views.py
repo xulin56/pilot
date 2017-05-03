@@ -1731,15 +1731,35 @@ class Superset(BaseSupersetView):
         session.commit()
         return redirect('/accessrequestsmodelview/list/')
 
-    def get_viz(self, slice_id=None, args=None, datasource_type=None,
-                datasource_id=None):
+    def temp_table(self, database_id, full_tb_name):
+        """A temp table for slice"""
+        table = SqlaTable()
+        table.id = 0
+        if '.' in full_tb_name:
+            table.schema, table.table_name = full_tb_name.split('.')
+        else:
+            table.table_name = full_tb_name
+        table.database_id = database_id
+        table.database = db.session.query(models.Database) \
+            .filter_by(id=database_id).first()
+        table.filter_select_enabled = True
+
+        table.columns, table.metrics = table.get_columns_and_metrics()
+        return table
+
+    def get_viz(self, slice_id=None, args=None,
+                datasource_type=None, datasource_id=None,
+                database_id=None, full_tb_name=None):
         if slice_id:
             slc = db.session.query(models.Slice).filter_by(id=slice_id).one()
             return slc.get_viz()
         else:
             viz_type = args.get('viz_type', 'table')
-            datasource = SourceRegistry.get_datasource(
-                datasource_type, datasource_id, db.session)
+            if datasource_type and datasource_id:
+                datasource = SourceRegistry.get_datasource(
+                    datasource_type, datasource_id, db.session)
+            else:
+                datasource = self.temp_table(database_id, full_tb_name)
             viz_obj = viz.viz_types[viz_type](
                 datasource, request.args if request.args else args)
             return viz_obj
@@ -1754,6 +1774,11 @@ class Superset(BaseSupersetView):
     @expose("/explore_json/<datasource_type>/<datasource_id>/")
     def explore_json(self, datasource_type, datasource_id):
         """render the chart of slice"""
+        # todo modify the url with parameters: datasource_id, full_tb_name
+        datasource_type = request.args.get('datasource_type')
+        datasource_id = request.args.get('datasource_id')
+        database_id = request.args.get('database_id')
+        full_tb_name = request.args.get('full_tb_name')
         try:
             # todo midify get_viz with parameters: database_id, full_tb_name
             viz_obj = self.get_viz(
@@ -1766,12 +1791,12 @@ class Superset(BaseSupersetView):
             logging.exception(e)
             return json_error_response(utils.error_msg_from_exception(e))
 
-        if not self.datasource_access(viz_obj.datasource):
-            return Response(
-                json.dumps(
-                    {'error': DATASOURCE_ACCESS_ERR}),
-                status=404,
-                mimetype="application/json")
+        # if not self.datasource_access(viz_obj.datasource):
+        #     return Response(
+        #         json.dumps(
+        #             {'error': DATASOURCE_ACCESS_ERR}),
+        #         status=404,
+        #         mimetype="application/json")
 
         payload = {}
         status = 200
@@ -1842,6 +1867,12 @@ class Superset(BaseSupersetView):
         """render the parameters of slice"""
         viz_type = request.args.get("viz_type")
         slice_id = request.args.get('slice_id')
+        # todo modify the url with parameters: database_id, full_tb_name
+        datasource_type = request.args.get('datasource_type')
+        datasource_id = request.args.get('datasource_id')
+        database_id = request.args.get('database_id')
+        full_tb_name = request.args.get('full_tb_name')
+
         slc = None
         user_id = g.user.get_id() if g.user else None
 
@@ -1852,29 +1883,34 @@ class Superset(BaseSupersetView):
         datasource_class = SourceRegistry.sources[datasource_type]
         datasources = db.session.query(datasource_class).all()
         datasources = sorted(datasources, key=lambda ds: ds.full_name)
+        databases = db.session.query(models.Database).all()
+        databases = sorted(databases, key=lambda d: d.name)
 
         try:
+            # todo midify get_viz with parameters: database_id, full_tb_name
             viz_obj = self.get_viz(
                 datasource_type=datasource_type,
                 datasource_id=datasource_id,
+                database_id=database_id,
+                full_tb_name=full_tb_name,
                 args=request.args)
         except Exception as e:
             flash('{}'.format(e), "alert")
             return redirect(error_redirect)
 
-        if not viz_obj.datasource:
-            flash(DATASOURCE_MISSING_ERR, "alert")
-            return redirect(error_redirect)
-
-        if not self.datasource_access(viz_obj.datasource):
-            flash(
-                __(get_datasource_access_error_msg(viz_obj.datasource.name)),
-                "danger")
-            return redirect(
-                'superset/request_access/?'
-                'datasource_type={datasource_type}&'
-                'datasource_id={datasource_id}&'
-                ''.format(**locals()))
+        # if not viz_obj.datasource:
+        #     flash(DATASOURCE_MISSING_ERR, "alert")
+        #     return redirect(error_redirect)
+        #
+        # if not self.datasource_access(viz_obj.datasource):
+        #     flash(
+        #         __(get_datasource_access_error_msg(viz_obj.datasource.name)),
+        #         "danger")
+        #     return redirect(
+        #         'superset/request_access/?'
+        #         'datasource_type={datasource_type}&'
+        #         'datasource_id={datasource_id}&'
+        #         ''.format(**locals()))
 
         if not viz_type and viz_obj.datasource.default_endpoint:
             return redirect(viz_obj.datasource.default_endpoint)
