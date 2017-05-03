@@ -337,7 +337,7 @@
         {% if can_edit %}
             {% set path = url_for(modelview_name + '.edit',pk=pk) %}
             {% set path = path | set_link_filters(filters) %}
-            {{ lnk_edit(path) }}
+            {{ lnk_edit_popup(path) }}
         {% endif %}
         {% if can_delete %}
             {{ lnk_delete(url_for(modelview_name + '.delete',pk=pk)) }}
@@ -368,6 +368,13 @@
 
 {% macro lnk_edit(my_href) %}
     <a href="{{my_href}}" data-toggle="tooltip" rel="tooltip"
+       title="{{_('Edit record')}}">
+        <i class="icon"></i>
+    </a>
+{% endmacro %}
+
+{% macro lnk_edit_popup(my_href) %}
+    <a class="slice-edit-popup" data-toggle="tooltip" rel="tooltip"
        title="{{_('Edit record')}}">
         <i class="icon"></i>
     </a>
