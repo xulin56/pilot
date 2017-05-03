@@ -777,9 +777,10 @@ class Database(Model, AuditMixinNullable):
             if not user_id:
                 user_id = g.user.get_id()
         except Exception:
-            logging.error("Unable to get user's id when fill sqlalchmy uri")
+            msg = "Unable to get user's id when fill sqlalchmy uri"
+            logging.error(msg)
             # todo show in the frontend
-            return False
+            raise Exception(msg)
         url = make_url(self.sqlalchemy_uri)
         account = (
             db.session.query(DatabaseAccount)
@@ -789,17 +790,19 @@ class Database(Model, AuditMixinNullable):
         )
         if not account:
             user = db.session.query(User).filter(User.id == user_id).first()
-            logging.error("User:{} do not have account for connection:{}"
-                          .format(user.username, self.database_name))
+            msg = "User:{} do not have account for connection:{}"\
+                .format(user.username, self.database_name)
+            logging.error(msg)
             # todo the frontend need to mention user to add account
-            return False
+            raise Exception(msg)
         url.username = account.username
         url.password = account.password
         if not self.test_uri(str(url)):
-            logging.error("Test connection failed, maybe need to modify your "
-                          "account for connection:{}".format(self.database_name))
-            # todo the frontend need to mention user to modify account
-            return False
+            msg = "Test connection failed, maybe need to modify your " \
+                  "account for connection:{}".format(self.database_name)
+            logging.error(msg)
+            # todo the frontend need to mention user to add account
+            raise Exception(msg)
         return str(url)
 
     def get_sqla_engine(self, schema=None):

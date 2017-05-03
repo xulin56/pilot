@@ -643,45 +643,51 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     }
 
     def pre_add(self, db):
-        db.set_sqlalchemy_uri(db.sqlalchemy_uri)
+        if db.test_uri(db.sqlalchemy_uri):
+            db.set_sqlalchemy_uri(db.sqlalchemy_uri)
+        else:
+            raise Exception("Not a valid connection")
+
+    def post_add(self, db):
+        self.add_or_edit_database_account(db)
         security.merge_perm(sm, 'database_access', db.perm)
         for schema in db.all_schema_names():
             security.merge_perm(
                 sm, 'schema_access', utils.get_schema_perm(db, schema))
-
-    def post_add(self, obj):
         # log user aciton
-        action_str = 'Add connection: {}'.format(repr(obj))
-        log_action('add', action_str, 'database', obj.id)
+        action_str = 'Add connection: {}'.format(repr(db))
+        log_action('add', action_str, 'database', db.id)
         # log database number
         log_number('database', g.user.get_id())
-        self.add_database_account(obj)
-
-    def add_database_account(self, obj):
-        url = sqla.engine.url.make_url(obj.sqlalchemy_uri_decrypted)
-        user_id = g.user.get_id()
-        db_account = models.DatabaseAccount
-        db_account.insert_or_update_account(
-            user_id, obj.id, url.username, url.password)
 
     def pre_update(self, db):
         self.pre_add(db)
 
-    def post_update(self, obj):
+    def post_update(self, db):
+        self.add_or_edit_database_account(db)
         # log user action
-        action_str = 'Edit connection: {}'.format(repr(obj))
-        log_action('edit', action_str, 'database', obj.id)
+        action_str = 'Edit connection: {}'.format(repr(db))
+        log_action('edit', action_str, 'database', db.id)
 
-    def post_delete(self, obj):
-        # log user action
-        action_str = 'Delete connection: {}'.format(repr(obj))
-        log_action('delete', action_str, 'database', obj.id)
-        # log database number
-        log_number('database', g.user.get_id())
+    def pre_delete(self, db):
         db.session.query(models.DatabaseAccount) \
-            .filter(models.DatabaseAccount.database_id == obj.id) \
+            .filter(models.DatabaseAccount.database_id == db.id) \
             .delete(synchronize_session=False)
         db.session.commit()
+
+    def post_delete(self, db):
+        # log user action
+        action_str = 'Delete connection: {}'.format(repr(db))
+        log_action('delete', action_str, 'database', db.id)
+        # log database number
+        log_number('database', g.user.get_id())
+
+    def add_or_edit_database_account(self, db):
+        url = sqla.engine.url.make_url(db.sqlalchemy_uri_decrypted)
+        user_id = g.user.get_id()
+        db_account = models.DatabaseAccount
+        db_account.insert_or_update_account(
+            user_id, db.id, url.username, url.password)
 
 # appbuilder.add_link(
 #     'Import Dashboards',
@@ -1744,15 +1750,17 @@ class Superset(BaseSupersetView):
         viz_obj = self.get_viz(slice_id)
         return redirect(viz_obj.get_url(**request.args))
 
-    # @log_this
     @has_access_api
     @expose("/explore_json/<datasource_type>/<datasource_id>/")
     def explore_json(self, datasource_type, datasource_id):
         """render the chart of slice"""
         try:
+            # todo midify get_viz with parameters: database_id, full_tb_name
             viz_obj = self.get_viz(
                 datasource_type=datasource_type,
                 datasource_id=datasource_id,
+                database_id=database_id,
+                full_tb_name=full_tb_name,
                 args=request.args)
         except Exception as e:
             logging.exception(e)
@@ -1828,9 +1836,6 @@ class Superset(BaseSupersetView):
         return 'table', new_tb.id
 
     # Todo: add parameters in expose url: 'database_id','table_name'
-    # "/explore/<datasource_type>/<datasource_id>/<database_id>/<table_name>"
-    # then add_table()
-    # @log_this
     @has_access
     @expose("/explore/<datasource_type>/<datasource_id>/")
     def explore(self, datasource_type, datasource_id):
@@ -2015,6 +2020,9 @@ class Superset(BaseSupersetView):
         slc.datasource_type = datasource_type
         slc.datasource_id = datasource_id
         slc.slice_name = slice_name
+        # todo add parameter: database_id, full_tb_name
+        # slc.database_id =
+        # slc.full_table_name =
 
         if action in ('saveas') and slice_add_perm:
             self.save_slice(slc)
