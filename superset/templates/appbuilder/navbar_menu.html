@@ -1,8 +1,7 @@
 {% macro menu_item(item) %}
     <a tabindex="-1" href="{{item.get_url()}}">
-       {% if item.icon %}
-    {% endif %}
-    {{_(item.label)}}</a>
+        {{_(item.label)}}
+    </a>
 {% endmacro %}
 
 
@@ -33,7 +32,9 @@
             </ul></li>
         {% else %}
             <li class="nav-li">
-                {{ menu_item(item1) }}
+                <a tabindex="-1" href="{{item1.get_url()}}">
+                    <i class="icon"></i>{{_(item1.label)}}
+                </a>
             </li>
         {% endif %}
     {% endif %}
