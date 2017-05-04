@@ -1743,8 +1743,7 @@ class Superset(BaseSupersetView):
         table.database = db.session.query(models.Database) \
             .filter_by(id=database_id).first()
         table.filter_select_enabled = True
-
-        table.columns, table.metrics = table.get_columns_and_metrics()
+        table.set_temp_columns_and_metrics()
         return table
 
     def get_viz(self, slice_id=None, args=None,
@@ -1755,11 +1754,11 @@ class Superset(BaseSupersetView):
             return slc.get_viz()
         else:
             viz_type = args.get('viz_type', 'table')
-            if datasource_type and datasource_id:
+            if database_id and full_tb_name:
+                datasource = self.temp_table(database_id, full_tb_name)
+            else:
                 datasource = SourceRegistry.get_datasource(
                     datasource_type, datasource_id, db.session)
-            else:
-                datasource = self.temp_table(database_id, full_tb_name)
             viz_obj = viz.viz_types[viz_type](
                 datasource, request.args if request.args else args)
             return viz_obj
@@ -1775,8 +1774,6 @@ class Superset(BaseSupersetView):
     def explore_json(self, datasource_type, datasource_id):
         """render the chart of slice"""
         # todo modify the url with parameters: datasource_id, full_tb_name
-        datasource_type = request.args.get('datasource_type')
-        datasource_id = request.args.get('datasource_id')
         database_id = request.args.get('database_id')
         full_tb_name = request.args.get('full_tb_name')
         try:
@@ -1839,39 +1836,12 @@ class Superset(BaseSupersetView):
             return redirect('/dashboardmodelview/list/')
         return self.render_template('superset/import_dashboards.html')
 
-    def add_table(self, database_id, schema, table_name):
-        """add table at backend when choice source table for new slice"""
-        if '.' in table_name:
-            schema, table_name = table_name.split('.')
-        tb = SourceRegistry.get_table(
-            db.session, 'table', table_name, schema, database_id)
-        if tb:
-            return 'table', tb.id
-
-        tb = models.SqlaTable(table_name=table_name)
-        tb.schema = schema
-        tb.database_id = database_id
-        tb.database = db.session.query(models.Database)\
-            .filter_by(id=database_id).first()
-        db.session.merge(tb)
-        db.session.commit()
-        tb.fetch_metadata()
-        new_tb = SourceRegistry.get_table(
-            db.session, 'table', table_name, schema, database_id)
-        return 'table', new_tb.id
-
-    # Todo: add parameters in expose url: 'database_id','table_name'
     @has_access
     @expose("/explore/<datasource_type>/<datasource_id>/")
     def explore(self, datasource_type, datasource_id):
         """render the parameters of slice"""
         viz_type = request.args.get("viz_type")
         slice_id = request.args.get('slice_id')
-        # todo modify the url with parameters: database_id, full_tb_name
-        datasource_type = request.args.get('datasource_type')
-        datasource_id = request.args.get('datasource_id')
-        database_id = request.args.get('database_id')
-        full_tb_name = request.args.get('full_tb_name')
 
         slc = None
         user_id = g.user.get_id() if g.user else None
@@ -1883,11 +1853,13 @@ class Superset(BaseSupersetView):
         datasource_class = SourceRegistry.sources[datasource_type]
         datasources = db.session.query(datasource_class).all()
         datasources = sorted(datasources, key=lambda ds: ds.full_name)
-        databases = db.session.query(models.Database).all()
+        databases = db.session.query(models.Database)\
+            .filter_by(expose_in_sqllab=1).all()
         databases = sorted(databases, key=lambda d: d.name)
 
+        database_id = request.args.get('database_id')
+        full_tb_name = request.args.get('full_tb_name')
         try:
-            # todo midify get_viz with parameters: database_id, full_tb_name
             viz_obj = self.get_viz(
                 datasource_type=datasource_type,
                 datasource_id=datasource_id,
@@ -1928,7 +1900,8 @@ class Superset(BaseSupersetView):
 
         # find out if user is in explore v2 beta group
         # and set flag `is_in_explore_v2_beta`
-        is_in_explore_v2_beta = sm.find_role('explore-v2-beta') in get_user_roles()
+        #is_in_explore_v2_beta = sm.find_role('explore-v2-beta') in get_user_roles()
+        is_in_explore_v2_beta = False
 
         # handle different endpoints
         if request.args.get("csv") == "true":
@@ -1972,6 +1945,7 @@ class Superset(BaseSupersetView):
                 viz=viz_obj,
                 slice=slc,
                 datasources=datasources,
+                databases=databases,
                 can_add=slice_add_perm,
                 can_edit=slice_edit_perm,
                 can_download=slice_download_perm,
@@ -2048,6 +2022,8 @@ class Superset(BaseSupersetView):
 
         datasource_type = args.get('datasource_type')
         datasource_id = args.get('datasource_id')
+        database_id = args.get('database_id')
+        full_tb_name = args.get('full_tb_name')
 
         if action in ('saveas'):
             d.pop('slice_id')  # don't save old slice_id
@@ -2059,9 +2035,8 @@ class Superset(BaseSupersetView):
         slc.datasource_type = datasource_type
         slc.datasource_id = datasource_id
         slc.slice_name = slice_name
-        # todo add parameter: database_id, full_tb_name
-        # slc.database_id =
-        # slc.full_table_name =
+        slc.database_id = database_id
+        slc.full_table_name = full_tb_name
 
         if action in ('saveas') and slice_add_perm:
             self.save_slice(slc)
