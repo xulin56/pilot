@@ -1307,6 +1307,14 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
             if col_name == col.column_name:
                 return col
 
+    def preview_data(self, limit=100):
+        sql = "SELECT * FROM {} LIMIT {}".format(self.name, limit)
+        engine = self.database.get_sqla_engine()
+        return pd.read_sql_query(
+            sql=sql,
+            con=engine
+        )
+
     def values_for_column(self,
                           column_name,
                           from_dttm,
