@@ -27,25 +27,25 @@
   {% endmacro %}
 
   <div class="datasource container-fluid">
+    <div class="panel-top-header">
+      <div class="header-left">
+        <i class="glyphicon glyphicon-edit"></i>
+        <span>编辑工作表</span>
+      </div>
+      <div class="header-right">
+        <div
+          id="js-query-and-save-btns"
+          class="query-and-save-btns-container"
+          data-can-add="{{ can_add }}">
+        </div>
+      </div>
+    </div>
     <form id="query" method="GET" style="display: none;">
       <div id="form_container" class="row">
         <div class="col-md-3">
-          <div
-            id="js-query-and-save-btns"
-            class="query-and-save-btns-container"
-            data-can-add="{{ can_add }}"
-          >
-          </div>
-
           <div class="panel panel-default">
-            <div class="panel-heading">
-              <div class="panel-title">
-                Datasource & Chart Type
-              </div>
-            </div>
             <div class="panel-body">
-              <div>
-                <!-- DATASOURCE -->
+              <!-- <div>
                 <span title="Data Source" data-toggle="tooltip">
                   <select id="datasource_id" class="select2">
                     {% for ds in datasources %}
@@ -58,9 +58,36 @@
                 </a>
               </div>
               <br/>
-              <!-- CHART TYPE -->
               <div title="Visualization Type" data-toggle="tooltip">
                 {{ form.get_field("viz_type")(class_="select2-with-images") }}
+              </div> -->
+              <div class="body-left-area">
+                <div class="left-area-item">
+                  <div class="item-left">
+                    <span>数据来源</span>
+                    <div class="radio-item">
+                        <input type="radio" name="optionsRadios" value="datasource" checked>
+                        <span>已建数据集</span>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="optionsRadios" value="sourcetable">
+                        <span>原始表</span>
+                      </label>
+                    </div>  
+                  </div>
+                  <div class="item-right">  
+                    <button>+</button>  
+                  </div>
+                </div>
+                <div class="left-area-item">
+                    <span title="Data Source" data-toggle="tooltip">
+                      <select id="datasource_id" class="select2">
+                        {% for ds in datasources %}
+                          <option url="{{ ds.explore_url }}" {{ "selected" if ds.id == datasource.id }} value="{{ ds.id }}">{{ ds.full_name }}<i class="fa fa-info"></i></option>
+                        {% endfor %}
+                      </select>
+                    </span>
+                </div>
               </div>
             </div>
           </div>
