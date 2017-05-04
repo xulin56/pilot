@@ -1553,6 +1553,8 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
                 "couldn't fetch column information")
 
         any_date_col = None
+        self.temp_columns = []
+        self.temp_metrics = []
         for col in table.columns:
             try:
                 datatype = "{}".format(col.type).upper()
