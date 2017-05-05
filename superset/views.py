@@ -643,45 +643,51 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     }
 
     def pre_add(self, db):
-        db.set_sqlalchemy_uri(db.sqlalchemy_uri)
+        if db.test_uri(db.sqlalchemy_uri):
+            db.set_sqlalchemy_uri(db.sqlalchemy_uri)
+        else:
+            raise Exception("Not a valid connection")
+
+    def post_add(self, db):
+        self.add_or_edit_database_account(db)
         security.merge_perm(sm, 'database_access', db.perm)
         for schema in db.all_schema_names():
             security.merge_perm(
                 sm, 'schema_access', utils.get_schema_perm(db, schema))
-
-    def post_add(self, obj):
         # log user aciton
-        action_str = 'Add connection: {}'.format(repr(obj))
-        log_action('add', action_str, 'database', obj.id)
+        action_str = 'Add connection: {}'.format(repr(db))
+        log_action('add', action_str, 'database', db.id)
         # log database number
         log_number('database', g.user.get_id())
-        self.add_database_account(obj)
-
-    def add_database_account(self, obj):
-        url = sqla.engine.url.make_url(obj.sqlalchemy_uri_decrypted)
-        user_id = g.user.get_id()
-        db_account = models.DatabaseAccount
-        db_account.insert_or_update_account(
-            user_id, obj.id, url.username, url.password)
 
     def pre_update(self, db):
         self.pre_add(db)
 
-    def post_update(self, obj):
+    def post_update(self, db):
+        self.add_or_edit_database_account(db)
         # log user action
-        action_str = 'Edit connection: {}'.format(repr(obj))
-        log_action('edit', action_str, 'database', obj.id)
+        action_str = 'Edit connection: {}'.format(repr(db))
+        log_action('edit', action_str, 'database', db.id)
 
-    def post_delete(self, obj):
-        # log user action
-        action_str = 'Delete connection: {}'.format(repr(obj))
-        log_action('delete', action_str, 'database', obj.id)
-        # log database number
-        log_number('database', g.user.get_id())
+    def pre_delete(self, db):
         db.session.query(models.DatabaseAccount) \
-            .filter(models.DatabaseAccount.database_id == obj.id) \
+            .filter(models.DatabaseAccount.database_id == db.id) \
             .delete(synchronize_session=False)
         db.session.commit()
+
+    def post_delete(self, db):
+        # log user action
+        action_str = 'Delete connection: {}'.format(repr(db))
+        log_action('delete', action_str, 'database', db.id)
+        # log database number
+        log_number('database', g.user.get_id())
+
+    def add_or_edit_database_account(self, db):
+        url = sqla.engine.url.make_url(db.sqlalchemy_uri_decrypted)
+        user_id = g.user.get_id()
+        db_account = models.DatabaseAccount
+        db_account.insert_or_update_account(
+            user_id, db.id, url.username, url.password)
 
 # appbuilder.add_link(
 #     'Import Dashboards',
@@ -1725,15 +1731,34 @@ class Superset(BaseSupersetView):
         session.commit()
         return redirect('/accessrequestsmodelview/list/')
 
-    def get_viz(self, slice_id=None, args=None, datasource_type=None,
-                datasource_id=None):
+    def temp_table(self, database_id, full_tb_name):
+        """A temp table for slice"""
+        table = SqlaTable()
+        table.id = 0
+        if '.' in full_tb_name:
+            table.schema, table.table_name = full_tb_name.split('.')
+        else:
+            table.table_name = full_tb_name
+        table.database_id = database_id
+        table.database = db.session.query(models.Database) \
+            .filter_by(id=database_id).first()
+        table.filter_select_enabled = True
+        table.set_temp_columns_and_metrics()
+        return table
+
+    def get_viz(self, slice_id=None, args=None,
+                datasource_type=None, datasource_id=None,
+                database_id=None, full_tb_name=None):
         if slice_id:
             slc = db.session.query(models.Slice).filter_by(id=slice_id).one()
             return slc.get_viz()
         else:
             viz_type = args.get('viz_type', 'table')
-            datasource = SourceRegistry.get_datasource(
-                datasource_type, datasource_id, db.session)
+            if database_id and full_tb_name:
+                datasource = self.temp_table(database_id, full_tb_name)
+            else:
+                datasource = SourceRegistry.get_datasource(
+                    datasource_type, datasource_id, db.session)
             viz_obj = viz.viz_types[viz_type](
                 datasource, request.args if request.args else args)
             return viz_obj
@@ -1744,26 +1769,31 @@ class Superset(BaseSupersetView):
         viz_obj = self.get_viz(slice_id)
         return redirect(viz_obj.get_url(**request.args))
 
-    # @log_this
     @has_access_api
     @expose("/explore_json/<datasource_type>/<datasource_id>/")
     def explore_json(self, datasource_type, datasource_id):
         """render the chart of slice"""
+        # todo modify the url with parameters: datasource_id, full_tb_name
+        database_id = request.args.get('database_id')
+        full_tb_name = request.args.get('full_tb_name')
         try:
+            # todo midify get_viz with parameters: database_id, full_tb_name
             viz_obj = self.get_viz(
                 datasource_type=datasource_type,
                 datasource_id=datasource_id,
+                database_id=database_id,
+                full_tb_name=full_tb_name,
                 args=request.args)
         except Exception as e:
             logging.exception(e)
             return json_error_response(utils.error_msg_from_exception(e))
 
-        if not self.datasource_access(viz_obj.datasource):
-            return Response(
-                json.dumps(
-                    {'error': DATASOURCE_ACCESS_ERR}),
-                status=404,
-                mimetype="application/json")
+        # if not self.datasource_access(viz_obj.datasource):
+        #     return Response(
+        #         json.dumps(
+        #             {'error': DATASOURCE_ACCESS_ERR}),
+        #         status=404,
+        #         mimetype="application/json")
 
         payload = {}
         status = 200
@@ -1806,37 +1836,13 @@ class Superset(BaseSupersetView):
             return redirect('/dashboardmodelview/list/')
         return self.render_template('superset/import_dashboards.html')
 
-    def add_table(self, database_id, schema, table_name):
-        """add table at backend when choice source table for new slice"""
-        if '.' in table_name:
-            schema, table_name = table_name.split('.')
-        tb = SourceRegistry.get_table(
-            db.session, 'table', table_name, schema, database_id)
-        if tb:
-            return 'table', tb.id
-
-        tb = models.SqlaTable(table_name=table_name)
-        tb.schema = schema
-        tb.database_id = database_id
-        tb.database = db.session.query(models.Database)\
-            .filter_by(id=database_id).first()
-        db.session.merge(tb)
-        db.session.commit()
-        tb.fetch_metadata()
-        new_tb = SourceRegistry.get_table(
-            db.session, 'table', table_name, schema, database_id)
-        return 'table', new_tb.id
-
-    # Todo: add parameters in expose url: 'database_id','table_name'
-    # "/explore/<datasource_type>/<datasource_id>/<database_id>/<table_name>"
-    # then add_table()
-    # @log_this
     @has_access
     @expose("/explore/<datasource_type>/<datasource_id>/")
     def explore(self, datasource_type, datasource_id):
         """render the parameters of slice"""
         viz_type = request.args.get("viz_type")
         slice_id = request.args.get('slice_id')
+
         slc = None
         user_id = g.user.get_id() if g.user else None
 
@@ -1847,29 +1853,36 @@ class Superset(BaseSupersetView):
         datasource_class = SourceRegistry.sources[datasource_type]
         datasources = db.session.query(datasource_class).all()
         datasources = sorted(datasources, key=lambda ds: ds.full_name)
+        databases = db.session.query(models.Database)\
+            .filter_by(expose_in_sqllab=1).all()
+        databases = sorted(databases, key=lambda d: d.name)
 
+        database_id = request.args.get('database_id')
+        full_tb_name = request.args.get('full_tb_name')
         try:
             viz_obj = self.get_viz(
                 datasource_type=datasource_type,
                 datasource_id=datasource_id,
+                database_id=database_id,
+                full_tb_name=full_tb_name,
                 args=request.args)
         except Exception as e:
             flash('{}'.format(e), "alert")
             return redirect(error_redirect)
 
-        if not viz_obj.datasource:
-            flash(DATASOURCE_MISSING_ERR, "alert")
-            return redirect(error_redirect)
-
-        if not self.datasource_access(viz_obj.datasource):
-            flash(
-                __(get_datasource_access_error_msg(viz_obj.datasource.name)),
-                "danger")
-            return redirect(
-                'superset/request_access/?'
-                'datasource_type={datasource_type}&'
-                'datasource_id={datasource_id}&'
-                ''.format(**locals()))
+        # if not viz_obj.datasource:
+        #     flash(DATASOURCE_MISSING_ERR, "alert")
+        #     return redirect(error_redirect)
+        #
+        # if not self.datasource_access(viz_obj.datasource):
+        #     flash(
+        #         __(get_datasource_access_error_msg(viz_obj.datasource.name)),
+        #         "danger")
+        #     return redirect(
+        #         'superset/request_access/?'
+        #         'datasource_type={datasource_type}&'
+        #         'datasource_id={datasource_id}&'
+        #         ''.format(**locals()))
 
         if not viz_type and viz_obj.datasource.default_endpoint:
             return redirect(viz_obj.datasource.default_endpoint)
@@ -1887,7 +1900,8 @@ class Superset(BaseSupersetView):
 
         # find out if user is in explore v2 beta group
         # and set flag `is_in_explore_v2_beta`
-        is_in_explore_v2_beta = sm.find_role('explore-v2-beta') in get_user_roles()
+        #is_in_explore_v2_beta = sm.find_role('explore-v2-beta') in get_user_roles()
+        is_in_explore_v2_beta = False
 
         # handle different endpoints
         if request.args.get("csv") == "true":
@@ -1926,11 +1940,14 @@ class Superset(BaseSupersetView):
                 slice=slc,
                 table_name=table_name)
         else:
+            preview_data = viz_obj.datasource.preview_data()
             return self.render_template(
                 "superset/explore.html",
                 viz=viz_obj,
                 slice=slc,
                 datasources=datasources,
+                databases=databases,
+                preview_data=preview_data,
                 can_add=slice_add_perm,
                 can_edit=slice_edit_perm,
                 can_download=slice_download_perm,
@@ -2007,6 +2024,8 @@ class Superset(BaseSupersetView):
 
         datasource_type = args.get('datasource_type')
         datasource_id = args.get('datasource_id')
+        database_id = args.get('database_id')
+        full_tb_name = args.get('full_tb_name')
 
         if action in ('saveas'):
             d.pop('slice_id')  # don't save old slice_id
@@ -2018,6 +2037,8 @@ class Superset(BaseSupersetView):
         slc.datasource_type = datasource_type
         slc.datasource_id = datasource_id
         slc.slice_name = slice_name
+        slc.database_id = database_id
+        slc.full_table_name = full_tb_name
 
         if action in ('saveas') and slice_add_perm:
             self.save_slice(slc)

@@ -24,7 +24,7 @@ manager.add_command('db', MigrateCommand)
 
 @manager.command
 def init():
-    """Inits the Superset application"""
+    """Inits the application"""
     security.sync_role_definitions()
 
 
@@ -32,19 +32,19 @@ def init():
     '-d', '--debug', action='store_true',
     help="Start the web server in debug mode")
 @manager.option(
-    '-a', '--address', default=config.get("SUPERSET_WEBSERVER_ADDRESS"),
+    '-a', '--address', default=config.get("PILOT_WEBSERVER_ADDRESS"),
     help="Specify the address to which to bind the web server")
 @manager.option(
-    '-p', '--port', default=config.get("SUPERSET_WEBSERVER_PORT"),
+    '-p', '--port', default=config.get("PILOT_WEBSERVER_PORT"),
     help="Specify the port on which to run the web server")
 @manager.option(
-    '-w', '--workers', default=config.get("SUPERSET_WORKERS", 2),
+    '-w', '--workers', default=config.get("PILOT_WORKERS", 2),
     help="Number of gunicorn web server workers to fire up")
 @manager.option(
-    '-t', '--timeout', default=config.get("SUPERSET_WEBSERVER_TIMEOUT"),
+    '-t', '--timeout', default=config.get("PILOT_WEBSERVER_TIMEOUT"),
     help="Specify the timeout (seconds) for the gunicorn web server")
 def runserver(debug, address, port, timeout, workers):
-    """Starts a Superset web server"""
+    """Starts a web server"""
     debug = debug or config.get("DEBUG")
     if debug:
         app.run(
@@ -72,7 +72,7 @@ def version(verbose):
     """Prints the current version number"""
     s = (
         "\n-----------------------\n"
-        "Superset {version}\n"
+        "Pilot {version}\n"
         "-----------------------").format(
         version=config.get('VERSION_STRING'))
     print(s)
@@ -147,7 +147,7 @@ def refresh_druid(datasource, merge):
 
 @manager.command
 def worker():
-    """Starts a Superset worker for async SQL query execution."""
+    """Starts a worker for async SQL query execution."""
     # celery -A tasks worker --loglevel=info
     print("Starting SQL Celery worker.")
     if config.get('CELERY_CONFIG'):

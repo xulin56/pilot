@@ -777,9 +777,10 @@ class Database(Model, AuditMixinNullable):
             if not user_id:
                 user_id = g.user.get_id()
         except Exception:
-            logging.error("Unable to get user's id when fill sqlalchmy uri")
+            msg = "Unable to get user's id when fill sqlalchmy uri"
+            logging.error(msg)
             # todo show in the frontend
-            return False
+            raise Exception(msg)
         url = make_url(self.sqlalchemy_uri)
         account = (
             db.session.query(DatabaseAccount)
@@ -789,17 +790,19 @@ class Database(Model, AuditMixinNullable):
         )
         if not account:
             user = db.session.query(User).filter(User.id == user_id).first()
-            logging.error("User:{} do not have account for connection:{}"
-                          .format(user.username, self.database_name))
+            msg = "User:{} do not have account for connection:{}"\
+                .format(user.username, self.database_name)
+            logging.error(msg)
             # todo the frontend need to mention user to add account
-            return False
+            raise Exception(msg)
         url.username = account.username
         url.password = account.password
         if not self.test_uri(str(url)):
-            logging.error("Test connection failed, maybe need to modify your "
-                          "account for connection:{}".format(self.database_name))
-            # todo the frontend need to mention user to modify account
-            return False
+            msg = "Test connection failed, maybe need to modify your " \
+                  "account for connection:{}".format(self.database_name)
+            logging.error(msg)
+            # todo the frontend need to mention user to add account
+            raise Exception(msg)
         return str(url)
 
     def get_sqla_engine(self, schema=None):
@@ -1010,7 +1013,7 @@ class TableColumn(Model, AuditMixinNullable, ImportMixin):
     table_id = Column(Integer, ForeignKey('tables.id'))
     table = relationship(
         'SqlaTable',
-        backref=backref('columns', cascade='all, delete-orphan'),
+        backref=backref('ref_columns', cascade='all, delete-orphan'),
         foreign_keys=[table_id])
     column_name = Column(String(255))
     verbose_name = Column(String(1024))
@@ -1131,7 +1134,7 @@ class SqlMetric(Model, AuditMixinNullable, ImportMixin):
     table_id = Column(Integer, ForeignKey('tables.id'))
     table = relationship(
         'SqlaTable',
-        backref=backref('metrics', cascade='all, delete-orphan'),
+        backref=backref('ref_metrics', cascade='all, delete-orphan'),
         foreign_keys=[table_id])
     expression = Column(Text)
     description = Column(Text)
@@ -1197,6 +1200,8 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
     baselink = "tablemodelview"
     column_cls = TableColumn
     metric_cls = SqlMetric
+    temp_columns = []      # for creating slice with source table
+    temp_metrics = []
     export_fields = (
         'table_name', 'main_dttm_col', 'description', 'default_endpoint',
         'database_id', 'is_featured', 'offset', 'cache_timeout', 'schema',
@@ -1209,6 +1214,14 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
 
     def __repr__(self):
         return self.name
+
+    @property
+    def columns(self):
+        return self.temp_columns if len(self.temp_columns) > 0 else self.ref_columns
+
+    @property
+    def metrics(self):
+        return self.temp_metrics if len(self.temp_metrics) > 0 else self.ref_metrics
 
     @property
     def description_markeddown(self):
@@ -1293,6 +1306,14 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
         for col in columns:
             if col_name == col.column_name:
                 return col
+
+    def preview_data(self, limit=100):
+        sql = "SELECT * FROM {} LIMIT {}".format(self.name, limit)
+        engine = self.database.get_sqla_engine()
+        return pd.read_sql_query(
+            sql=sql,
+            con=engine
+        )
 
     def values_for_column(self,
                           column_name,
@@ -1529,6 +1550,87 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
 
     def get_sqla_table_object(self):
         return self.database.get_table(self.table_name, schema=self.schema)
+
+    def set_temp_columns_and_metrics(self):
+        """Get table's columns and metrics"""
+        try:
+            table = self.get_sqla_table_object()
+        except Exception:
+            raise Exception(
+                "Table doesn't seem to exist in the specified database, "
+                "couldn't fetch column information")
+
+        any_date_col = None
+        self.temp_columns = []
+        self.temp_metrics = []
+        for col in table.columns:
+            try:
+                datatype = "{}".format(col.type).upper()
+            except Exception as e:
+                datatype = "UNKNOWN"
+                logging.error(
+                    "Unrecognized data type in {}.{}".format(table, col.name))
+                logging.exception(e)
+
+            new_col = TableColumn()
+            new_col.column_name = col.name
+            new_col.type = datatype
+            new_col.groupby = new_col.is_string
+            new_col.filterable = new_col.is_string
+            new_col.sum = new_col.isnum
+            new_col.avg = new_col.isnum
+            new_col.is_dttm = new_col.is_time
+            self.temp_columns.append(new_col)
+
+            if not any_date_col and new_col.is_time:
+                any_date_col = col.name
+
+            quoted = "{}".format(
+                column(new_col.column_name).compile(dialect=db.engine.dialect))
+            if new_col.sum:
+                new_metric = SqlMetric()
+                new_metric.metric_name = 'sum__' + new_col.column_name
+                new_metric.verbose_name = 'sum__' + new_col.column_name
+                new_metric.metric_type = 'sum'
+                new_metric.expression = "SUM({})".format(quoted)
+                self.temp_metrics.append(new_metric)
+            if new_col.avg:
+                new_metric = SqlMetric()
+                new_metric.metric_name = 'avg__' + new_col.column_name
+                new_metric.verbose_name = 'avg__' + new_col.column_name
+                new_metric.metric_type = 'avg'
+                new_metric.expression = "AVG({})".format(quoted)
+                self.temp_metrics.append(new_metric)
+            if new_col.max:
+                new_metric = SqlMetric()
+                new_metric.metric_name = 'max__' + new_col.column_name
+                new_metric.verbose_name = 'max__' + new_col.column_name
+                new_metric.metric_type = 'max'
+                new_metric.expression = "MAX({})".format(quoted)
+                self.temp_metrics.append(new_metric)
+            if new_col.min:
+                new_metric = SqlMetric()
+                new_metric.metric_name = 'min__' + new_col.column_name
+                new_metric.verbose_name = 'min__' + new_col.column_name
+                new_metric.metric_type = 'min'
+                new_metric.expression = "MIN({})".format(quoted)
+                self.temp_metrics.append(new_metric)
+            if new_col.count_distinct:
+                new_metric = SqlMetric()
+                new_metric.metric_name = 'count_distinct__' + new_col.column_name
+                new_metric.verbose_name = 'count_distinct__' + new_col.column_name
+                new_metric.metric_type = 'count_distinct'
+                new_metric.expression = "COUNT(DISTINCT {})".format(quoted)
+                self.temp_metrics.append(new_metric)
+
+        new_metric = SqlMetric()
+        new_metric.metric_name = 'count'
+        new_metric.verbose_name = 'COUNT(*)'
+        new_metric.metric_type = 'count'
+        new_metric.expression = "COUNT(*)"
+        self.temp_metrics.append(new_metric)
+        if not self.main_dttm_col:
+            self.main_dttm_col = any_date_col
 
     def fetch_metadata(self):
         """Fetches the metadata for the table and merges it in"""
