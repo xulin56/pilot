@@ -32,10 +32,9 @@ with open(os.path.join(PACKAGE_DIR, 'version_info.json'), 'w') as version_file:
 
 
 setup(
-    name='superset',
+    name='pilot',
     description=(
-        "A interactive data visualization platform build on SqlAlchemy "
-        "and druid.io"),
+        "A interactive data visualization platform build on SqlAlchemy"),
     version=version_string,
     packages=find_packages(),
     include_package_data=True,
