@@ -72,7 +72,7 @@ def version(verbose):
     """Prints the current version number"""
     s = (
         "\n-----------------------\n"
-        "Superset {version}\n"
+        "Pilot {version}\n"
         "-----------------------").format(
         version=config.get('VERSION_STRING'))
     print(s)

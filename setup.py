@@ -39,7 +39,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    scripts=['superset/bin/superset'],
+    scripts=['superset/bin/pilot'],
     install_requires=[
         'celery==3.1.23',
         'cryptography==1.5.3',
