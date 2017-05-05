@@ -22,7 +22,7 @@ if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
 # ---------------------------------------------------------
-# Superset specific config
+# Pilot specific config
 # ---------------------------------------------------------
 PACKAGE_DIR = os.path.join(BASE_DIR, 'static', 'assets')
 PACKAGE_FILE = os.path.join(PACKAGE_DIR, 'package.json')
@@ -30,11 +30,10 @@ with open(PACKAGE_FILE) as package_file:
     VERSION_STRING = json.load(package_file)['version']
 
 ROW_LIMIT = 50000
-SUPERSET_WORKERS = 4
-
-SUPERSET_WEBSERVER_ADDRESS = '0.0.0.0'
-SUPERSET_WEBSERVER_PORT = 8086
-SUPERSET_WEBSERVER_TIMEOUT = 60
+PILOT_WORKERS = 2
+PILOT_WEBSERVER_ADDRESS = '0.0.0.0'
+PILOT_WEBSERVER_PORT = 8086
+PILOT_WEBSERVER_TIMEOUT = 60
 
 CUSTOM_SECURITY_MANAGER = None
 # ---------------------------------------------------------
@@ -175,7 +174,6 @@ DRUID_DATA_SOURCE_BLACKLIST = []
 # --------------------------------------------------
 # Modules, datasources and middleware to be registered
 # --------------------------------------------------
-#DEFAULT_MODULE_DS_MAP = {'superset.models': ['DruidDatasource', 'SqlaTable']}
 DEFAULT_MODULE_DS_MAP = {'superset.models': ['SqlaTable']}
 ADDITIONAL_MODULE_DS_MAP = {}
 ADDITIONAL_MIDDLEWARE = []
@@ -258,7 +256,7 @@ JINJA_CONTEXT_ADDONS = {}
 # by humans.
 ROBOT_PERMISSION_ROLES = ['Public', 'Gamma', 'Alpha', 'Admin', 'sql_lab']
 
-CONFIG_PATH_ENV_VAR = 'SUPERSET_CONFIG_PATH'
+CONFIG_PATH_ENV_VAR = 'PILOT_CONFIG_PATH'
 
 try:
     if CONFIG_PATH_ENV_VAR in os.environ:
