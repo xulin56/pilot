@@ -1,3 +1,4 @@
+<div class="explore-wrap">
 {% extends "superset/basic.html" %}
 
 {% block title %}
@@ -29,7 +30,7 @@
   <div class="datasource container-fluid">
     <div class="panel-top-header">
       <div class="header-left">
-        <i class="glyphicon glyphicon-edit"></i>
+        <i class="icon"></i>
         <span>编辑工作表</span>
       </div>
       <div class="header-right">
@@ -79,7 +80,7 @@
                     <button>+</button>  
                   </div>
                 </div>
-                <div class="left-area-item">
+                <div class="check-area">
                     <span title="Data Source" data-toggle="tooltip">
                       <select id="datasource_id" class="select2">
                         {% for ds in datasources %}
@@ -332,3 +333,4 @@
     {% include "superset/partials/_script_tag.html" %}
   {% endwith %}
 {% endblock %}
+</div>

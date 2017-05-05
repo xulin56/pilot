@@ -1,32 +1,105 @@
-.panel-top-header {
-	width: 100%;
-	height: 50px;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-}
 
-.body-left-area {
-
-	.left-area-item {
-		display: flex;
-		justify-content: space-between;
-		.item-left {
-			display: flex;
-			span {
-
-			}
-			div.radio-item {
-
-			}
-		}
-		.item-right {
-
+.explore-wrap{
+	.top{
+		.navbar-inverse{
+			margin:0;
 		}
 	}
-}
-
-.left-area-item {
-	display: flex;
-	justify-content: space-between;
+	.datasource{
+		padding:0;
+		.panel-top-header {
+			margin-bottom:18px;
+			border:$borderStyle;
+			background-color:#fff;
+			width: 100%;
+			height: 50px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			.header-left{
+				display:flex;
+				height:100%;
+				align-items:center;
+				.icon{
+					width:20px;
+					height:22px;
+					background-position:-10px -368px;
+					margin:0 12px 0 19px;
+				}
+				span{
+					color:#1d2531;
+					font-size:18px;
+				}
+			}
+			.header-right{
+				.query-and-save-btns-container{
+					margin-bottom:0;
+					.query-and-save{
+						button{
+							width:130px;
+							height:36px;
+							margin-right:8px;
+							border-radius:4px;
+							border:$borderStyle;
+							color:#0089f7;
+							background-color:#fff;
+						}
+						.active{
+							background-color:#1b9cf2;
+							color:#fff;
+						}
+					}
+				}
+			}
+		}
+		.col-md-3{
+			.panel-default{
+				.panel-body{
+					.body-left-area{
+						.left-area-item{
+							display:flex;
+							justify-content: space-between;
+							.item-left{
+								display:flex;
+								height:26px;
+								align-items:center;
+								font-size:16px;
+								.radio-item{
+									margin-left:20px;
+									display:flex;
+									align-items:center;
+									input{
+										margin:0;
+									}
+								}
+							}
+							.item-right{
+								button{
+									width:26px;
+									height:26px;
+									background-color:#279cf2;
+									text-align:center;
+									line-height:26px;
+									color:#fff;
+									font-size:24px;
+									border-radius:4px;
+								}
+							}
+						}
+						.check-area{
+							margin-top:12px;
+							.select2{
+								width:100%;
+								.select2-arrow{
+									.icon{
+										background-position:-296px -664px;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
