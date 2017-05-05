@@ -6,10 +6,9 @@ import thunk from 'redux-thunk';
 import { operate, SliceEdit } from './components/Slice';
 
 const $ = window.$ = require('jquery');
-
+var popupEl = render(<SliceEdit />, document.getElementById('popup_root'));
 
 $(".slice-edit-popup").on('click',function () {
-	var popupEl = render(<SliceEdit />, document.getElementById('popup_root'));
 	if(popupEl) {
 		popupEl.showDialog();	
 	}
