@@ -220,9 +220,7 @@
               <div class="clearfix">
                 <div class="pull-left">
                   {% include 'superset/partials/_explore_title.html' %}
-                </div>
-                <div class="pull-right">
-                  <div class="slice-meta-controls pull-right">
+                  <div class="cached-time">
                     <span id="is_cached" class="label label-default m-r-3" title="{{ _("Force refresh" )}}" data-toggle="tooltip">
                       cached
                     </span>
@@ -233,6 +231,20 @@
                       data-toggle="tooltip">
                       {{ _("0 sec") }}
                     </span>
+                  </div>
+                </div>
+                <div class="pull-right">
+                  <div class="slice-meta-controls pull-right">
+                    <!-- <span id="is_cached" class="label label-default m-r-3" title="{{ _("Force refresh" )}}" data-toggle="tooltip">
+                      cached
+                    </span> -->
+                    <!-- <span
+                      class="label label-warning m-r-3"
+                      id="timer"
+                      title="{{ _("Query timer") }}"
+                      data-toggle="tooltip">
+                      {{ _("0 sec") }}
+                    </span> -->
 
                     <span
                       id="js-explore-actions"
