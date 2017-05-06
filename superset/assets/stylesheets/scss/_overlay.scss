@@ -144,6 +144,8 @@ $borderStyle:1px solid #e9eaed;
     }
   }
   .well-sm{
+    box-shadow:none;
+    background-color:#edf0f5;
     display:flex;
     align-items:center;
     justify-content: space-between;

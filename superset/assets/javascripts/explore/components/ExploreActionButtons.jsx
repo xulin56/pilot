@@ -26,7 +26,7 @@ export default function ExploreActionButtons({ canDownload, slice, query }) {
         title="Export to .json"
         target="_blank"
       >
-        <i className="fa fa-file-code-o"></i> .json
+        <i className="fa fa-file-code-o"></i>.json
       </a>
 
       <a
