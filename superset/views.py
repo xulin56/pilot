@@ -199,9 +199,9 @@ def check_ownership(obj, raise_if_false=True):
         if raise_if_false:
             raise security_exception
         return False
-    roles = (r.name for r in get_user_roles())
-    if 'Admin' in roles:
-        return True
+    # roles = (r.name for r in get_user_roles())
+    # if 'Admin' in roles:
+    #     return True
     session = db.create_scoped_session()
     orig_obj = session.query(obj.__class__).filter_by(id=obj.id).first()
     owner_names = (user.username for user in orig_obj.owners)
@@ -362,6 +362,10 @@ class SupersetModelView(ModelView):
     order_direction = 'desc'
     filter = None
     only_favorite = False        # all or favorite
+
+    def populate_obj(self, obj, values):
+        for key, value in values.items():
+            setattr(obj, key, value)
 
     def query_own_or_online(self, class_name, user_id, only_favorite):
         query = (
@@ -965,8 +969,68 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                                     title=self.list_title,
                                     widgets=widgets)
 
-    #@expose('/delete/<id>')
-    # TODO need to rename to 'delete' to overwrite the default delete method
+    def get_available_dashboards(self, user_id):
+        dashs = db.session.query(models.Dashboard)\
+            .filter_by(created_by_fk=user_id).all()
+        return self.dashboards_to_dict(dashs)
+
+    def dashboards_to_dict(self, dashs):
+        dashboards = []
+        for dash in dashs:
+            row = {'id': dash.id, 'dashboard_title': dash.dashboard_title}
+            dashboards.append(row)
+        return dashboards
+
+    def show_(self, user_id, obj_id):
+        obj = db.session.query(self.model).filter(self.model.id == obj_id).one()
+        response = {}
+        response['id'] = obj.id
+        response['slice_name'] = obj.slice_name
+        response['description'] = obj.description
+        response['dashboards'] = self.dashboards_to_dict(obj.dashboards)
+        response['created_on'] = str(obj.created_on)
+        response['changed_on'] = str(obj.changed_on)
+        response['created_by_user'] = \
+            obj.created_by.username if obj.created_by else None
+        response['changed_by_user'] = \
+            obj.changed_by.username if obj.changed_by else None
+        response['available_dashboards'] = self.get_available_dashboards(user_id)
+        return json.dumps(response)
+
+    def populate_slice(self, user_id, json_data):
+        data = json.loads(json_data)
+        obj_id = data.get('id')
+        obj = db.session.query(self.model).filter_by(id=obj_id).one()
+        if not obj:
+            abort(404)
+
+        values = {}
+        values['slice_name'] = data.get('slice_name')
+        values['description'] = data.get('description')
+        dashs_list = data.get('dashboards')
+        dashboards = []
+        for dash_dict in dashs_list:
+            dash_obj = db.session.query(models.Dashboard) \
+                .filter_by(dashboard_title=dash_dict.get('dashboard_title')).one()
+            dashboards.append(dash_obj)
+        values['dashboards'] = dashboards
+        values['changed_by_fk'] = user_id
+        values['changed_on'] = datetime.now()
+        self.populate_obj(obj, values)
+        return obj
+
+    def update_(self):
+        user_id = int(g.user.get_id())
+        json_data = request.data
+        obj = self.populate_slice(user_id, json_data)
+        try:
+            self.pre_update(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.edit(obj):
+                self.post_update(obj)
+
     def delete_(self, id):
         obj = db.session.query(self.model).filter_by(id=id).one()
         if not obj:
@@ -990,8 +1054,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         log_action('edit', action_str, 'slice', obj.id)
 
     def pre_delete(self, obj):
-        #check_ownership(obj)
-        pass
+        check_ownership(obj)
 
     def post_delete(self, obj):
         db.session.query(models.FavStar) \
