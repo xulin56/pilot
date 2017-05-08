@@ -102,5 +102,41 @@
 				}
 			}
 		}
+		.col-md-9{
+			.panel-default{
+				.panel-heading{
+					.pull-left{
+						display:flex;
+						align-items:center;
+						.cached-time{
+							padding-left:12px;
+							.label-warning{
+								background-color:#2acc28;
+							}
+						}
+						
+						h3{
+							color:#1d2531;
+							font-size:18px;
+							display:flex;
+							margin:0;
+							.icon{
+								width: 16px;
+								height:16px;
+								cursor:pointer;
+							}
+							.icon:nth-of-type(1){
+								background-position:-52px -210px;
+								margin:0 12px;
+
+							}
+							.icon:nth-of-type(2){
+								background-position:-290px -251px;
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }
