@@ -17,8 +17,8 @@ from collections import Counter
 import functools
 import sqlalchemy as sqla
 
-from flask import (
-    g, request, redirect, flash, Response, render_template, Markup)
+from flask import (g, request, redirect, flash,
+                   Response, render_template, Markup, abort)
 from flask_appbuilder import ModelView, CompactCRUDMixin, BaseView, expose
 from flask_appbuilder.actions import action
 from flask_appbuilder.models.sqla.interface import SQLAInterface
@@ -965,6 +965,22 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                                     title=self.list_title,
                                     widgets=widgets)
 
+    #@expose('/delete/<id>')
+    # TODO need to rename to 'delete' to overwrite the default delete method
+    def delete_(self, id):
+        obj = db.session.query(self.model).filter_by(id=id).one()
+        if not obj:
+            abort(404)
+        try:
+            self.pre_delete(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.delete(obj):
+                self.post_delete(obj)
+            flash(*self.datamodel.message)
+            self.update_redirect()
+
     def pre_update(self, obj):
         check_ownership(obj)
 
@@ -974,7 +990,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         log_action('edit', action_str, 'slice', obj.id)
 
     def pre_delete(self, obj):
-        check_ownership(obj)
+        #check_ownership(obj)
+        pass
 
     def post_delete(self, obj):
         db.session.query(models.FavStar) \
