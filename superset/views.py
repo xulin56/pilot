@@ -454,48 +454,6 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'database_expression': _("Database Expression")
     }
 
-# class DruidColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
-#     datamodel = SQLAInterface(models.DruidColumn)
-#     edit_columns = [
-#         'column_name', 'description', 'dimension_spec_json', 'datasource',
-#         'groupby', 'count_distinct', 'sum', 'min', 'max']
-#     add_columns = edit_columns
-#     list_columns = [
-#         'column_name', 'type', 'groupby', 'filterable', 'count_distinct',
-#         'sum', 'min', 'max']
-#     can_delete = False
-#     page_size = 500
-#     label_columns = {
-#         'column_name': _("Column"),
-#         'type': _("Type"),
-#         'datasource': _("Datasource"),
-#         'groupby': _("Groupable"),
-#         'filterable': _("Filterable"),
-#         'count_distinct': _("Count Distinct"),
-#         'sum': _("Sum"),
-#         'min': _("Min"),
-#         'max': _("Max"),
-#     }
-#     description_columns = {
-#         'dimension_spec_json': utils.markdown(
-#             "this field can be used to specify  "
-#             "a `dimensionSpec` as documented [here]"
-#             "(http://druid.io/docs/latest/querying/dimensionspecs.html). "
-#             "Make sure to input valid JSON and that the "
-#             "`outputName` matches the `column_name` defined "
-#             "above.",
-#             True),
-#     }
-#
-#     def post_update(self, col):
-#         col.generate_metrics()
-#         utils.validate_json(col.dimension_spec_json)
-#
-#     def post_add(self, col):
-#         self.post_update(col)
-#
-# appbuilder.add_view_no_menu(DruidColumnInlineView)
-
 
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.SqlMetric)
@@ -541,46 +499,6 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     def post_update(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
-
-# class DruidMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
-#     datamodel = SQLAInterface(models.DruidMetric)
-#     list_columns = ['metric_name', 'verbose_name', 'metric_type']
-#     edit_columns = [
-#         'metric_name', 'description', 'verbose_name', 'metric_type', 'json',
-#         'datasource', 'd3format', 'is_restricted']
-#     add_columns = edit_columns
-#     page_size = 500
-#     validators_columns = {
-#         'json': [validate_json],
-#     }
-#     description_columns = {
-#         'metric_type': utils.markdown(
-#             "use `postagg` as the metric type if you are defining a "
-#             "[Druid Post Aggregation]"
-#             "(http://druid.io/docs/latest/querying/post-aggregations.html)",
-#             True),
-#         'is_restricted': _("Whether the access to this metric is restricted "
-#                            "to certain roles. Only roles with the permission "
-#                            "'metric access on XXX (the name of this metric)' "
-#                            "are allowed to access this metric"),
-#     }
-#     label_columns = {
-#         'metric_name': _("Metric"),
-#         'description': _("Description"),
-#         'verbose_name': _("Verbose Name"),
-#         'metric_type': _("Type"),
-#         'json': _("JSON"),
-#         'datasource': _("Druid Datasource"),
-#     }
-#
-#     def post_add(self, metric):
-#         utils.init_metrics_perm(superset, [metric])
-#
-#     def post_update(self, metric):
-#         utils.init_metrics_perm(superset, [metric])
-#
-#
-# appbuilder.add_view_no_menu(DruidMetricInlineView)
 
 
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
@@ -945,67 +863,6 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         log_action('delete', action_str, 'table', table.id)
         # log table number
         log_number('table', g.user.get_id())
-
-# class AccessRequestsModelView(SupersetModelView, DeleteMixin):
-#     datamodel = SQLAInterface(DAR)
-#     list_columns = [
-#         'username'FormWidget, 'user_roles', 'datasource_link',
-#         'roles_with_datasource', 'created_on']
-#     order_columns = ['username', 'datasource_link']
-#     base_order = ('changed_on', 'desc')
-#     label_columns = {
-#         'username': _("User"),
-#         'user_roles': _("User Roles"),
-#         'database': _("Database URL"),
-#         'datasource_link': _("Datasource"),
-#         'roles_with_datasource': _("Roles to grant"),
-#         'created_on': _("Created On"),
-#     }
-
-# appbuilder.add_view(
-#     AccessRequestsModelView,
-#     "Access requests",
-#     label=__("Access requests"),
-#     category="Security",
-#     category_label=__("Security"),
-#     icon='fa-table',)
-
-
-# class DruidClusterModelView(SupersetModelView, DeleteMixin):  # noqa
-#     datamodel = SQLAInterface(models.DruidCluster)
-#     add_columns = [
-#         'cluster_name',
-#         'coordinator_host', 'coordinator_port', 'coordinator_endpoint',
-#         'broker_host', 'broker_port', 'broker_endpoint', 'cache_timeout',
-#     ]
-#     edit_columns = add_columns
-#     list_columns = ['cluster_name', 'metadata_last_refreshed']
-#     label_columns = {
-#         'cluster_name': _("Cluster"),
-#         'coordinator_host': _("Coordinator Host"),
-#         'coordinator_port': _("Coordinator Port"),
-#         'coordinator_endpoint': _("Coordinator Endpoint"),
-#         'broker_host': _("Broker Host"),
-#         'broker_port': _("Broker Port"),
-#         'broker_endpoint': _("Broker Endpoint"),
-#     }
-#
-#     def pre_add(self, cluster):
-#         security.merge_perm(sm, 'database_access', cluster.perm)
-#
-#     def pre_update(self, cluster):
-#         self.pre_add(cluster)
-#
-#
-# if config['DRUID_IS_ACTIVE']:
-#     appbuilder.add_view(
-#         DruidClusterModelView,
-#         name="Druid Clusters",
-#         label=__("Druid Clusters"),
-#         icon="fa-cubes",
-#         category="Sources",
-#         category_label=__("Sources"),
-#         category_icon='fa-database',)
 
 
 class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
@@ -1526,82 +1383,6 @@ appbuilder.add_view(
 class QueryView(SupersetModelView):
     datamodel = SQLAInterface(models.Query)
     list_columns = ['user', 'database', 'status', 'start_time', 'end_time']
-
-# appbuilder.add_view(
-#     QueryView,
-#     "Queries",
-#     label=__("Queries"),
-#     category="Manage",
-#     category_label=__("Manage"),
-#     icon="fa-search")
-
-
-# class DruidDatasourceModelView(SupersetModelView, DeleteMixin):  # noqa
-#     datamodel = SQLAInterface(models.DruidDatasource)
-#     list_widget = ListWidgetWithCheckboxes
-#     list_columns = [
-#         'datasource_link', 'cluster', 'changed_by_', 'changed_on_', 'offset']
-#     order_columns = [
-#         'datasource_link', 'changed_on_', 'offset']
-#     related_views = [DruidColumnInlineView, DruidMetricInlineView]
-#     edit_columns = [
-#         'datasource_name', 'cluster', 'description', 'owner',
-#         'is_featured', 'is_hidden', 'filter_select_enabled',
-#         'default_endpoint', 'offset', 'cache_timeout']
-#     add_columns = edit_columns
-#     show_columns = add_columns + ['perm']
-#     page_size = 500
-#     base_order = ('datasource_name', 'asc')
-#     description_columns = {
-#         'offset': _("Timezone offset (in hours) for this datasource"),
-#         'description': Markup(
-#             "Supports <a href='"
-#             "https://daringfireball.net/projects/markdown/' target='_blank'>markdown</a>"),
-#     }
-#     base_filters = [['id', DatasourceFilter, lambda: []]]
-#     label_columns = {
-#         'datasource_link': _("Data Source"),
-#         'cluster': _("Cluster"),
-#         'description': _("Description"),
-#         'owner': _("Owner"),
-#         'is_featured': _("Is Featured"),
-#         'is_hidden': _("Is Hidden"),
-#         'filter_select_enabled': _("Enable Filter Select"),
-#         'default_endpoint': _("Default Endpoint"),
-#         'offset': _("Time Offset"),
-#         'cache_timeout': _("Cache Timeout"),
-#     }
-#
-#     def pre_add(self, datasource):
-#         number_of_existing_datasources = db.session.query(
-#             sqla.func.count('*')).filter(
-#             models.DruidDatasource.datasource_name ==
-#                 datasource.datasource_name,
-#             models.DruidDatasource.cluster_name == datasource.cluster.id
-#         ).scalar()
-#
-#         # table object is already added to the session
-#         if number_of_existing_datasources > 1:
-#             raise Exception(get_datasource_exist_error_mgs(
-#                 datasource.full_name))
-#
-#     def post_add(self, datasource):
-#         datasource.generate_metrics()
-#         security.merge_perm(sm, 'datasource_access', datasource.get_perm())
-#         if datasource.schema:
-#             security.merge_perm(sm, 'schema_access', datasource.schema_perm)
-#
-#     def post_update(self, datasource):
-#         self.post_add(datasource)
-#
-# if config['DRUID_IS_ACTIVE']:
-#     appbuilder.add_view(
-#         DruidDatasourceModelView,
-#         "Druid Datasources",
-#         label=__("Druid Datasources"),
-#         category="Sources",
-#         category_label=__("Sources"),
-#         icon="fa-cube")
 
 
 @app.route('/health')
