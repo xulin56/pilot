@@ -395,6 +395,11 @@ class SupersetModelView(ModelView):
 
         return query
 
+    def get_available_dashboards(self, user_id):
+        dashs = db.session.query(models.Dashboard) \
+            .filter_by(created_by_fk=user_id).all()
+        return dashs
+
     def get_available_slices(self, user_id):
         slices = (
             db.session.query(models.Slice)
@@ -404,6 +409,13 @@ class SupersetModelView(ModelView):
             ).all()
         )
         return slices
+
+    def dashboards_to_dict(self, dashs):
+        dashs_list = []
+        for dash in dashs:
+            row = {'id': dash.id, 'dashboard_title': dash.dashboard_title}
+            dashs_list.append(row)
+        return dashs_list
 
     def slices_to_dict(self, slices):
         slices_list = []
@@ -418,6 +430,7 @@ class SupersetModelView(ModelView):
             row = {'id': table.id, 'table_name': table.table_name}
             tables_list.append(row)
         return tables_list
+
 
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.TableColumn)
@@ -992,18 +1005,6 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                                     title=self.list_title,
                                     widgets=widgets)
 
-    def get_available_dashboards(self, user_id):
-        dashs = db.session.query(models.Dashboard)\
-            .filter_by(created_by_fk=user_id).all()
-        return self.dashboards_to_dict(dashs)
-
-    def dashboards_to_dict(self, dashs):
-        dashboards = []
-        for dash in dashs:
-            row = {'id': dash.id, 'dashboard_title': dash.dashboard_title}
-            dashboards.append(row)
-        return dashboards
-
     def show_(self, user_id, obj_id):
         obj = db.session.query(self.model).filter(self.model.id == obj_id).one()
         response = {}
@@ -1017,7 +1018,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             obj.created_by.username if obj.created_by else None
         response['changed_by_user'] = \
             obj.changed_by.username if obj.changed_by else None
-        response['available_dashboards'] = self.get_available_dashboards(user_id)
+        available_dashs = self.get_available_dashboards(user_id)
+        response['available_dashboards'] = self.dashboards_to_dict(available_dashs)
         return json.dumps(response)
 
     def populate_slice(self, user_id, json_data):
