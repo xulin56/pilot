@@ -1400,6 +1400,19 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         response['data'] = data
         return response
 
+    def delete_(self, id):
+        obj = db.session.query(self.model).filter_by(id=id).one()
+        if not obj:
+            abort(404)
+        try:
+            self.pre_delete(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.delete(obj):
+                self.post_delete(obj)
+            flash(*self.datamodel.message)
+
     @expose("/action/<action>/<dashboard_id>")
     def dashbaord_online_or_offline(self, action, dashboard_id):
         obj = db.session.query(models.Dashboard) \
