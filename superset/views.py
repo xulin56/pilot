@@ -597,6 +597,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'database_expression': _("Database Expression")
     }
 
+
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.SqlMetric)
     list_title = _("List Sql Metric")
@@ -652,8 +653,8 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     edit_title = _("Edit Database")
     list_columns = [
         'database_name', 'backend', 'allow_dml', 'creator', 'changed_on']
-    add_columns = [
-        'database_name', 'sqlalchemy_uri', 'extra', 'expose_in_sqllab', 'allow_dml']
+    show_columns = ['id', 'database_name', 'sqlalchemy_uri']
+    add_columns = ['database_name', 'sqlalchemy_uri']
     search_exclude_columns = ('password',)
     edit_columns = add_columns
     show_columns = [
@@ -709,33 +710,6 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         'time': Database.changed_on,
         'owner': User.username
     }
-
-    def show_(self):
-        json_data = self.get_request_data()
-        obj_id = json_data.get('id', 0)
-        obj = self.get_object(obj_id)
-        response = {}
-        response['id'] = obj.id
-        response['database_name'] = obj.database_name
-        response['sqlalchemy_uri'] = obj.sqlalchemy_uri
-        return json.dumps(response)
-
-    def populate_object(self, user_id, data):
-        user_id = int(user_id)
-        obj_id = int(data.get('id', 0))
-        if obj_id:
-            obj = self.get_object(obj_id)
-            obj.changed_by_fk = user_id
-            obj.changed_on = datetime.now()
-        else:
-            obj = models.Database()
-            obj.created_by_fk = user_id
-            obj.created_on = datetime.now()
-        attributes = {}
-        attributes['database_name'] = data.get('database_name')
-        attributes['sqlalchemy_uri'] = data.get('sqlalchemy_uri')
-        self.populate_attributes(obj, attributes)
-        return obj
 
     def pre_add(self, obj):
         if obj.test_uri(obj.sqlalchemy_uri):
