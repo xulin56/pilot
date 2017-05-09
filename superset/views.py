@@ -1425,7 +1425,29 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         response['data'] = data
         return response
 
-    def show_(self, user_id, obj_id):
+    def available_slices_json(self):
+        """Called by frontend"""
+        user_id = int(g.user.get_id())
+        slices = self.get_available_slices(user_id)
+        d = self.slices_to_dict(slices)
+        return json.dumps({'available_slices': d})
+
+    def add_(self):
+        user_id = int(g.user.get_id())
+        json_data = request.data
+        obj = self.populate_dashboard(user_id, json_data)
+        try:
+            self.pre_add(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.add(obj):
+                self.post_add(obj)
+
+    def show_(self):
+        user_id = int(g.user.get_id())
+        data = json.loads(request.data)
+        obj_id = data.get('id')
         obj = db.session.query(self.model).filter(self.model.id == obj_id).one()
         if not obj:
             abort(404)
@@ -1442,9 +1464,12 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     def populate_dashboard(self, user_id, json_data):
         data = json.loads(json_data)
         obj_id = data.get('id')
-        obj = db.session.query(self.model).filter_by(id=obj_id).one()
-        if not obj:
-            abort(404)
+        if obj_id:  # edit
+            obj = db.session.query(self.model).filter_by(id=obj_id).one()
+            if not obj:
+                abort(404)
+        else:   # add
+            obj = models.Dashboard()
 
         values = {}
         values['dashboard_title'] = data.get('dashboard_title')
