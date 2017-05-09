@@ -395,6 +395,18 @@ class SupersetModelView(ModelView):
 
         return query
 
+    def get_request_data(self):
+        data = request.data
+        return json.loads(data)
+
+    def get_object(self, obj_id):
+        obj_id = int(obj_id)
+        obj = db.session.query(self.model).filter_by(id=obj_id).one()
+        if not obj:
+            abort(404)
+        else:
+            return obj
+
     def get_available_dashboards(self, user_id):
         dashs = db.session.query(models.Dashboard) \
             .filter_by(created_by_fk=user_id).all()
@@ -542,6 +554,7 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 
 
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
+    model = models.Database
     datamodel = SQLAInterface(models.Database)
     list_title = _("List Database")
     show_title = _("Show Database")
@@ -606,6 +619,71 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         'time': Database.changed_on,
         'owner': User.username
     }
+
+    def add_(self):
+        user_id = g.user.get_id()
+        json_data = self.get_request_data()
+        obj = self.populate_database(user_id, json_data)
+        try:
+            self.pre_add(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.add(obj):
+                self.post_add(obj)
+
+    def show_(self):
+        json_data = self.get_request_data()
+        obj_id = json_data.get('id', 0)
+        obj = self.get_object(obj_id)
+        response = {}
+        response['id'] = obj.id
+        response['database_name'] = obj.database_name
+        response['sqlalchemy_uri'] = obj.sqlalchemy_uri
+        return json.dumps(response)
+
+    def populate_database(self, user_id, data):
+        user_id = int(user_id)
+        obj_id = int(data.get('id', 0))
+        if obj_id:
+            obj = self.get_object(obj_id)
+            obj.changed_by_fk = user_id
+            obj.changed_on = datetime.now()
+        else:
+            obj = models.Database()
+            obj.created_by_fk = user_id
+            obj.created_on = datetime.now()
+        values = {}
+        values['database_name'] = data.get('database_name')
+        values['sqlalchemy_uri'] = data.get('sqlalchemy_uri')
+        self.populate_obj(obj, values)
+        return obj
+
+    def update_(self):
+        user_id = g.user.get_id()
+        json_data = self.get_request_data()
+        obj = self.populate_database(user_id, json_data)
+        try:
+            self.pre_update(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.edit(obj):
+                self.post_update(obj)
+
+    def delete_(self):
+        json_data = self.get_request_data()
+        obj_id = json_data.get('id', 0)
+        obj = self.get_object(obj_id)
+        try:
+            self.pre_delete(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.delete(obj):
+                self.post_delete(obj)
+            flash(*self.datamodel.message)
+            self.update_redirect()
 
     def pre_add(self, obj):
         if obj.test_uri(obj.sqlalchemy_uri):
