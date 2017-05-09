@@ -1508,14 +1508,14 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
     def available_slices_json(self):
         """Called by frontend"""
-        user_id = int(g.user.get_id())
+        user_id = g.user.get_id()
         slices = self.get_available_slices(user_id)
         d = self.slices_to_dict(slices)
         return json.dumps({'available_slices': d})
 
     def add_(self):
-        user_id = int(g.user.get_id())
-        json_data = request.data
+        user_id = g.user.get_id()
+        json_data = self.get_request_data()
         obj = self.populate_dashboard(user_id, json_data)
         try:
             self.pre_add(obj)
@@ -1526,12 +1526,10 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                 self.post_add(obj)
 
     def show_(self):
-        user_id = int(g.user.get_id())
-        data = json.loads(request.data)
+        user_id = g.user.get_id()
+        data = self.get_request_data()
         obj_id = data.get('id')
-        obj = db.session.query(self.model).filter(self.model.id == obj_id).one()
-        if not obj:
-            abort(404)
+        obj = self.get_object(obj_id)
         response = {}
         response['id'] = obj.id
         response['dashboard_title'] = obj.dashboard_title
@@ -1543,21 +1541,21 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         return json.dumps(response)
 
     def populate_dashboard(self, user_id, json_data):
-        data = json.loads(json_data)
-        obj_id = data.get('id')
+        user_id = int(user_id)
+        obj_id = json_data.get('id')
         if obj_id:  # edit
-            obj = db.session.query(self.model).filter_by(id=obj_id).one()
-            if not obj:
-                abort(404)
+            obj = self.get_object(obj_id)
+            obj.changed_by_fk = user_id
+            obj.changed_on = datetime.now()
         else:   # add
             obj = models.Dashboard()
             obj.created_by_fk = user_id
             obj.created_on = datetime.now()
 
         values = {}
-        values['dashboard_title'] = data.get('dashboard_title')
-        values['description'] = data.get('description')
-        slices_list = data.get('slices')
+        values['dashboard_title'] = json_data.get('dashboard_title')
+        values['description'] = json_data.get('description')
+        slices_list = json_data.get('slices')
         slices = []
         for slice_dict in slices_list:
             slice_obj = db.session.query(models.Slice) \
@@ -1570,8 +1568,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         return obj
 
     def update_(self):
-        user_id = int(g.user.get_id())
-        json_data = request.data
+        user_id = g.user.get_id()
+        json_data = self.get_request_data()
         obj = self.populate_dashboard(user_id, json_data)
         try:
             self.pre_update(obj)
@@ -1581,10 +1579,10 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             if self.datamodel.edit(obj):
                 self.post_update(obj)
 
-    def delete_(self, id):
-        obj = db.session.query(self.model).filter_by(id=id).one()
-        if not obj:
-            abort(404)
+    def delete_(self):
+        json_data = self.get_request_data()
+        obj_id = json_data.get(id)
+        obj = self.get_object(obj_id)
         try:
             self.pre_delete(obj)
         except Exception as e:
