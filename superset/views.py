@@ -1005,7 +1005,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                                     title=self.list_title,
                                     widgets=widgets)
 
-    def show_(self, user_id, obj_id):
+    def show_(self):
+        user_id = int(g.user.get_id())
+        data = json.loads(request.data)
+        obj_id = data.get('id')
         obj = db.session.query(self.model).filter(self.model.id == obj_id).one()
         response = {}
         response['id'] = obj.id
@@ -1056,8 +1059,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             if self.datamodel.edit(obj):
                 self.post_update(obj)
 
-    def delete_(self, id):
-        obj = db.session.query(self.model).filter_by(id=id).one()
+    def delete_(self):
+        data = json.loads(request.data)
+        obj_id = data.get('id')
+        obj = db.session.query(self.model).filter_by(id=obj_id).one()
         if not obj:
             abort(404)
         try:
@@ -1470,6 +1475,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                 abort(404)
         else:   # add
             obj = models.Dashboard()
+            obj.created_by_fk = user_id
+            obj.created_on = datetime.now()
 
         values = {}
         values['dashboard_title'] = data.get('dashboard_title')
