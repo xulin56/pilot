@@ -408,11 +408,13 @@ class SupersetModelView(ModelView):
             return obj
 
     def get_available_dashboards(self, user_id):
+        user_id = int(user_id)
         dashs = db.session.query(models.Dashboard) \
             .filter_by(created_by_fk=user_id).all()
         return dashs
 
     def get_available_slices(self, user_id):
+        user_id = int(user_id)
         slices = (
             db.session.query(models.Slice)
                 .filter(
@@ -1084,10 +1086,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                                     widgets=widgets)
 
     def show_(self):
-        user_id = int(g.user.get_id())
-        data = json.loads(request.data)
+        user_id = g.user.get_id()
+        data = self.get_request_data()
         obj_id = data.get('id')
-        obj = db.session.query(self.model).filter(self.model.id == obj_id).one()
+        obj = self.get_object(obj_id)
         response = {}
         response['id'] = obj.id
         response['slice_name'] = obj.slice_name
@@ -1104,16 +1106,14 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return json.dumps(response)
 
     def populate_slice(self, user_id, json_data):
-        data = json.loads(json_data)
-        obj_id = data.get('id')
-        obj = db.session.query(self.model).filter_by(id=obj_id).one()
-        if not obj:
-            abort(404)
+        user_id = int(user_id)
+        obj_id = json_data.get('id')
+        obj = self.get_object(obj_id)
 
         values = {}
-        values['slice_name'] = data.get('slice_name')
-        values['description'] = data.get('description')
-        dashs_list = data.get('dashboards')
+        values['slice_name'] = json_data.get('slice_name')
+        values['description'] = json_data.get('description')
+        dashs_list = json_data.get('dashboards')
         dashboards = []
         for dash_dict in dashs_list:
             dash_obj = db.session.query(models.Dashboard) \
@@ -1126,8 +1126,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return obj
 
     def update_(self):
-        user_id = int(g.user.get_id())
-        json_data = request.data
+        user_id = g.user.get_id()
+        json_data = self.get_request_data()
         obj = self.populate_slice(user_id, json_data)
         try:
             self.pre_update(obj)
@@ -1138,11 +1138,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                 self.post_update(obj)
 
     def delete_(self):
-        data = json.loads(request.data)
+        data = self.get_request_data()
         obj_id = data.get('id')
-        obj = db.session.query(self.model).filter_by(id=obj_id).one()
-        if not obj:
-            abort(404)
+        obj = self.get_object(obj_id)
         try:
             self.pre_delete(obj)
         except Exception as e:
