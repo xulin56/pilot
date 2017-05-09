@@ -1533,18 +1533,6 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         d = self.slices_to_dict(slices)
         return json.dumps({'available_slices': d})
 
-    def add_(self):
-        user_id = g.user.get_id()
-        json_data = self.get_request_data()
-        obj = self.populate_dashboard(user_id, json_data)
-        try:
-            self.pre_add(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.add(obj):
-                self.post_add(obj)
-
     def show_(self):
         user_id = g.user.get_id()
         data = self.get_request_data()
@@ -1560,7 +1548,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         response['available_slices'] = self.slices_to_dict(available_slices)
         return json.dumps(response)
 
-    def populate_dashboard(self, user_id, json_data):
+    def populate_object(self, user_id, json_data):
         user_id = int(user_id)
         obj_id = json_data.get('id')
         if obj_id:  # edit
@@ -1572,45 +1560,20 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             obj.created_by_fk = user_id
             obj.created_on = datetime.now()
 
-        values = {}
-        values['dashboard_title'] = json_data.get('dashboard_title')
-        values['description'] = json_data.get('description')
+        attributes = {}
+        attributes['dashboard_title'] = json_data.get('dashboard_title')
+        attributes['description'] = json_data.get('description')
         slices_list = json_data.get('slices')
         slices = []
         for slice_dict in slices_list:
             slice_obj = db.session.query(models.Slice) \
                 .filter_by(id=slice_dict.get('id')).one()
             slices.append(slice_obj)
-        values['slices'] = slices
-        values['changed_by_fk'] = user_id
-        values['changed_on'] = datetime.now()
-        self.populate_obj(obj, values)
+        attributes['slices'] = slices
+        attributes['changed_by_fk'] = user_id
+        attributes['changed_on'] = datetime.now()
+        self.populate_attributes(obj, attributes)
         return obj
-
-    def update_(self):
-        user_id = g.user.get_id()
-        json_data = self.get_request_data()
-        obj = self.populate_dashboard(user_id, json_data)
-        try:
-            self.pre_update(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.edit(obj):
-                self.post_update(obj)
-
-    def delete_(self):
-        json_data = self.get_request_data()
-        obj_id = json_data.get(id)
-        obj = self.get_object(obj_id)
-        try:
-            self.pre_delete(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.delete(obj):
-                self.post_delete(obj)
-            flash(*self.datamodel.message)
 
     @expose("/action/<action>/<dashboard_id>")
     def dashbaord_online_or_offline(self, action, dashboard_id):
