@@ -395,6 +395,29 @@ class SupersetModelView(ModelView):
 
         return query
 
+    def get_available_slices(self, user_id):
+        slices = (
+            db.session.query(models.Slice)
+                .filter(
+                or_(models.Slice.created_by_fk == user_id,
+                    models.Slice.online == 1)
+            ).all()
+        )
+        return slices
+
+    def slices_to_dict(self, slices):
+        slices_list = []
+        for slice in slices:
+            row = {'id': slice.id, 'slice_name': slice.slice_name}
+            slices_list.append(row)
+        return slices_list
+
+    def tables_to_dict(self, tables):
+        tables_list = []
+        for table in tables:
+            row = {'id': table.id, 'table_name': table.table_name}
+            tables_list.append(row)
+        return tables_list
 
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.TableColumn)
@@ -1399,6 +1422,20 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         response['only_favorite'] = only_favorite
         response['data'] = data
         return response
+
+    def show_(self, user_id, obj_id):
+        obj = db.session.query(self.model).filter(self.model.id == obj_id).one()
+        if not obj:
+            abort(404)
+        response = {}
+        response['id'] = obj.id
+        response['dashboard_title'] = obj.dashboard_title
+        response['description'] = obj.description
+        response['slices'] = self.slices_to_dict(obj.slices)
+        response['datasources'] = self.tables_to_dict(obj.datasources)
+        available_slices = self.get_available_slices(user_id)
+        response['available_slices'] = self.slices_to_dict(available_slices)
+        return json.dumps(response)
 
     def delete_(self, id):
         obj = db.session.query(self.model).filter_by(id=id).one()
