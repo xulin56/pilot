@@ -778,10 +778,11 @@ class Database(Model, AuditMixinNullable):
         return str(url)
 
     def get_sqla_engine(self, schema=None):
-        if self.database_name == 'main':
-            url = make_url(self.sqlalchemy_uri_decrypted)
-        else:
-            url = make_url(self.fill_sqlalchemy_uri())
+        # if self.database_name == 'main':
+        #     url = make_url(self.sqlalchemy_uri_decrypted)
+        # else:
+        #     url = make_url(self.fill_sqlalchemy_uri())
+        url = make_url(self.sqlalchemy_uri_decrypted)
         extra = self.get_extra()
         params = extra.get('engine_params', {})
         if self.backend == 'presto' and schema:
