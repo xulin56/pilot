@@ -428,6 +428,11 @@ class SupersetModelView(ModelView):
         attributes = {}
         for col in self.show_columns:
             attributes[col] = obj.col
+
+        attributes['created_by_user'] = obj.created_by.username \
+            if obj.created_by else None
+        attributes['changed_by_user'] = obj.changed_by.username \
+            if obj.changed_by else None
         return attributes
 
     def get_add_attributes(self, data, user_id):
@@ -1015,13 +1020,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     edit_title = _("Edit Slice")
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
-    list_columns = [
-        'slice_link', 'viz_type', 'datasource_link', 'creator', 'online', 'modified']
-    edit_columns = [
-        'slice_name', 'description', 'online', 'viz_type', 'department',
-        'dashboards',  'params']
+    list_columns = ['slice_name', 'description', 'slice_link', 'viz_type', 'online', 'creator']
+    edit_columns = ['slice_name', 'description', 'online', 'viz_type']
     show_columns = [
-        'slice_name', 'description', 'online', 'viz_type', 'department', 'params', 'dashboards',
+        'id', 'slice_name', 'online', 'viz_type',
         'created_by', 'created_on', 'changed_by', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
@@ -1106,45 +1108,29 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                                     title=self.list_title,
                                     widgets=widgets)
 
-    def show_(self):
-        user_id = g.user.get_id()
-        data = self.get_request_data()
-        obj_id = data.get('id')
-        obj = self.get_object(obj_id)
-        response = {}
-        response['id'] = obj.id
-        response['slice_name'] = obj.slice_name
-        response['description'] = obj.description
-        response['dashboards'] = self.dashboards_to_dict(obj.dashboards)
-        response['created_on'] = str(obj.created_on)
-        response['changed_on'] = str(obj.changed_on)
-        response['created_by_user'] = \
-            obj.created_by.username if obj.created_by else None
-        response['changed_by_user'] = \
-            obj.changed_by.username if obj.changed_by else None
-        available_dashs = self.get_available_dashboards(user_id)
-        response['available_dashboards'] = self.dashboards_to_dict(available_dashs)
-        return json.dumps(response)
+    def get_show_attributes(self, obj):
+        attributes = super().get_show_attributes(obj)
+        attributes['dashboards'] = self.dashboards_to_dict(obj.dashboards)
+        dashs = self.get_available_dashboards()
+        available_dashs = self.dashboards_to_dict(dashs)
+        attributes['available_dashboards'] = available_dashs
+        return attributes
 
-    def populate_object(self, user_id, json_data):
-        user_id = int(user_id)
-        obj_id = json_data.get('id')
-        obj = self.get_object(obj_id)
-
+    def get_edit_attributes(self, data, user_id):
         attributes = {}
-        attributes['slice_name'] = json_data.get('slice_name')
-        attributes['description'] = json_data.get('description')
-        dashs_list = json_data.get('dashboards')
+        attributes['changed_by_fk'] = user_id
+        attributes['changed_on'] = datetime.now()
+        for col in self.edit_columns:
+            attributes[col] = data.get(col)
+
+        dashs_list = data.get('dashboards')
         dashboards = []
         for dash_dict in dashs_list:
             dash_obj = db.session.query(models.Dashboard) \
                 .filter_by(dashboard_title=dash_dict.get('dashboard_title')).one()
             dashboards.append(dash_obj)
         attributes['dashboards'] = dashboards
-        attributes['changed_by_fk'] = user_id
-        attributes['changed_on'] = datetime.now()
-        self.populate_attributes(obj, attributes)
-        return obj
+        return attributes
 
     def pre_update(self, obj):
         check_ownership(obj)
