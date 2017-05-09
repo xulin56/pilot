@@ -1439,6 +1439,40 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         response['available_slices'] = self.slices_to_dict(available_slices)
         return json.dumps(response)
 
+    def populate_dashboard(self, user_id, json_data):
+        data = json.loads(json_data)
+        obj_id = data.get('id')
+        obj = db.session.query(self.model).filter_by(id=obj_id).one()
+        if not obj:
+            abort(404)
+
+        values = {}
+        values['dashboard_title'] = data.get('dashboard_title')
+        values['description'] = data.get('description')
+        slices_list = data.get('slices')
+        slices = []
+        for slice_dict in slices_list:
+            slice_obj = db.session.query(models.Slice) \
+                .filter_by(id=slice_dict.get('id')).one()
+            slices.append(slice_obj)
+        values['slices'] = slices
+        values['changed_by_fk'] = user_id
+        values['changed_on'] = datetime.now()
+        self.populate_obj(obj, values)
+        return obj
+
+    def update_(self):
+        user_id = int(g.user.get_id())
+        json_data = request.data
+        obj = self.populate_dashboard(user_id, json_data)
+        try:
+            self.pre_update(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.edit(obj):
+                self.post_update(obj)
+
     def delete_(self, id):
         obj = db.session.query(self.model).filter_by(id=id).one()
         if not obj:
