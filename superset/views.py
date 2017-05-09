@@ -675,18 +675,6 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username
     }
 
-    def add_(self):
-        user_id = g.user.get_id()
-        json_data = self.get_request_data()
-        obj = self.populate_database(user_id, json_data)
-        try:
-            self.pre_add(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.add(obj):
-                self.post_add(obj)
-
     def show_(self):
         json_data = self.get_request_data()
         obj_id = json_data.get('id', 0)
@@ -697,7 +685,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         response['sqlalchemy_uri'] = obj.sqlalchemy_uri
         return json.dumps(response)
 
-    def populate_database(self, user_id, data):
+    def populate_object(self, user_id, data):
         user_id = int(user_id)
         obj_id = int(data.get('id', 0))
         if obj_id:
@@ -708,37 +696,11 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             obj = models.Database()
             obj.created_by_fk = user_id
             obj.created_on = datetime.now()
-        values = {}
-        values['database_name'] = data.get('database_name')
-        values['sqlalchemy_uri'] = data.get('sqlalchemy_uri')
-        self.populate_obj(obj, values)
+        attributes = {}
+        attributes['database_name'] = data.get('database_name')
+        attributes['sqlalchemy_uri'] = data.get('sqlalchemy_uri')
+        self.populate_attributes(obj, attributes)
         return obj
-
-    def update_(self):
-        user_id = g.user.get_id()
-        json_data = self.get_request_data()
-        obj = self.populate_database(user_id, json_data)
-        try:
-            self.pre_update(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.edit(obj):
-                self.post_update(obj)
-
-    def delete_(self):
-        json_data = self.get_request_data()
-        obj_id = json_data.get('id', 0)
-        obj = self.get_object(obj_id)
-        try:
-            self.pre_delete(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.delete(obj):
-                self.post_delete(obj)
-            flash(*self.datamodel.message)
-            self.update_redirect()
 
     def pre_add(self, obj):
         if obj.test_uri(obj.sqlalchemy_uri):
