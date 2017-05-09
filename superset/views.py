@@ -1284,8 +1284,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     add_title = _("Add Dashboard")
     edit_title = _("Edit Dashboard")
     list_columns = ['dashboard_link', 'description', 'online', 'department', 'creator', 'modified']
-    edit_columns = ['dashboard_title', 'description', 'online', 'department', 'slices', 'owners']
-    show_columns = edit_columns + ['table_names']
+    edit_columns = ['dashboard_title', 'description', 'online', 'slices']
+    show_columns = edit_columns + ['id', 'table_names']
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
     description_columns = {
@@ -1489,52 +1489,37 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
     def available_slices_json(self):
         """Called by frontend"""
-        user_id = g.user.get_id()
+        user_id = self.get_user_id()
         slices = self.get_available_slices(user_id)
         d = self.slices_to_dict(slices)
         return json.dumps({'available_slices': d})
 
-    def show_(self):
-        user_id = g.user.get_id()
-        data = self.get_request_data()
-        obj_id = data.get('id')
-        obj = self.get_object(obj_id)
-        response = {}
-        response['id'] = obj.id
-        response['dashboard_title'] = obj.dashboard_title
-        response['description'] = obj.description
-        response['slices'] = self.slices_to_dict(obj.slices)
-        response['datasources'] = self.tables_to_dict(obj.datasources)
-        available_slices = self.get_available_slices(user_id)
-        response['available_slices'] = self.slices_to_dict(available_slices)
-        return json.dumps(response)
+    def get_show_attributes(self, obj):
+        attributes = super().get_show_attributes(obj)
+        attributes['slices'] = self.slices_to_dict(obj.slices)
+        available_slices = self.get_available_slices(self.get_user_id())
+        attributes['available_slices'] = self.slices_to_dict(available_slices)
+        return attributes
 
-    def populate_object(self, user_id, json_data):
-        user_id = int(user_id)
-        obj_id = json_data.get('id')
-        if obj_id:  # edit
-            obj = self.get_object(obj_id)
-            obj.changed_by_fk = user_id
-            obj.changed_on = datetime.now()
-        else:   # add
-            obj = models.Dashboard()
-            obj.created_by_fk = user_id
-            obj.created_on = datetime.now()
-
-        attributes = {}
-        attributes['dashboard_title'] = json_data.get('dashboard_title')
-        attributes['description'] = json_data.get('description')
-        slices_list = json_data.get('slices')
+    def get_add_attributes(self, data, user_id):
+        attributes = super().get_add_attributes(data, user_id)
+        slices_list = data.get('slices')
         slices = []
         for slice_dict in slices_list:
             slice_obj = db.session.query(models.Slice) \
                 .filter_by(id=slice_dict.get('id')).one()
             slices.append(slice_obj)
         attributes['slices'] = slices
-        attributes['changed_by_fk'] = user_id
-        attributes['changed_on'] = datetime.now()
-        self.populate_attributes(obj, attributes)
-        return obj
+
+    def get_edit_attributes(self, data, user_id):
+        attributes = super().get_add_attributes(data, user_id)
+        slices_list = data.get('slices')
+        slices = []
+        for slice_dict in slices_list:
+            slice_obj = db.session.query(models.Slice) \
+                .filter_by(id=slice_dict.get('id')).one()
+            slices.append(slice_obj)
+        attributes['slices'] = slices
 
     @expose("/action/<action>/<dashboard_id>")
     def dashbaord_online_or_offline(self, action, dashboard_id):
