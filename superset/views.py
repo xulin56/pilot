@@ -379,7 +379,11 @@ class SupersetModelView(ModelView):
                 self.post_add(obj)
 
     def show_(self):
-        pass
+        json_data = self.get_request_data()
+        obj_id = json_data.get('id', 0)
+        obj = self.get_object(obj_id)
+        attributes = self.get_show_attributes(obj)
+        return json.dumps(attributes)
 
     def update_(self):
         user_id = self.get_user_id()
@@ -407,12 +411,40 @@ class SupersetModelView(ModelView):
             flash(*self.datamodel.message)
             self.update_redirect()
 
-    def populate_object(self, user_id, json_data):
-        return None
-
-    def populate_attributes(self, obj, attributes):
+    def populate_object(self, user_id, data):
+        user_id = int(user_id)
+        obj_id = data.get('id')
+        if obj_id:
+            obj = self.get_object(obj_id)
+            attributes = self.get_edit_attributes(data, user_id)
+        else:
+            obj = models.Database()
+            attributes = self.get_add_attributes(data, user_id)
         for key, value in attributes.items():
             setattr(obj, key, value)
+        return obj
+
+    def get_show_attributes(self, obj):
+        attributes = {}
+        for col in self.show_columns:
+            attributes[col] = obj.col
+        return attributes
+
+    def get_add_attributes(self, data, user_id):
+        attributes = {}
+        attributes['created_by_fk'] = user_id
+        attributes['created_on'] = datetime.now()
+        for col in self.add_columns:
+            attributes[col] = data.get(col)
+        return attributes
+
+    def get_edit_attributes(self, data, user_id):
+        attributes = {}
+        attributes['changed_by_fk'] = user_id
+        attributes['changed_on'] = datetime.now()
+        for col in self.edit_columns:
+            attributes[col] = data.get(col)
+        return attributes
 
     def query_own_or_online(self, class_name, user_id, only_favorite):
         query = (
@@ -500,6 +532,7 @@ class SupersetModelView(ModelView):
 
 
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
+    model = models.TableColumn
     datamodel = SQLAInterface(models.TableColumn)
     list_title = _("List Table Column")
     show_title = _("Show Table Column")
@@ -507,6 +540,10 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     edit_title = _("Edit Table Column")
     can_delete = False
     list_widget = ListWidgetWithCheckboxes
+    show_columns = [
+        'id', 'column_name', 'verbose_name', 'description', 'groupby', 'filterable',
+        'table', 'count_distinct', 'sum', 'min', 'max', 'expression',
+        'is_dttm', 'python_date_format', 'database_expression']
     edit_columns = [
         'column_name', 'verbose_name', 'description', 'groupby', 'filterable',
         'table', 'count_distinct', 'sum', 'min', 'max', 'expression',
@@ -515,7 +552,6 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     list_columns = [
         'column_name', 'type', 'groupby', 'filterable', 'count_distinct',
         'sum', 'min', 'max', 'is_dttm']
-    page_size = 500
     description_columns = {
         'is_dttm': (_(
             "Whether to make this column available as a "
@@ -560,7 +596,6 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'python_date_format': _("Datetime Format"),
         'database_expression': _("Database Expression")
     }
-
 
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.SqlMetric)
