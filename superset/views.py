@@ -1151,51 +1151,25 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         response['available_dashboards'] = self.dashboards_to_dict(available_dashs)
         return json.dumps(response)
 
-    def populate_slice(self, user_id, json_data):
+    def populate_object(self, user_id, json_data):
         user_id = int(user_id)
         obj_id = json_data.get('id')
         obj = self.get_object(obj_id)
 
-        values = {}
-        values['slice_name'] = json_data.get('slice_name')
-        values['description'] = json_data.get('description')
+        attributes = {}
+        attributes['slice_name'] = json_data.get('slice_name')
+        attributes['description'] = json_data.get('description')
         dashs_list = json_data.get('dashboards')
         dashboards = []
         for dash_dict in dashs_list:
             dash_obj = db.session.query(models.Dashboard) \
                 .filter_by(dashboard_title=dash_dict.get('dashboard_title')).one()
             dashboards.append(dash_obj)
-        values['dashboards'] = dashboards
-        values['changed_by_fk'] = user_id
-        values['changed_on'] = datetime.now()
-        self.populate_obj(obj, values)
+        attributes['dashboards'] = dashboards
+        attributes['changed_by_fk'] = user_id
+        attributes['changed_on'] = datetime.now()
+        self.populate_attributes(obj, attributes)
         return obj
-
-    def update_(self):
-        user_id = g.user.get_id()
-        json_data = self.get_request_data()
-        obj = self.populate_slice(user_id, json_data)
-        try:
-            self.pre_update(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.edit(obj):
-                self.post_update(obj)
-
-    def delete_(self):
-        data = self.get_request_data()
-        obj_id = data.get('id')
-        obj = self.get_object(obj_id)
-        try:
-            self.pre_delete(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.delete(obj):
-                self.post_delete(obj)
-            flash(*self.datamodel.message)
-            self.update_redirect()
 
     def pre_update(self, obj):
         check_ownership(obj)
