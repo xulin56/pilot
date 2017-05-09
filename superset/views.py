@@ -363,8 +363,55 @@ class SupersetModelView(ModelView):
     filter = None
     only_favorite = False        # all or favorite
 
-    def populate_obj(self, obj, values):
-        for key, value in values.items():
+    def list_(self):
+        pass
+
+    def add_(self):
+        user_id = self.get_user_id()
+        json_data = self.get_request_data()
+        obj = self.populate_object(user_id, json_data)
+        try:
+            self.pre_add(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.add(obj):
+                self.post_add(obj)
+
+    def show_(self):
+        pass
+
+    def update_(self):
+        user_id = self.get_user_id()
+        json_data = self.get_request_data()
+        obj = self.populate_object(user_id, json_data)
+        try:
+            self.pre_update(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.edit(obj):
+                self.post_update(obj)
+
+    def delete_(self):
+        json_data = self.get_request_data()
+        obj_id = json_data.get('id', 0)
+        obj = self.get_object(obj_id)
+        try:
+            self.pre_delete(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.delete(obj):
+                self.post_delete(obj)
+            flash(*self.datamodel.message)
+            self.update_redirect()
+
+    def populate_object(self, user_id, json_data):
+        return None
+
+    def populate_attributes(self, obj, attributes):
+        for key, value in attributes.items():
             setattr(obj, key, value)
 
     def query_own_or_online(self, class_name, user_id, only_favorite):
@@ -394,6 +441,12 @@ class SupersetModelView(ModelView):
             )
 
         return query
+
+    def get_user_id(self):
+        if g.user:
+            return g.user.get_id()
+        else:
+            abort(404)
 
     def get_request_data(self):
         data = request.data
@@ -929,6 +982,37 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         response['data'] = data
         return response
 
+    def populate_object(self, user_id, json_data):
+        user_id = int(user_id)
+        obj_id = int(json_data.get('id', 0))
+        if obj_id:
+            obj = self.get_object(obj_id)
+            obj.changed_by_fk = user_id
+            obj.changed_on = datetime.now()
+        else:
+            obj = models.Database()
+            obj.created_by_fk = user_id
+            obj.created_on = datetime.now()
+        attributes = {}
+        attributes['database_id'] = json_data.get('database_id')
+        attributes['schema'] = json_data.get('schema')
+        attributes['table_name'] = json_data.get('table_name')
+        attributes['sql'] = json_data.get('sql')
+        self.populate_attributes(obj, attributes)
+        return obj
+
+    def show_(self):
+        json_data = self.get_request_data()
+        obj_id = json_data.get('id', 0)
+        obj = self.get_object(obj_id)
+        response = {}
+        response['id'] = obj.id
+        response['table_name'] = obj.table_name
+        response['database_id'] = obj.database_id
+        response['database'] = obj.database.database_name
+        response['schema'] = obj.schema
+        return json.dumps(response)
+
     def pre_add(self, table):
         number_of_existing_tables = db.session.query(
             sqla.func.count('*')).filter(
@@ -953,7 +1037,6 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @staticmethod
     def merge_perm(table):
-        table.fetch_metadata()
         security.merge_perm(sm, 'datasource_access', table.get_perm())
         if table.schema:
             security.merge_perm(sm, 'schema_access', table.schema_perm)
@@ -964,6 +1047,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
             "info")
 
     def post_add(self, table):
+        table.fetch_metadata()
         TableModelView.merge_perm(table)
         # log user aciton
         action_str = 'Add table: {}'.format(repr(table))
