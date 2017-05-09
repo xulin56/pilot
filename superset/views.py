@@ -843,12 +843,9 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     edit_title = _("Edit Table")
     list_columns = ['link', 'database', 'changed_by_', 'changed_on_']
     order_columns = ['link', 'database', 'changed_on_']
-    add_columns = ['database', 'schema', 'table_name']
-    edit_columns = [
-        'table_name', 'sql', 'filter_select_enabled',
-        'database', 'schema', 'description', 'owner',
-        'main_dttm_col', 'default_endpoint', 'offset', 'cache_timeout']
-    show_columns = edit_columns + ['perm']
+    add_columns = ['database', 'schema', 'table_name', 'sql']
+    show_columns = add_columns + ['id', 'database_id']
+    edit_columns = add_columns
     related_views = [TableColumnInlineView, SqlMetricInlineView]
     base_order = ('changed_on', 'desc')
     description_columns = {
@@ -952,37 +949,6 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         response['type'] = type
         response['data'] = data
         return response
-
-    def populate_object(self, user_id, json_data):
-        user_id = int(user_id)
-        obj_id = int(json_data.get('id', 0))
-        if obj_id:
-            obj = self.get_object(obj_id)
-            obj.changed_by_fk = user_id
-            obj.changed_on = datetime.now()
-        else:
-            obj = models.Database()
-            obj.created_by_fk = user_id
-            obj.created_on = datetime.now()
-        attributes = {}
-        attributes['database_id'] = json_data.get('database_id')
-        attributes['schema'] = json_data.get('schema')
-        attributes['table_name'] = json_data.get('table_name')
-        attributes['sql'] = json_data.get('sql')
-        self.populate_attributes(obj, attributes)
-        return obj
-
-    def show_(self):
-        json_data = self.get_request_data()
-        obj_id = json_data.get('id', 0)
-        obj = self.get_object(obj_id)
-        response = {}
-        response['id'] = obj.id
-        response['table_name'] = obj.table_name
-        response['database_id'] = obj.database_id
-        response['database'] = obj.database.database_name
-        response['schema'] = obj.schema
-        return json.dumps(response)
 
     def pre_add(self, table):
         number_of_existing_tables = db.session.query(
