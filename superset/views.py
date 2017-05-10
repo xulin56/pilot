@@ -3724,39 +3724,6 @@ class Home(BaseSupersetView):
             status=status_,
             mimetype="application/json")
 
-# if config['DRUID_IS_ACTIVE']:
-#     appbuilder.add_link(
-#         "Refresh Druid Metadata",
-#         label=__("Refresh Druid Metadata"),
-#         href='/superset/refresh_datasources/',
-#         category='Sources',
-#         category_label=__("Sources"),
-#         category_icon='fa-database',
-#         icon="fa-cog")
-
-
-# class CssTemplateModelView(SupersetModelView, DeleteMixin):
-#     datamodel = SQLAInterface(models.CssTemplate)
-#     list_columns = ['template_name']
-#     edit_columns = ['template_name', 'css']
-#     add_columns = edit_columns
-#
-#
-# class CssTemplateAsyncModelView(CssTemplateModelView):
-#     list_columns = ['template_name', 'css']
-#
-# appbuilder.add_separator("Sources")
-# appbuilder.add_view(
-#     CssTemplateModelView,
-#     "CSS Templates",
-#     label=__("CSS Templates"),
-#     icon="fa-css3",
-#     category="Manage",
-#     category_label=__("Manage"),
-#     category_icon='')
-
-# appbuilder.add_view_no_menu(CssTemplateAsyncModelView)
-
 appbuilder.add_view_no_menu(DatabaseAsync)
 appbuilder.add_view_no_menu(DatabaseTablesAsync)
 appbuilder.add_view_no_menu(TableColumnInlineView)
@@ -3767,13 +3734,6 @@ appbuilder.add_view_no_menu(DashboardModelViewAsync)
 appbuilder.add_view_no_menu(R)
 appbuilder.add_view_no_menu(Superset)
 appbuilder.add_view_no_menu(Home)
-
-# appbuilder.add_link(
-#     'Statistics',
-#     href='/superset/statistics',
-#     icon="",
-#     category_icon="",
-#     category='')
 
 appbuilder.add_view(
     DashboardModelView,
