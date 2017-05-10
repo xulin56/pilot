@@ -356,6 +356,7 @@ class DeleteMixin(object):
 
 
 class SupersetModelView(ModelView):
+    model = models.Model
     page = 0
     page_size = 10
     order_column = 'time'
@@ -418,7 +419,7 @@ class SupersetModelView(ModelView):
             obj = self.get_object(obj_id)
             attributes = self.get_edit_attributes(data, user_id)
         else:
-            obj = models.Database()
+            obj = self.model()
             attributes = self.get_add_attributes(data, user_id)
         for key, value in attributes.items():
             setattr(obj, key, value)
@@ -479,12 +480,14 @@ class SupersetModelView(ModelView):
 
         return query
 
+    # TODO add @property, rename to user_id()
     def get_user_id(self):
         if g.user:
             return g.user.get_id()
         else:
             abort(404)
 
+    # TODO add @property, rename to request_data()
     def get_request_data(self):
         data = request.data
         return json.loads(data)
@@ -662,10 +665,6 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     add_columns = ['database_name', 'sqlalchemy_uri']
     search_exclude_columns = ('password',)
     edit_columns = add_columns
-    show_columns = [
-        'database_name', 'sqlalchemy_uri', 'extra', 'tables',
-        'backend', 'expose_in_sqllab', 'allow_dml', 'cache_timeout', 'perm',
-        'created_by', 'created_on', 'changed_by', 'changed_on']
     add_template = "superset/models/database/add.html"
     edit_template = "superset/models/database/edit.html"
     base_order = ('changed_on', 'desc')
