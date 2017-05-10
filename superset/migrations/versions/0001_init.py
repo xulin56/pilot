@@ -1,6 +1,6 @@
 """init
 
-Revision ID: c3a154649e5f
+Revision ID: 0001
 Revises: None
 Create Date: 2017-04-23 14:08:56.139842
 
