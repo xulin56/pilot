@@ -124,8 +124,8 @@ class SliceEdit extends React.Component {
                             </div>
                         </div>
                         <div className="popup-footer">
-                            <button className="btn btn-success" onClick={this.confirm}>
-                                <span>确定</span>
+                            <button className="tp-btn tp-btn-middle tp-btn-primary" onClick={this.confirm}>
+                                确定
                             </button>
                         </div>
                     </div>
