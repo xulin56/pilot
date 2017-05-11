@@ -6,7 +6,6 @@ const propTypes = {
 };
 
 const defaultProps = {
-    
 };
 
 class SliceEdit extends React.Component {
@@ -49,7 +48,7 @@ class SliceEdit extends React.Component {
 
     render() {
         return (
-            <div id="popup" className="popup">
+            <div id="popup" className="popup" style={{display:'none'}}>
                 <div className="popup-dialog popup-md">
                     <div className="popup-content">
                         <div className="popup-header">

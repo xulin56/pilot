@@ -642,6 +642,13 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         'changed_on': _("Changed On"),
     }
 
+    # used for order column
+    str_to_column = {
+        'title': Database.database_name,
+        'time': Database.changed_on,
+        'owner': User.username
+    }
+
     def pre_add(self, obj):
         if obj.test_uri(obj.sqlalchemy_uri):
             obj.set_sqlalchemy_uri(obj.sqlalchemy_uri)
@@ -688,6 +695,60 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         db_account = models.DatabaseAccount
         db_account.insert_or_update_account(
             user_id, obj.id, url.username, url.password)
+
+    def get_database_list(self, order_column, order_direction,
+                       page, page_size, filter_str):
+        """Return the database(connection) list"""
+        query = (
+            db.session.query(Database, User)
+            .filter(Database.created_by_fk == User.id)
+        )
+
+        if filter_str:
+            filter_str = '%{}%'.format(filter_str.lower())
+            query = query.filter(
+                or_(
+                    Database.database_name.ilike(filter_str),
+                    User.username.ilike(filter_str)
+                )
+            )
+        count = query.count()
+
+        if order_column:
+            try:
+                column = self.str_to_column.get(order_column)
+            except KeyError:
+                logging.error('Error order column name: \'{}\' passed to get_database_list()'
+                              .format(order_column))
+            else:
+                if order_direction == 'desc':
+                    query = query.order_by(column.desc())
+                else:
+                    query = query.order_by(column)
+
+        if page is not None and page >= 0 and page_size and page_size > 0:
+            query = query.limit(page_size).offset(page * page_size)
+
+        rs = query.all()
+        data = []
+        for database, user in rs:
+            line = {
+                'id': database.id,
+                'title': database.database_name,
+                'type': database.backend,
+                'owner': user.username,
+                'time': str(database.changed_on)
+            }
+            data.append(line)
+
+        response = {}
+        response['count'] = count
+        response['order_column'] = order_column
+        response['order_direction'] = 'desc' if order_direction == 'desc' else 'asc'
+        response['page'] = page
+        response['page_size'] = page_size
+        response['data'] = data
+        return response
 
 # appbuilder.add_link(
 #     'Import Dashboards',
