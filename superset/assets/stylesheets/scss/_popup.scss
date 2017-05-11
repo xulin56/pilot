@@ -107,9 +107,8 @@ $borderRadius:4px;
 				 border:$borderStyle;
 				 border-radius:4px;
 				 padding:10px;
-			display: inline-block;
+			}
 		}
-	
 	}
 	.sub-item {
 		width: 50%;
@@ -117,6 +116,7 @@ $borderRadius:4px;
 		.item-left {
 			width: 30%;
 			text-align:right;
+			
 		}
 		.item-right {
 			width: 70%;
