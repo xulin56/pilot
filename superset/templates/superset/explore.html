@@ -92,6 +92,18 @@
               </div>
             </div>
           </div>
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <div class="panel-title">
+                图表类型
+              </div>
+            </div>
+            <div class="panel-body">
+              <div title="Visualization Type" data-toggle="tooltip">
+                {{ form.get_field("viz_type")(class_="select2-with-images") }}
+              </div>
+            </div>
+          </div>
           {% for fieldset in form.fieldsets %}
               <div class="panel panel-default">
                 {% if fieldset.label %}
