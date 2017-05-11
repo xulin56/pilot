@@ -16,6 +16,7 @@ from flask_migrate import Migrate
 from superset.source_registry import SourceRegistry
 from werkzeug.contrib.fixers import ProxyFix
 from superset import utils, config
+from superset.check_license import CheckLicense
 
 
 APP_DIR = os.path.dirname(__file__)
@@ -52,6 +53,13 @@ if app.config.get('ENABLE_TIME_ROTATE'):
     handler.setFormatter(logging.Formatter(app.config.get('LOG_FORMAT')))
     handler.setLevel(app.config.get('LOG_LEVEL'))
     logging.getLogger().addHandler(handler)
+
+
+# License check
+server_location = conf.get('LICENSE_CHECK_SERVER')
+license_jar = conf.get('LICENSE_CHECK_JAR')
+CheckLicense.check(server_location, license_jar=license_jar)
+
 
 if app.config.get('ENABLE_CORS'):
     from flask_cors import CORS
