@@ -642,52 +642,52 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         'changed_on': _("Changed On"),
     }
 
-    def pre_add(self, db):
-        if db.test_uri(db.sqlalchemy_uri):
-            db.set_sqlalchemy_uri(db.sqlalchemy_uri)
+    def pre_add(self, obj):
+        if obj.test_uri(obj.sqlalchemy_uri):
+            obj.set_sqlalchemy_uri(obj.sqlalchemy_uri)
         else:
             raise Exception("Not a valid connection")
 
-    def post_add(self, db):
+    def post_add(self, obj):
         self.add_or_edit_database_account(db)
-        security.merge_perm(sm, 'database_access', db.perm)
-        for schema in db.all_schema_names():
+        security.merge_perm(sm, 'database_access', obj.perm)
+        for schema in obj.all_schema_names():
             security.merge_perm(
                 sm, 'schema_access', utils.get_schema_perm(db, schema))
         # log user aciton
         action_str = 'Add connection: {}'.format(repr(db))
-        log_action('add', action_str, 'database', db.id)
+        log_action('add', action_str, 'database', obj.id)
         # log database number
         log_number('database', g.user.get_id())
 
-    def pre_update(self, db):
-        self.pre_add(db)
+    def pre_update(self, obj):
+        self.pre_add(obj)
 
-    def post_update(self, db):
+    def post_update(self, obj):
         self.add_or_edit_database_account(db)
         # log user action
         action_str = 'Edit connection: {}'.format(repr(db))
-        log_action('edit', action_str, 'database', db.id)
+        log_action('edit', action_str, 'database', obj.id)
 
-    def pre_delete(self, db):
+    def pre_delete(self, obj):
         db.session.query(models.DatabaseAccount) \
-            .filter(models.DatabaseAccount.database_id == db.id) \
+            .filter(models.DatabaseAccount.database_id == obj.id) \
             .delete(synchronize_session=False)
         db.session.commit()
 
-    def post_delete(self, db):
+    def post_delete(self, obj):
         # log user action
         action_str = 'Delete connection: {}'.format(repr(db))
-        log_action('delete', action_str, 'database', db.id)
+        log_action('delete', action_str, 'database', obj.id)
         # log database number
         log_number('database', g.user.get_id())
 
-    def add_or_edit_database_account(self, db):
-        url = sqla.engine.url.make_url(db.sqlalchemy_uri_decrypted)
+    def add_or_edit_database_account(self, obj):
+        url = sqla.engine.url.make_url(obj.sqlalchemy_uri_decrypted)
         user_id = g.user.get_id()
         db_account = models.DatabaseAccount
         db_account.insert_or_update_account(
-            user_id, db.id, url.username, url.password)
+            user_id, obj.id, url.username, url.password)
 
 # appbuilder.add_link(
 #     'Import Dashboards',
@@ -712,6 +712,7 @@ class DatabaseTablesAsync(DatabaseView):
 
 
 class TableModelView(SupersetModelView, DeleteMixin):  # noqa
+    model = models.SqlaTable
     datamodel = SQLAInterface(models.SqlaTable)
     list_title = _("List Table")
     show_title = _("Show Table")
@@ -759,6 +760,75 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         'offset': _("Offset"),
         'cache_timeout': _("Cache Timeout"),
     }
+
+    # used for order column
+    str_to_column = {
+        'title': SqlaTable.table_name,
+        'time': SqlaTable.changed_on,
+        'owner': User.username
+    }
+
+    def get_table_list(self, order_column, order_direction,
+                       page, page_size, filter_str, type=None):
+        """Return the table list"""
+        query = (
+            db.session.query(SqlaTable, Database, User)
+            .filter(SqlaTable.database_id == Database.id,
+                    SqlaTable.created_by_fk == User.id)
+        )
+
+        # todo add column backend for filter
+        # if type:      # hdfs, inceptor, mysql
+        #     query = query.filter(Database.backend.like(type))
+        if filter_str:
+            filter_str = '%{}%'.format(filter_str.lower())
+            query = query.filter(
+                or_(
+                    SqlaTable.table_name.ilike(filter_str),
+                    Database.database_name.ilike(filter_str),
+                    User.username.ilike(filter_str)
+                )
+            )
+        count = query.count()
+
+        if order_column:
+            try:
+                column = self.str_to_column.get(order_column)
+            except KeyError:
+                logging.error('Error order column name: \'{}\' passed to get_table_list()'
+                              .format(order_column))
+            else:
+                if order_direction == 'desc':
+                    query = query.order_by(column.desc())
+                else:
+                    query = query.order_by(column)
+
+        if page is not None and page >= 0 and page_size and page_size > 0:
+            query = query.limit(page_size).offset(page * page_size)
+
+        rs = query.all()
+        data = []
+        for table, database, user in rs:
+            line = {
+                'id': table.id,
+                'title': table.table_name,
+                'link': table.explore_url,
+                'type': database.backend,
+                'connection': database.database_name,
+                'owner': user.username,
+                'time': str(table.changed_on)
+            }
+            data.append(line)
+
+        response = {}
+        response['count'] = count
+        response['order_column'] = order_column
+        response['order_direction'] = 'desc' if order_direction == 'desc' else 'asc'
+        response['page'] = page
+        response['page_size'] = page_size
+        response['type'] = type
+        response['data'] = data
+        return response
 
     def pre_add(self, table):
         number_of_existing_tables = db.session.query(
