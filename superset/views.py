@@ -364,7 +364,18 @@ class SupersetModelView(ModelView):
     filter = None
     only_favorite = False        # all or favorite
 
-    def list_(self):
+    def get_list_args(self, args):
+        kwargs = {}
+        kwargs['user_id'] = self.get_user_id()
+        kwargs['order_column'] = args.get('order_column', self.order_column)
+        kwargs['order_direction'] = args.get('order_direction', self.order_direction)
+        kwargs['page'] = args.get('page', self.page)
+        kwargs['page_size'] = args.get('page_size', self.page_size)
+        kwargs['filter'] = args.get('filter', self.filter)
+        kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
+        return kwargs
+
+    def get_list_data(self):
         pass
 
     def add_(self):
@@ -1077,35 +1088,14 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     }
 
     # @expose('/list/')
-    def list_(self):
-        """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
-        user_id = int(g.user.get_id())
-        try:
-            order_column = request.args.get('order_column')
-            order_direction = request.args.get('order_direction')
-            page = request.args.get('page')
-            page_size = request.args.get('page_size')
-            filter = request.args.get('filter')
-            only_favorite = request.args.get('only_favorite')
-        except Exception:
-            order_column, order_direction = None, None
-            page, page_size = None, None
-            filter, only_favorite = None, False
+    # def list(self):
+    #     return self.render_template(self.list_template)
 
-        page = int(page) if page else self.page
-        page_size = int(page_size) if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-        filter = filter if filter else self.filter
-        only_favorite = bool(only_favorite) if only_favorite else self.only_favorite
-
-        list = self.get_slice_list(user_id, order_column, order_direction,
-                                   page, page_size, filter, only_favorite)
-        widgets = {}
-        widgets['list'] = list
-        return self.render_template(self.list_template,
-                                    title=self.list_title,
-                                    widgets=widgets)
+    @expose('/listdata/')
+    def get_list_data(self):
+        kwargs = self.get_list_args(request.args)
+        list_data = self.get_slice_list(**kwargs)
+        return json.dumps(list_data)
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
@@ -1167,10 +1157,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return redirect(redirect_url)
 
     def get_slice_list(self, user_id, order_column, order_direction,
-                       page, page_size, filter_str, only_favorite):
+                       page, page_size, filter, only_favorite):
         """ Return the slices with column 'favorite' and 'online' """
         query = self.query_own_or_online('slice', user_id, only_favorite)
-        if filter_str:
+        if filter:
             filter_str = '%{}%'.format(filter_str.lower())
             query = query.filter(
                 or_(
