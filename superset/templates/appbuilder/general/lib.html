@@ -294,7 +294,11 @@
     <div class="btnsLeft">
         <i class="icon"></i>
         <span class="tit-parts f1">
-            工作表
+            {% if modelview_name and modelview_name == 'DashboardModelView' %}
+                仪表盘
+            {% elif modelview_name and modelview_name == 'SliceModelView' %}
+                工作表
+            {% endif %}
         </span>
             <span class="tit-parts f1">
             <strong>{{ _('Record Count') }}:{{ count }}</strong>
@@ -337,7 +341,7 @@
         {% if can_edit %}
             {% set path = url_for(modelview_name + '.edit',pk=pk) %}
             {% set path = path | set_link_filters(filters) %}
-            {{ lnk_edit_popup(path) }}
+            {{ lnk_edit_popup(modelview_name) }}
         {% endif %}
         {% if can_delete %}
             {{ lnk_delete(url_for(modelview_name + '.delete',pk=pk)) }}
@@ -373,11 +377,18 @@
     </a>
 {% endmacro %}
 
-{% macro lnk_edit_popup(my_href) %}
-    <a class="slice-edit-popup" data-toggle="tooltip" rel="tooltip"
-       title="{{_('Edit record')}}">
-        <i class="icon"></i>
-    </a>
+{% macro lnk_edit_popup(modelview_name) %}
+    {% if modelview_name and modelview_name == 'DashboardModelView' %}
+        <a class="edit-popup-dashboard" data-toggle="tooltip" rel="tooltip"
+           title="{{_('Edit record')}}">
+            <i class="icon"></i>
+        </a>
+    {% elif modelview_name and modelview_name == 'SliceModelView' %}
+        <a class="edit-popup-slice" data-toggle="tooltip" rel="tooltip"
+           title="{{_('Edit record')}}">
+            <i class="icon"></i>
+        </a>
+    {% endif %}
 {% endmacro %}
 
 {% macro lnk_show(my_href) %}

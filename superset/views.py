@@ -1064,7 +1064,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_type': _("Datasource Type"),
     }
 
-    list_template = "superset/list.html"
+    # list_template = "superset/list.html"
+    list_template = "superset/slice.html"
 
     # used for order column
     str_to_column = {
@@ -1076,8 +1077,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username
     }
 
-    # @expose('/list/')
-    def list_(self):
+    @expose('/listdata/')
+    def get_list_data(self):
         """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
         user_id = int(g.user.get_id())
         try:
@@ -1101,11 +1102,11 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
 
         list = self.get_slice_list(user_id, order_column, order_direction,
                                    page, page_size, filter, only_favorite)
-        widgets = {}
-        widgets['list'] = list
-        return self.render_template(self.list_template,
-                                    title=self.list_title,
-                                    widgets=widgets)
+        return json.dumps(list)
+
+    @expose('/list/')
+    def list(self):
+        return self.render_template(self.list_template)
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
