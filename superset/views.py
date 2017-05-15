@@ -375,9 +375,6 @@ class SupersetModelView(ModelView):
         kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
         return kwargs
 
-    def get_list_data(self):
-        pass
-
     def add_(self):
         user_id = self.get_user_id()
         json_data = self.get_request_data()
@@ -389,6 +386,14 @@ class SupersetModelView(ModelView):
         else:
             if self.datamodel.add(obj):
                 self.post_add(obj)
+
+    # @expose('/list/')
+    # def list(self):
+    #      return self.render_template(self.list_template)
+
+    @expose('/listdata/')
+    def get_list_data(self):
+        return json.dumps('{}.list'.format(self.__class__.__name__))
 
     @expose('/show/<pk>', methods=['GET'])
     def show(self, pk):
@@ -1032,7 +1037,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     edit_title = _("Edit Slice")
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
-    list_columns = ['slice_name', 'description', 'slice_link', 'viz_type', 'online', 'creator']
+    list_columns = ['id', 'slice_name', 'description', 'slice_link', 'viz_type', 'online', 'changed_on']
     edit_columns = ['slice_name', 'description', 'online', 'viz_type']
     show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
@@ -1086,10 +1091,6 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'time': Slice.changed_on,
         'owner': User.username
     }
-
-    # @expose('/list/')
-    # def list(self):
-    #     return self.render_template(self.list_template)
 
     @expose('/listdata/')
     def get_list_data(self):
@@ -1190,20 +1191,12 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         rs = query.all()
         data = []
         for obj, username, fav_id in rs:
-            line = {
-                'id': obj.id,
-                'title': obj.slice_name,
-                'description': obj.description,
-                'link': obj.slice_url,
-                'viz_type': obj.viz_type,
-                'table': obj.datasource_name,
-                'online': obj.online,
-                'time': str(obj.changed_on),
-                'owner': username,
-                'favorite': True if fav_id else False
-            }
+            line = {}
+            for col in self.list_columns:
+                line[col] = str(getattr(obj, col, None))
+            line['created_by_user'] = username
+            line['favorite'] = True if fav_id else False
             data.append(line)
-
 
         response = {}
         response['count'] = count
