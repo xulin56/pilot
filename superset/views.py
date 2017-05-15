@@ -393,7 +393,9 @@ class SupersetModelView(ModelView):
 
     @expose('/listdata/')
     def get_list_data(self):
-        return json.dumps('{}.list'.format(self.__class__.__name__))
+        kwargs = self.get_list_args(request.args)
+        list_data = self.get_object_list_data(**kwargs)
+        return json.dumps(list_data)
 
     @expose('/show/<pk>', methods=['GET'])
     def show(self, pk):
@@ -1092,12 +1094,6 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username
     }
 
-    @expose('/listdata/')
-    def get_list_data(self):
-        kwargs = self.get_list_args(request.args)
-        list_data = self.get_slice_list(**kwargs)
-        return json.dumps(list_data)
-
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
         attributes['dashboards'] = self.dashboards_to_dict(obj.dashboards)
@@ -1155,7 +1151,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             redirect_url = table.explore_url
         return redirect(redirect_url)
 
-    def get_slice_list(self, user_id, order_column, order_direction,
+    def get_object_list_data(self, user_id, order_column, order_direction,
                        page, page_size, filter, only_favorite):
         """ Return the slices with column 'favorite' and 'online' """
         query = self.query_own_or_online('slice', user_id, only_favorite)
