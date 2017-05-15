@@ -722,13 +722,13 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             raise Exception("Not a valid connection")
 
     def post_add(self, obj):
-        self.add_or_edit_database_account(db)
+        self.add_or_edit_database_account(obj)
         security.merge_perm(sm, 'database_access', obj.perm)
         for schema in obj.all_schema_names():
             security.merge_perm(
-                sm, 'schema_access', utils.get_schema_perm(db, schema))
+                sm, 'schema_access', utils.get_schema_perm(obj, schema))
         # log user aciton
-        action_str = 'Add connection: {}'.format(repr(db))
+        action_str = 'Add connection: {}'.format(repr(obj))
         log_action('add', action_str, 'database', obj.id)
         # log database number
         log_number('database', g.user.get_id())
@@ -737,9 +737,9 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         self.pre_add(obj)
 
     def post_update(self, obj):
-        self.add_or_edit_database_account(db)
+        self.add_or_edit_database_account(obj)
         # log user action
-        action_str = 'Edit connection: {}'.format(repr(db))
+        action_str = 'Edit connection: {}'.format(repr(obj))
         log_action('edit', action_str, 'database', obj.id)
 
     def pre_delete(self, obj):
@@ -750,7 +750,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
 
     def post_delete(self, obj):
         # log user action
-        action_str = 'Delete connection: {}'.format(repr(db))
+        action_str = 'Delete connection: {}'.format(repr(obj))
         log_action('delete', action_str, 'database', obj.id)
         # log database number
         log_number('database', g.user.get_id())

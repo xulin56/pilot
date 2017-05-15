@@ -51,6 +51,7 @@ setup(
         'flask-sqlalchemy==2.0',
         'humanize==0.5.1',
         'gunicorn==19.6.0',
+        'JPype1==0.6.2',
         'markdown==2.6.6',
         'mysqlclient==1.3.8',
         'pandas==0.18.1',
