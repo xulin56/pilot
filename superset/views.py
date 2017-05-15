@@ -429,6 +429,9 @@ class SupersetModelView(ModelView):
             flash(*self.datamodel.message)
             self.update_redirect()
 
+    def get_object_list_data(self, **kwargs):
+        pass
+
     def populate_object(self, user_id, data):
         user_id = int(user_id)
         obj_id = data.get('id')
@@ -1375,38 +1378,6 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             'superset/export_dashboards.html',
             dashboards_url='/dashboardmodelview/list'
         )
-
-    #@expose('/list/')
-    def list_(self):
-        """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
-        user_id = int(g.user.get_id())
-        try:
-            order_column = request.args.get('order_column')
-            order_direction = request.args.get('order_direction')
-            page = request.args.get('page')
-            page_size = request.args.get('page_size')
-            filter = request.args.get('filter')
-            only_favorite = request.args.get('only_favorite')
-        except Exception:
-            order_column, order_direction = None, None
-            page, page_size = None, None
-            filter, only_favorite = None, None
-
-        page = int(page) if page else self.page
-        page_size = int(page_size) if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-        filter = filter if filter else self.filter
-        only_favorite = bool(only_favorite) if only_favorite else self.only_favorite
-
-        list = self.get_dashboard_list(user_id, order_column, order_direction,
-                                       page, page_size, filter, only_favorite)
-        widgets = {}
-        widgets['list'] = list
-        return list
-        # return self.render_template(self.list_template,
-        #                             title=self.list_title,
-        #                             widgets=widgets)
 
     def get_object_list_data(self, user_id, order_column, order_direction,
                            page, page_size, filter, only_favorite):
