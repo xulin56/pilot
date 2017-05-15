@@ -75,8 +75,9 @@ $(document).ready(function() {
 
     function analysisData(data) {
         var sliceData = data.data;
-        sliceData.forEach(function(slice) {
+        sliceData.forEach(function(slice, index) {
             var obj = {};
+            obj.key = index + 1;
             obj.name = slice.title;
             obj.type = slice.viz_type;
             obj.set = "";
