@@ -390,10 +390,9 @@ class SupersetModelView(ModelView):
             if self.datamodel.add(obj):
                 self.post_add(obj)
 
-    def show_(self):
-        json_data = self.get_request_data()
-        obj_id = json_data.get('id', 0)
-        obj = self.get_object(obj_id)
+    @expose('/show/<pk>', methods=['GET'])
+    def show(self, pk):
+        obj = self.get_object(pk)
         attributes = self.get_show_attributes(obj)
         return json.dumps(attributes)
 
@@ -439,7 +438,10 @@ class SupersetModelView(ModelView):
     def get_show_attributes(self, obj):
         attributes = {}
         for col in self.show_columns:
-            attributes[col] = obj.col
+            if not hasattr(obj, col):
+                logging.error("Class: \'{}\' does not have the attribute: \'{}\'"
+                              .format(obj.__class__.__name__, col))
+            attributes[col] = str(getattr(obj, col, None))
 
         attributes['created_by_user'] = obj.created_by.username \
             if obj.created_by else None
@@ -511,8 +513,8 @@ class SupersetModelView(ModelView):
         else:
             return obj
 
-    def get_available_dashboards(self, user_id):
-        user_id = int(user_id)
+    def get_available_dashboards(self):
+        user_id = self.get_user_id()
         dashs = db.session.query(models.Dashboard) \
             .filter_by(created_by_fk=user_id).all()
         return dashs
@@ -1032,9 +1034,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     label_columns = {'datasource_link': 'Datasource', }
     list_columns = ['slice_name', 'description', 'slice_link', 'viz_type', 'online', 'creator']
     edit_columns = ['slice_name', 'description', 'online', 'viz_type']
-    show_columns = [
-        'id', 'slice_name', 'online', 'viz_type',
-        'created_by', 'created_on', 'changed_by', 'changed_on']
+    show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
         'description': Markup(
@@ -1149,8 +1149,6 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     def add(self):
         table = db.session.query(models.SqlaTable).first()
         if not table:
-            # TODO modify 'explore(self, datasource_type, datasource_id)'
-            # TODO Not return when the table_id is nonexistent
             redirect_url = '/superset/explore/table/0'
         else:
             redirect_url = table.explore_url
@@ -1161,7 +1159,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         """ Return the slices with column 'favorite' and 'online' """
         query = self.query_own_or_online('slice', user_id, only_favorite)
         if filter:
-            filter_str = '%{}%'.format(filter_str.lower())
+            filter_str = '%{}%'.format(filter.lower())
             query = query.filter(
                 or_(
                     Slice.slice_name.ilike(filter_str),
