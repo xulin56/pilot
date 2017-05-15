@@ -359,7 +359,7 @@ class SupersetModelView(ModelView):
     model = models.Model
     page = 0
     page_size = 10
-    order_column = 'time'
+    order_column = 'changed_on'
     order_direction = 'desc'
     filter = None
     only_favorite = False        # all or favorite
@@ -1037,7 +1037,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     edit_title = _("Edit Slice")
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
-    list_columns = ['id', 'slice_name', 'description', 'slice_link', 'viz_type', 'online', 'changed_on']
+    list_columns = ['id', 'slice_name', 'description', 'slice_url', 'viz_type', 'online', 'changed_on']
     edit_columns = ['slice_name', 'description', 'online', 'viz_type']
     show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
@@ -1088,7 +1088,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'description': Slice.description,
         'viz_type': Slice.viz_type,
         'table': Slice.datasource_name,
-        'time': Slice.changed_on,
+        'changed_on': Slice.changed_on,
         'owner': User.username
     }
 
