@@ -61,7 +61,8 @@ var dataSource = [];
 $(document).ready(function() {
 
     function getSliceList() {
-        var url = "http://localhost:8086/slicemodelview/listdata/";
+
+        var url = getAbsUrl("/slicemodelview/listdata/");
         $.getJSON(url, function (data) {
             analysisData(data);
         });
@@ -87,6 +88,10 @@ $(document).ready(function() {
             dataSource.push(obj);
         });
         renderTable();
+    }
+
+    function getAbsUrl(relativePath) {
+        return window.location.origin + relativePath;
     }
 
     $("#addSlice").click(function() {
