@@ -359,13 +359,21 @@ class SupersetModelView(ModelView):
     model = models.Model
     page = 0
     page_size = 10
-    order_column = 'time'
+    order_column = 'changed_on'
     order_direction = 'desc'
     filter = None
     only_favorite = False        # all or favorite
 
-    def list_(self):
-        pass
+    def get_list_args(self, args):
+        kwargs = {}
+        kwargs['user_id'] = self.get_user_id()
+        kwargs['order_column'] = args.get('order_column', self.order_column)
+        kwargs['order_direction'] = args.get('order_direction', self.order_direction)
+        kwargs['page'] = args.get('page', self.page)
+        kwargs['page_size'] = args.get('page_size', self.page_size)
+        kwargs['filter'] = args.get('filter', self.filter)
+        kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
+        return kwargs
 
     def add_(self):
         user_id = self.get_user_id()
@@ -379,10 +387,19 @@ class SupersetModelView(ModelView):
             if self.datamodel.add(obj):
                 self.post_add(obj)
 
-    def show_(self):
-        json_data = self.get_request_data()
-        obj_id = json_data.get('id', 0)
-        obj = self.get_object(obj_id)
+    # @expose('/list/')
+    # def list(self):
+    #      return self.render_template(self.list_template)
+
+    @expose('/listdata/')
+    def get_list_data(self):
+        kwargs = self.get_list_args(request.args)
+        list_data = self.get_object_list_data(**kwargs)
+        return json.dumps(list_data)
+
+    @expose('/show/<pk>', methods=['GET'])
+    def show(self, pk):
+        obj = self.get_object(pk)
         attributes = self.get_show_attributes(obj)
         return json.dumps(attributes)
 
@@ -428,7 +445,10 @@ class SupersetModelView(ModelView):
     def get_show_attributes(self, obj):
         attributes = {}
         for col in self.show_columns:
-            attributes[col] = obj.col
+            if not hasattr(obj, col):
+                logging.error("Class: \'{}\' does not have the attribute: \'{}\'"
+                              .format(obj.__class__.__name__, col))
+            attributes[col] = str(getattr(obj, col, None))
 
         attributes['created_by_user'] = obj.created_by.username \
             if obj.created_by else None
@@ -500,8 +520,8 @@ class SupersetModelView(ModelView):
         else:
             return obj
 
-    def get_available_dashboards(self, user_id):
-        user_id = int(user_id)
+    def get_available_dashboards(self):
+        user_id = self.get_user_id()
         dashs = db.session.query(models.Dashboard) \
             .filter_by(created_by_fk=user_id).all()
         return dashs
@@ -1019,11 +1039,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     edit_title = _("Edit Slice")
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
-    list_columns = ['slice_name', 'description', 'slice_link', 'viz_type', 'online', 'creator']
+    list_columns = ['id', 'slice_name', 'description', 'slice_url', 'viz_type', 'online', 'modified']
     edit_columns = ['slice_name', 'description', 'online', 'viz_type']
-    show_columns = [
-        'id', 'slice_name', 'online', 'viz_type',
-        'created_by', 'created_on', 'changed_by', 'changed_on']
+    show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
         'description': Markup(
@@ -1064,7 +1082,6 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_type': _("Datasource Type"),
     }
 
-    # list_template = "superset/list.html"
     list_template = "superset/slice.html"
 
     # used for order column
@@ -1073,40 +1090,13 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'description': Slice.description,
         'viz_type': Slice.viz_type,
         'table': Slice.datasource_name,
-        'time': Slice.changed_on,
+        'changed_on': Slice.changed_on,
         'owner': User.username
     }
 
-    @expose('/listdata/')
-    def get_list_data(self):
-        """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
-        user_id = int(g.user.get_id())
-        try:
-            order_column = request.args.get('order_column')
-            order_direction = request.args.get('order_direction')
-            page = request.args.get('page')
-            page_size = request.args.get('page_size')
-            filter = request.args.get('filter')
-            only_favorite = request.args.get('only_favorite')
-        except Exception:
-            order_column, order_direction = None, None
-            page, page_size = None, None
-            filter, only_favorite = None, False
-
-        page = int(page) if page else self.page
-        page_size = int(page_size) if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-        filter = filter if filter else self.filter
-        only_favorite = bool(only_favorite) if only_favorite else self.only_favorite
-
-        list = self.get_slice_list(user_id, order_column, order_direction,
-                                   page, page_size, filter, only_favorite)
-        return json.dumps(list)
-
     @expose('/list/')
     def list(self):
-        return self.render_template(self.list_template)
+         return self.render_template(self.list_template)
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
@@ -1160,19 +1150,17 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     def add(self):
         table = db.session.query(models.SqlaTable).first()
         if not table:
-            # TODO modify 'explore(self, datasource_type, datasource_id)'
-            # TODO Not return when the table_id is nonexistent
             redirect_url = '/superset/explore/table/0'
         else:
             redirect_url = table.explore_url
         return redirect(redirect_url)
 
-    def get_slice_list(self, user_id, order_column, order_direction,
-                       page, page_size, filter_str, only_favorite):
+    def get_object_list_data(self, user_id, order_column, order_direction,
+                       page, page_size, filter, only_favorite):
         """ Return the slices with column 'favorite' and 'online' """
         query = self.query_own_or_online('slice', user_id, only_favorite)
-        if filter_str:
-            filter_str = '%{}%'.format(filter_str.lower())
+        if filter:
+            filter_str = '%{}%'.format(filter.lower())
             query = query.filter(
                 or_(
                     Slice.slice_name.ilike(filter_str),
@@ -1203,20 +1191,12 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         rs = query.all()
         data = []
         for obj, username, fav_id in rs:
-            line = {
-                'id': obj.id,
-                'title': obj.slice_name,
-                'description': obj.description,
-                'link': obj.slice_url,
-                'viz_type': obj.viz_type,
-                'table': obj.datasource_name,
-                'online': obj.online,
-                'time': str(obj.changed_on),
-                'owner': username,
-                'favorite': True if fav_id else False
-            }
+            line = {}
+            for col in self.list_columns:
+                line[col] = str(getattr(obj, col, None))
+            line['created_by_user'] = username
+            line['favorite'] = True if fav_id else False
             data.append(line)
-
 
         response = {}
         response['count'] = count
@@ -1279,13 +1259,10 @@ class SliceAddView(SliceModelView):  # noqa
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Dashboard
     datamodel = SQLAInterface(models.Dashboard)
-    list_title = _("List Dashboard")
-    show_title = _("Show Dashboard")
-    add_title = _("Add Dashboard")
-    edit_title = _("Edit Dashboard")
-    list_columns = ['dashboard_link', 'description', 'online', 'department', 'creator', 'modified']
+    list_columns = ['id', 'dashboard_title', 'url', 'description',
+                    'online',  'changed_on']
     edit_columns = ['dashboard_title', 'description', 'online', 'slices']
-    show_columns = edit_columns + ['id', 'table_names']
+    show_columns = ['id', 'dashboard_title', 'description', 'table_names']
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
     description_columns = {
@@ -1333,7 +1310,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     str_to_column = {
         'title': Dashboard.dashboard_title,
         'description': Dashboard.description,
-        'time': Dashboard.changed_on,
+        'changed_on': Dashboard.changed_on,
         'owner': User.username,
     }
 
@@ -1431,12 +1408,12 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         #                             title=self.list_title,
         #                             widgets=widgets)
 
-    def get_dashboard_list(self, user_id, order_column, order_direction,
-                           page, page_size, filter_str, only_favorite):
+    def get_object_list_data(self, user_id, order_column, order_direction,
+                           page, page_size, filter, only_favorite):
         """Return the dashbaords with column 'favorite' and 'online'"""
         query = self.query_own_or_online('dashboard', user_id, only_favorite)
-        if filter_str:
-            filter_str = '%{}%'.format(filter_str.lower())
+        if filter:
+            filter_str = '%{}%'.format(filter.lower())
             query = query.filter(
                 or_(
                     Dashboard.dashboard_title.ilike(filter_str),
@@ -1465,16 +1442,11 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         rs = query.all()
         data = []
         for obj, username, fav_id in rs:
-            line = {
-                'id': obj.id,
-                'title': obj.dashboard_title,
-                'description': obj.description,
-                'link': obj.url,
-                'online': obj.online,
-                'time': str(obj.changed_on),
-                'owner': username,
-                'favorite': True if fav_id else False
-            }
+            line = {}
+            for col in self.list_columns:
+                line[col] = str(getattr(obj, col, None))
+            line['created_by_user'] = username
+            line['favorite'] = True if fav_id else False
             data.append(line)
 
         response = {}
