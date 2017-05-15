@@ -12,19 +12,31 @@ import 'antd/dist/antd.css';
 const $ = window.$ = require('jquery');
 
 const columns = [{
-    title: 'Name',
+    title: '名称',
     dataIndex: 'name',
-    key: 'name',
+    key: 'name'
 }, {
-    title: 'Age',
-    dataIndex: 'age',
-    key: 'age',
+    title: '图标类型',
+    dataIndex: 'type',
+    key: 'type'
 }, {
-    title: 'Address',
-    dataIndex: 'address',
-    key: 'address',
+    title: '数据集',
+    dataIndex: 'set',
+    key: 'set'
 }, {
-    title: 'Action',
+    title: '所有者',
+    dataIndex: 'owner',
+    key: 'owner'
+}, {
+    title: '发布状态',
+    dataIndex: 'state',
+    key: 'state'
+}, {
+    title: '最后修改时间',
+    dataIndex: 'time',
+    key: 'time'
+}, {
+    title: '操作',
     key: 'action',
     render: (text, record) => (
         <div>
@@ -35,39 +47,46 @@ const columns = [{
     )
 }];
 
-const dataSource = [{
-    key: '1',
-    name: 'Mike',
-    age: 32,
-    address: '10 Downing Street'
-}, {
-    key: '2',
-    name: 'John',
-    age: 42,
-    address: '10 Downing Street'
-}];
-
 const rowSelection = {
     onChange: (selectedRowKeys, selectedRows) => {
         console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
     },
     getCheckboxProps: record => ({
         disabled: record.name === 'Disabled User',    // Column configuration not to be checked
-    }),
+    })
 };
+
+var dataSource = [];
 
 $(document).ready(function() {
 
     function getSliceList() {
         var url = "http://localhost:8086/slicemodelview/listdata/";
         $.getJSON(url, function (data) {
-            console.log("data=", data);
-
+            analysisData(data);
         });
     }
 
-    render(<Table rowSelection={rowSelection} dataSource={dataSource} columns={columns}/>,
-        document.getElementById('slice-list-content'));
+    function renderTable() {
+
+        render(<Table rowSelection={rowSelection} dataSource={dataSource} columns={columns}/>,
+            document.getElementById('slice-list-content'));
+    }
+
+    function analysisData(data) {
+        var sliceData = data.data;
+        sliceData.forEach(function(slice) {
+            var obj = {};
+            obj.name = slice.title;
+            obj.type = slice.viz_type;
+            obj.set = "";
+            obj.owner = slice.owner;
+            obj.state = "未发布";
+            obj.time = slice.time;
+            dataSource.push(obj);
+        });
+        renderTable();
+    }
 
     $("#addSlice").click(function() {
 
