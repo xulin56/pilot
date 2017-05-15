@@ -1039,7 +1039,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     edit_title = _("Edit Slice")
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
-    list_columns = ['id', 'slice_name', 'description', 'slice_url', 'viz_type', 'online', 'changed_on']
+    list_columns = ['id', 'slice_name', 'description', 'slice_url', 'viz_type', 'online', 'modified']
     edit_columns = ['slice_name', 'description', 'online', 'viz_type']
     show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
@@ -1255,11 +1255,8 @@ class SliceAddView(SliceModelView):  # noqa
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Dashboard
     datamodel = SQLAInterface(models.Dashboard)
-    list_title = _("List Dashboard")
-    show_title = _("Show Dashboard")
-    add_title = _("Add Dashboard")
-    edit_title = _("Edit Dashboard")
-    list_columns = ['dashboard_link', 'description', 'online', 'department', 'creator', 'modified']
+    list_columns = ['id', 'dashboard_title', 'url', 'description',
+                    'online',  'changed_on']
     edit_columns = ['dashboard_title', 'description', 'online', 'slices']
     show_columns = ['id', 'dashboard_title', 'description', 'table_names']
     add_columns = edit_columns
@@ -1309,7 +1306,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     str_to_column = {
         'title': Dashboard.dashboard_title,
         'description': Dashboard.description,
-        'time': Dashboard.changed_on,
+        'changed_on': Dashboard.changed_on,
         'owner': User.username,
     }
 
@@ -1407,12 +1404,12 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         #                             title=self.list_title,
         #                             widgets=widgets)
 
-    def get_dashboard_list(self, user_id, order_column, order_direction,
-                           page, page_size, filter_str, only_favorite):
+    def get_object_list_data(self, user_id, order_column, order_direction,
+                           page, page_size, filter, only_favorite):
         """Return the dashbaords with column 'favorite' and 'online'"""
         query = self.query_own_or_online('dashboard', user_id, only_favorite)
-        if filter_str:
-            filter_str = '%{}%'.format(filter_str.lower())
+        if filter:
+            filter_str = '%{}%'.format(filter.lower())
             query = query.filter(
                 or_(
                     Dashboard.dashboard_title.ilike(filter_str),
@@ -1441,16 +1438,11 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         rs = query.all()
         data = []
         for obj, username, fav_id in rs:
-            line = {
-                'id': obj.id,
-                'title': obj.dashboard_title,
-                'description': obj.description,
-                'link': obj.url,
-                'online': obj.online,
-                'time': str(obj.changed_on),
-                'owner': username,
-                'favorite': True if fav_id else False
-            }
+            line = {}
+            for col in self.list_columns:
+                line[col] = str(getattr(obj, col, None))
+            line['created_by_user'] = username
+            line['favorite'] = True if fav_id else False
             data.append(line)
 
         response = {}
