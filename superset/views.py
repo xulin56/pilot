@@ -378,7 +378,7 @@ class SupersetModelView(ModelView):
     def add_(self):
         user_id = self.get_user_id()
         json_data = self.get_request_data()
-        obj = self.populate_object(user_id, json_data)
+        obj = self.populate_object(None, user_id, json_data)
         try:
             self.pre_add(obj)
         except Exception as e:
@@ -403,38 +403,37 @@ class SupersetModelView(ModelView):
         attributes = self.get_show_attributes(obj)
         return json.dumps(attributes)
 
-    def update_(self):
-        user_id = self.get_user_id()
-        json_data = self.get_request_data()
-        obj = self.populate_object(user_id, json_data)
-        try:
-            self.pre_update(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.edit(obj):
-                self.post_update(obj)
+    # @expose('/edit/<pk>', methods=['GET', 'POST'])
+    # def edit(self, pk):
+    #     user_id = self.get_user_id()
+    #     json_data = self.get_request_data()
+    #     obj = self.populate_object(pk, user_id, json_data)
+    #     try:
+    #         self.pre_update(obj)
+    #     except Exception as e:
+    #         flash(str(e), "danger")
+    #     else:
+    #         if self.datamodel.edit(obj):
+    #             self.post_update(obj)
 
-    def delete_(self):
-        json_data = self.get_request_data()
-        obj_id = json_data.get('id', 0)
-        obj = self.get_object(obj_id)
-        try:
-            self.pre_delete(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.delete(obj):
-                self.post_delete(obj)
-            flash(*self.datamodel.message)
-            self.update_redirect()
+    # @expose('/delete/<pk>')
+    # def delete(self, pk):
+    #     obj = self.get_object(pk)
+    #     try:
+    #         self.pre_delete(obj)
+    #     except Exception as e:
+    #         flash(str(e), "danger")
+    #     else:
+    #         if self.datamodel.delete(obj):
+    #             self.post_delete(obj)
+    #         flash(*self.datamodel.message)
+    #         self.update_redirect()
 
     def get_object_list_data(self, **kwargs):
         pass
 
-    def populate_object(self, user_id, data):
+    def populate_object(self, obj_id, user_id, data):
         user_id = int(user_id)
-        obj_id = data.get('id')
         if obj_id:
             obj = self.get_object(obj_id)
             attributes = self.get_edit_attributes(data, user_id)
@@ -464,6 +463,9 @@ class SupersetModelView(ModelView):
         attributes['created_by_fk'] = user_id
         attributes['created_on'] = datetime.now()
         for col in self.add_columns:
+            if col not in data:
+                logging.error("The attribute: \'{}\' not in the needed attributes: \'{}\'"
+                              .format(col, ','.join(data.keys())))
             attributes[col] = data.get(col)
         return attributes
 
@@ -472,6 +474,9 @@ class SupersetModelView(ModelView):
         attributes['changed_by_fk'] = user_id
         attributes['changed_on'] = datetime.now()
         for col in self.edit_columns:
+            if col not in data:
+                logging.error("The attribute: \'{}\' not in the needed attributes: \'{}\'"
+                              .format(col, ','.join(data.keys())))
             attributes[col] = data.get(col)
         return attributes
 
