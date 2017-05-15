@@ -55,6 +55,9 @@
 		.col-md-3{
 			.panel-default{
 				.panel-body{
+					.select2-container{
+						width:100%;
+					}
 					.body-left-area{
 						.left-area-item{
 							display:flex;
@@ -63,7 +66,6 @@
 								display:flex;
 								height:26px;
 								align-items:center;
-								font-size:16px;
 								.radio-item{
 									margin-left:20px;
 									display:flex;
