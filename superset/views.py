@@ -375,17 +375,18 @@ class SupersetModelView(ModelView):
         kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
         return kwargs
 
-    def add_(self):
-        user_id = self.get_user_id()
-        json_data = self.get_request_data()
-        obj = self.populate_object(None, user_id, json_data)
-        try:
-            self.pre_add(obj)
-        except Exception as e:
-            flash(str(e), "danger")
-        else:
-            if self.datamodel.add(obj):
-                self.post_add(obj)
+    # @expose('/add', methods=['GET', 'POST'])
+    # def add(self):
+    #     user_id = self.get_user_id()
+    #     json_data = self.get_request_data()
+    #     obj = self.populate_object(None, user_id, json_data)
+    #     try:
+    #         self.pre_add(obj)
+    #     except Exception as e:
+    #         flash(str(e), "danger")
+    #     else:
+    #         if self.datamodel.add(obj):
+    #             self.post_add(obj)
 
     # @expose('/list/')
     # def list(self):
@@ -518,6 +519,7 @@ class SupersetModelView(ModelView):
     # TODO add @property, rename to request_data()
     def get_request_data(self):
         data = request.data
+        data = str(data, encoding='utf-8')
         return json.loads(data)
 
     def get_object(self, obj_id):
@@ -1047,7 +1049,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     edit_title = _("Edit Slice")
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
-    list_columns = ['id', 'slice_name', 'description', 'slice_url', 'viz_type', 'online', 'modified']
+    list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
+                    'viz_type', 'online', 'changed_on']
     edit_columns = ['slice_name', 'description', 'online', 'viz_type']
     show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
