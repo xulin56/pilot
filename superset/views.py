@@ -1082,7 +1082,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_type': _("Datasource Type"),
     }
 
-    list_template = "superset/list.html"
+    list_template = "superset/slice.html"
 
     # used for order column
     str_to_column = {
@@ -1093,6 +1093,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'changed_on': Slice.changed_on,
         'owner': User.username
     }
+
+    @expose('/list/')
+    def list(self):
+         return self.render_template(self.list_template)
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
