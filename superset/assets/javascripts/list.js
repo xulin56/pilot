@@ -3,15 +3,23 @@ import { render } from 'react-dom';
 import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
 import thunk from 'redux-thunk';
-import { Operate, SliceEdit } from './components/Slice';
+import { Operate } from './components/Slice';
+import { DashboardEdit, SliceEdit } from './components/popup';
 
 const $ = window.$ = require('jquery');
-var popupEl = render(<SliceEdit />, document.getElementById('popup_root'));
 
-$(".slice-edit-popup").on('click',function () {
-	if(popupEl) {
-		popupEl.showDialog();	
+$(".edit-popup-dashboard").on('click',function () {
+    var popupElDashboard = render(<DashboardEdit />, document.getElementById('popup_root'));
+	if(popupElDashboard) {
+        popupElDashboard.showDialog();
 	}
+});
+
+$(".edit-popup-slice").on('click',function () {
+    var popupElSlice = render(<SliceEdit />, document.getElementById('popup_root'));
+    if(popupElSlice) {
+        popupElSlice.showDialog();
+    }
 });
 
 $(function(){

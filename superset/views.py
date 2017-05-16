@@ -1093,7 +1093,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_type': _("Datasource Type"),
     }
 
-    list_template = "superset/slice.html"
+    list_template = "superset/partials/slice/slice.html"
 
     # used for order column
     str_to_column = {
@@ -1315,7 +1315,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'department': _('Department')
     }
 
-    list_template = "superset/list.html"
+    list_template = "superset/partials/dashboard/dashboard.html"
 
     # used for order column
     str_to_column = {
