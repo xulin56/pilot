@@ -375,22 +375,22 @@ class SupersetModelView(ModelView):
         kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
         return kwargs
 
-    # @expose('/add', methods=['GET', 'POST'])
-    # def add(self):
-    #     user_id = self.get_user_id()
-    #     json_data = self.get_request_data()
-    #     obj = self.populate_object(None, user_id, json_data)
-    #     try:
-    #         self.pre_add(obj)
-    #     except Exception as e:
-    #         flash(str(e), "danger")
-    #     else:
-    #         if self.datamodel.add(obj):
-    #             self.post_add(obj)
+    @expose('/add', methods=['GET', 'POST'])
+    def add(self):
+        user_id = self.get_user_id()
+        json_data = self.get_request_data()
+        obj = self.populate_object(None, user_id, json_data)
+        try:
+            self.pre_add(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.add(obj):
+                self.post_add(obj)
 
-    # @expose('/list/')
-    # def list(self):
-    #      return self.render_template(self.list_template)
+    @expose('/list/')
+    def list(self):
+         return self.render_template(self.list_template)
 
     @expose('/listdata/')
     def get_list_data(self):
@@ -404,31 +404,31 @@ class SupersetModelView(ModelView):
         attributes = self.get_show_attributes(obj)
         return json.dumps(attributes)
 
-    # @expose('/edit/<pk>', methods=['GET', 'POST'])
-    # def edit(self, pk):
-    #     user_id = self.get_user_id()
-    #     json_data = self.get_request_data()
-    #     obj = self.populate_object(pk, user_id, json_data)
-    #     try:
-    #         self.pre_update(obj)
-    #     except Exception as e:
-    #         flash(str(e), "danger")
-    #     else:
-    #         if self.datamodel.edit(obj):
-    #             self.post_update(obj)
+    @expose('/edit/<pk>', methods=['GET', 'POST'])
+    def edit(self, pk):
+        user_id = self.get_user_id()
+        json_data = self.get_request_data()
+        obj = self.populate_object(pk, user_id, json_data)
+        try:
+            self.pre_update(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.edit(obj):
+                self.post_update(obj)
 
-    # @expose('/delete/<pk>')
-    # def delete(self, pk):
-    #     obj = self.get_object(pk)
-    #     try:
-    #         self.pre_delete(obj)
-    #     except Exception as e:
-    #         flash(str(e), "danger")
-    #     else:
-    #         if self.datamodel.delete(obj):
-    #             self.post_delete(obj)
-    #         flash(*self.datamodel.message)
-    #         self.update_redirect()
+    @expose('/delete/<pk>')
+    def delete(self, pk):
+        obj = self.get_object(pk)
+        try:
+            self.pre_delete(obj)
+        except Exception as e:
+            flash(str(e), "danger")
+        else:
+            if self.datamodel.delete(obj):
+                self.post_delete(obj)
+            flash(*self.datamodel.message)
+            self.update_redirect()
 
     def get_object_list_data(self, **kwargs):
         pass
@@ -1105,9 +1105,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username
     }
 
-    @expose('/list/')
-    def list(self):
-         return self.render_template(self.list_template)
+    # @expose('/list/')
+    # def list(self):
+    #      return self.render_template(self.list_template)
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
