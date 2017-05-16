@@ -1048,10 +1048,6 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Slice
     datamodel = SQLAInterface(models.Slice)
-    list_title = _("List Slice")
-    show_title = _("Show Slice")
-    add_title = _("Add Slice")
-    edit_title = _("Edit Slice")
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
     list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
@@ -1098,21 +1094,21 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_type': _("Datasource Type"),
     }
 
-    list_template = "superset/slice.html"
+    # list_template = "superset/slice.html"
 
-    # used for order column
     str_to_column = {
         'title': Slice.slice_name,
         'description': Slice.description,
         'viz_type': Slice.viz_type,
         'table': Slice.datasource_name,
         'changed_on': Slice.changed_on,
-        'owner': User.username
+        'owner': User.username,
+        'created_by_user': User.username
     }
 
-    @expose('/list/')
-    def list(self):
-         return self.render_template(self.list_template)
+    # @expose('/list/')
+    # def list(self):
+    #      return self.render_template(self.list_template)
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
@@ -1322,12 +1318,12 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
     list_template = "superset/list.html"
 
-    # used for order column
     str_to_column = {
         'title': Dashboard.dashboard_title,
         'description': Dashboard.description,
         'changed_on': Dashboard.changed_on,
         'owner': User.username,
+        'created_by_user': User.username
     }
 
     @expose('/addablechoices/', methods=['GET'])
