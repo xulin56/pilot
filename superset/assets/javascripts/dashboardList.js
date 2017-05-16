@@ -9,10 +9,14 @@ import thunk from 'redux-thunk';
 import { Operate } from './components/Slice';
 import { DashboardEdit, SliceEdit } from './components/popup';
 
-import { DatePicker, Table } from 'antd';
+import { Pagination, Table } from 'antd';
 import 'antd/dist/antd.css';
 
 const $ = window.$ = require('jquery');
+
+function editSlice() {
+    console.log("editSlice...");
+}
 
 const columns = [{
     title: '',
@@ -21,7 +25,7 @@ const columns = [{
     width: '5%',
     render: (text, record) => (
         <div>
-            <button class="btn btn-default">收藏</button>
+            <button className="btn btn-default">收藏</button>
         </div>
     )
 }, {
@@ -54,9 +58,9 @@ const columns = [{
     width: '20%',
     render: (text, record) => (
         <div>
-            <button class="btn btn-default">编辑</button>&nbsp;
-            <button class="btn btn-default">发布</button>&nbsp;
-            <button class="btn btn-default">删除</button>
+            <button className="btn btn-default edit-slice">编辑</button>&nbsp;
+            <button className="btn btn-default">发布</button>&nbsp;
+            <button className="btn btn-default">删除</button>
         </div>
     )
 }];
@@ -134,6 +138,21 @@ $(document).ready(function() {
         if(event.keyCode == 13) {
 
         }
+    });
+
+    $(".edit-slice").click(function() {
+        var popupElSlice = render(<SliceEdit />, document.getElementById('popup_root'));
+        if(popupElSlice) {
+            popupElSlice.showDialog();
+        }
+    });
+
+    $("#publishItem").bind("click", function() {
+
+    });
+
+    $("#deleteItem").bind("click", function() {
+
     });
 
     getSliceList();
