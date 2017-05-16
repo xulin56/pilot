@@ -375,10 +375,11 @@ class SupersetModelView(ModelView):
         kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
         return kwargs
 
-    def add_(self):
+    @expose('/add', methods=['GET', 'POST'])
+    def add(self):
         user_id = self.get_user_id()
         json_data = self.get_request_data()
-        obj = self.populate_object(user_id, json_data)
+        obj = self.populate_object(None, user_id, json_data)
         try:
             self.pre_add(obj)
         except Exception as e:
@@ -387,9 +388,9 @@ class SupersetModelView(ModelView):
             if self.datamodel.add(obj):
                 self.post_add(obj)
 
-    # @expose('/list/')
-    # def list(self):
-    #      return self.render_template(self.list_template)
+    @expose('/list/')
+    def list(self):
+         return self.render_template(self.list_template)
 
     @expose('/listdata/')
     def get_list_data(self):
@@ -403,10 +404,11 @@ class SupersetModelView(ModelView):
         attributes = self.get_show_attributes(obj)
         return json.dumps(attributes)
 
-    def update_(self):
+    @expose('/edit/<pk>', methods=['GET', 'POST'])
+    def edit(self, pk):
         user_id = self.get_user_id()
         json_data = self.get_request_data()
-        obj = self.populate_object(user_id, json_data)
+        obj = self.populate_object(pk, user_id, json_data)
         try:
             self.pre_update(obj)
         except Exception as e:
@@ -415,10 +417,9 @@ class SupersetModelView(ModelView):
             if self.datamodel.edit(obj):
                 self.post_update(obj)
 
-    def delete_(self):
-        json_data = self.get_request_data()
-        obj_id = json_data.get('id', 0)
-        obj = self.get_object(obj_id)
+    @expose('/delete/<pk>')
+    def delete(self, pk):
+        obj = self.get_object(pk)
         try:
             self.pre_delete(obj)
         except Exception as e:
@@ -429,9 +430,11 @@ class SupersetModelView(ModelView):
             flash(*self.datamodel.message)
             self.update_redirect()
 
-    def populate_object(self, user_id, data):
+    def get_object_list_data(self, **kwargs):
+        pass
+
+    def populate_object(self, obj_id, user_id, data):
         user_id = int(user_id)
-        obj_id = data.get('id')
         if obj_id:
             obj = self.get_object(obj_id)
             attributes = self.get_edit_attributes(data, user_id)
@@ -461,6 +464,9 @@ class SupersetModelView(ModelView):
         attributes['created_by_fk'] = user_id
         attributes['created_on'] = datetime.now()
         for col in self.add_columns:
+            if col not in data:
+                logging.error("The attribute: \'{}\' not in the needed attributes: \'{}\'"
+                              .format(col, ','.join(data.keys())))
             attributes[col] = data.get(col)
         return attributes
 
@@ -469,6 +475,9 @@ class SupersetModelView(ModelView):
         attributes['changed_by_fk'] = user_id
         attributes['changed_on'] = datetime.now()
         for col in self.edit_columns:
+            if col not in data:
+                logging.error("The attribute: \'{}\' not in the needed attributes: \'{}\'"
+                              .format(col, ','.join(data.keys())))
             attributes[col] = data.get(col)
         return attributes
 
@@ -510,6 +519,7 @@ class SupersetModelView(ModelView):
     # TODO add @property, rename to request_data()
     def get_request_data(self):
         data = request.data
+        data = str(data, encoding='utf-8')
         return json.loads(data)
 
     def get_object(self, obj_id):
@@ -1039,7 +1049,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     edit_title = _("Edit Slice")
     can_add = False
     label_columns = {'datasource_link': 'Datasource', }
-    list_columns = ['id', 'slice_name', 'description', 'slice_url', 'viz_type', 'online', 'modified']
+    list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
+                    'viz_type', 'online', 'changed_on']
     edit_columns = ['slice_name', 'description', 'online', 'viz_type']
     show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
@@ -1094,9 +1105,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username
     }
 
-    @expose('/list/')
-    def list(self):
-         return self.render_template(self.list_template)
+    # @expose('/list/')
+    # def list(self):
+    #      return self.render_template(self.list_template)
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
@@ -1375,38 +1386,6 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             'superset/export_dashboards.html',
             dashboards_url='/dashboardmodelview/list'
         )
-
-    #@expose('/list/')
-    def list_(self):
-        """/list?order_column=id&order_direction=desc&page=0&page_size=10"""
-        user_id = int(g.user.get_id())
-        try:
-            order_column = request.args.get('order_column')
-            order_direction = request.args.get('order_direction')
-            page = request.args.get('page')
-            page_size = request.args.get('page_size')
-            filter = request.args.get('filter')
-            only_favorite = request.args.get('only_favorite')
-        except Exception:
-            order_column, order_direction = None, None
-            page, page_size = None, None
-            filter, only_favorite = None, None
-
-        page = int(page) if page else self.page
-        page_size = int(page_size) if page_size else self.page_size
-        order_column = order_column if order_column else self.order_column
-        order_direction = order_direction if order_direction else self.order_direction
-        filter = filter if filter else self.filter
-        only_favorite = bool(only_favorite) if only_favorite else self.only_favorite
-
-        list = self.get_dashboard_list(user_id, order_column, order_direction,
-                                       page, page_size, filter, only_favorite)
-        widgets = {}
-        widgets['list'] = list
-        return list
-        # return self.render_template(self.list_template,
-        #                             title=self.list_title,
-        #                             widgets=widgets)
 
     def get_object_list_data(self, user_id, order_column, order_direction,
                            page, page_size, filter, only_favorite):
