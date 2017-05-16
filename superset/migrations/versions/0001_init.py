@@ -226,7 +226,7 @@ def upgrade():
         sa.Column('avg', sa.Boolean(), nullable=True, server_default="0"),
         sa.Column('max', sa.Boolean(), nullable=True, server_default="0"),
         sa.Column('min', sa.Boolean(), nullable=True, server_default="0"),
-        sa.Column('filterable', sa.Boolean(), nullable=True, server_default="0"),
+        sa.Column('filterable', sa.Boolean(), nullable=True, server_default="1"),
         sa.Column('expression', sa.Text(), nullable=True),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('python_date_format', sa.String(length=255), nullable=True),
