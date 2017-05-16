@@ -1,3 +1,6 @@
+/**
+ * Created by haitao on 17-5-15.
+ */
 import React from 'react';
 import { render } from 'react-dom';
 import { createStore, applyMiddleware } from 'redux';
@@ -6,7 +9,7 @@ import thunk from 'redux-thunk';
 import { Operate } from './components/Slice';
 import { DashboardEdit, SliceEdit } from './components/popup';
 
-import { Pagination, Table } from 'antd';
+import { DatePicker, Table } from 'antd';
 import 'antd/dist/antd.css';
 
 const $ = window.$ = require('jquery');
@@ -28,39 +31,27 @@ const columns = [{
     sorter: true,
     width: '30%'
 }, {
-    title: '图标类型',
-    dataIndex: 'type',
-    key: 'type',
+    title: '发布状态',
+    dataIndex: 'state',
+    key: 'state',
     sorter: true,
-    width: '10%'
-}, {
-    title: '数据集',
-    dataIndex: 'set',
-    key: 'set',
-    sorter: true,
-    width: '10%'
+    width: '15%'
 }, {
     title: '所有者',
     dataIndex: 'owner',
     key: 'owner',
     sorter: true,
-    width: '10%'
-}, {
-    title: '发布状态',
-    dataIndex: 'state',
-    key: 'state',
-    sorter: true,
-    width: '10%'
+    width: '15%'
 }, {
     title: '最后修改时间',
     dataIndex: 'time',
     key: 'time',
     sorter: true,
-    width: '10%'
+    width: '15%'
 }, {
     title: '操作',
     key: 'action',
-    width: '15%',
+    width: '20%',
     render: (text, record) => (
         <div>
             <button class="btn btn-default">编辑</button>&nbsp;
@@ -85,7 +76,7 @@ $(document).ready(function() {
 
     function getSliceList() {
 
-        var url = getAbsUrl("/slicemodelview/listdata/");
+        var url = getAbsUrl("/dashboardmodelview/listdata/");
         $.getJSON(url, function (data) {
             analysisData(data);
             console.log("data=", data);
@@ -95,12 +86,12 @@ $(document).ready(function() {
     function renderTable() {
 
         render(<Table rowSelection={rowSelection} dataSource={dataSource} columns={columns} pagination={false} />,
-            document.getElementById('slice-list-content'));
+            document.getElementById('dashboard-list-content'));
     }
 
     function renderPagination() {
         render(<Pagination defaultCurrent={1} total={50} />,
-            document.getElementById('slice-list-paging'));
+            document.getElementById('dashboard-list-paging'));
     }
 
     function analysisData(data) {
@@ -108,9 +99,7 @@ $(document).ready(function() {
         sliceData.forEach(function(slice, index) {
             var obj = {};
             obj.key = index + 1;
-            obj.name = slice.slice_name;
-            obj.type = slice.viz_type;
-            obj.set = slice.datasource;
+            obj.name = slice.dashboard_title;
             obj.owner = slice.created_by_user;
             obj.state = slice.online;
             obj.time = slice.changed_on;

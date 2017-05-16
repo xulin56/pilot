@@ -1,0 +1,35 @@
+{% extends "superset/basic.html" %}
+
+{% block body %}
+    <div id="dashboard" class="dashboard-list">
+        <div class="operation">
+            <div>
+                <i class="glyphicon glyphicon-dashboard"></i>
+                <span>仪表盘</span>
+                <span>记录条目</span>
+                <span>07</span>
+            </div>
+            <div>
+                <button id="add" class="btn btn-default">+</button>
+                <button id="delete" class="btn btn-default">-</button>
+                <button id="upload" class="btn btn-default">upload</button>
+                <button id="download" class="btn btn-default">download</button>
+                <button id="showAll" class="btn btn-default">全部</button>
+                <button id="showFavorite" class="btn btn-default">收藏</button>
+                <input id="searchInput" placeholder="search..." />
+                <button id="shrink" class="btn btn-default">shrink</button>
+                <button id="enlarge" class="btn btn-default">enlarge</button>
+            </div>
+        </div>
+        <div id="dashboard-list-content" class="list-content"></div>
+        <div id="dashboard-list-paging" class="list-paging"></div>
+    </div>
+{% endblock %}
+
+{% block head_js %}
+    {{ super() }}
+    {% with filename="dashboardList" %}
+        {% include "superset/partials/_script_tag.html" %}
+    {% endwith %}
+{% endblock %}
+
