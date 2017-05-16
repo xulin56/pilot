@@ -39,6 +39,7 @@ CUSTOM_SECURITY_MANAGER = None
 # ---------------------------------------------------------
 
 # License check
+LICENSE_CHECK = True
 LICENSE_CHECK_SERVER = '172.16.2.41:2291'
 # The jar has default path.
 # if you have not moved it, then no need to changed it.
