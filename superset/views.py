@@ -373,6 +373,7 @@ class SupersetModelView(ModelView):
         kwargs['page_size'] = args.get('page_size', self.page_size)
         kwargs['filter'] = args.get('filter', self.filter)
         kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
+        kwargs['table_id'] = args.get('table_id', None)
         return kwargs
 
     @expose('/addablechoices/', methods=['GET'])
@@ -577,10 +578,6 @@ class SupersetModelView(ModelView):
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.TableColumn
     datamodel = SQLAInterface(models.TableColumn)
-    list_title = _("List Table Column")
-    show_title = _("Show Table Column")
-    add_title = _("Add Table Column")
-    edit_title = _("Edit Table Column")
     can_delete = False
     list_widget = ListWidgetWithCheckboxes
     show_columns = [
@@ -593,8 +590,8 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'is_dttm', 'python_date_format', 'database_expression']
     add_columns = edit_columns
     list_columns = [
-        'column_name', 'type', 'groupby', 'filterable', 'count_distinct',
-        'sum', 'min', 'max', 'is_dttm']
+        'id', 'column_name', 'type', 'groupby', 'filterable',
+        'count_distinct', 'sum', 'min', 'max', 'is_dttm']
     description_columns = {
         'is_dttm': (_(
             "Whether to make this column available as a "
@@ -639,6 +636,24 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'python_date_format': _("Datetime Format"),
         'database_expression': _("Database Expression")
     }
+
+    def get_object_list_data(self, **kwargs):
+        table_id = kwargs.get('table_id')
+        if not table_id:
+            logging.exception("Need parameter 'table_id' to query columns")
+
+        rows = db.session.query(self.model)\
+            .filter_by(table_id=table_id).all()
+        data = []
+        for row in rows:
+            line = {}
+            for col in self.list_columns:
+                line[col] = str(getattr(row, col, None))
+            data.append(line)
+
+        response = {}
+        response['data'] = data
+        return response
 
 
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
