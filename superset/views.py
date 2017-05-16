@@ -375,6 +375,11 @@ class SupersetModelView(ModelView):
         kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
         return kwargs
 
+    @expose('/addablechoices/', methods=['GET'])
+    def addable_choices(self):
+        """Called before 'add' to provide select choices"""
+        return json.dumps("None")
+
     # @expose('/add', methods=['GET', 'POST'])
     # def add(self):
     #     user_id = self.get_user_id()
@@ -1324,6 +1329,10 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'changed_on': Dashboard.changed_on,
         'owner': User.username,
     }
+
+    @expose('/addablechoices/', methods=['GET'])
+    def addable_choices(self):
+        return self.available_slices_json()
 
     def pre_add(self, obj):
         if not obj.slug:
