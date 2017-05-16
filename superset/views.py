@@ -580,14 +580,11 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.TableColumn)
     can_delete = False
     list_widget = ListWidgetWithCheckboxes
-    show_columns = [
-        'id', 'column_name', 'verbose_name', 'description', 'groupby', 'filterable',
-        'table', 'count_distinct', 'sum', 'min', 'max', 'expression',
-        'is_dttm', 'python_date_format', 'database_expression']
     edit_columns = [
-        'column_name', 'verbose_name', 'description', 'groupby', 'filterable',
+        'column_name', 'verbose_name', 'groupby', 'filterable',
         'table', 'count_distinct', 'sum', 'min', 'max', 'expression',
         'is_dttm', 'python_date_format', 'database_expression']
+    show_columns = edit_columns + ['id']
     add_columns = edit_columns
     list_columns = [
         'id', 'column_name', 'type', 'groupby', 'filterable',
@@ -715,6 +712,7 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         response = {}
         response['data'] = data
         return response
+
 
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Database
