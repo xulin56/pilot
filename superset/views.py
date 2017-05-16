@@ -657,12 +657,9 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 
 
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
+    model = models.SqlMetric
     datamodel = SQLAInterface(models.SqlMetric)
-    list_title = _("List Sql Metric")
-    show_title = _("Show Sql Metric")
-    add_title = _("Add Sql Metric")
-    edit_title = _("Edit Sql Metric")
-    list_columns = ['metric_name', 'verbose_name', 'metric_type']
+    list_columns = ['id', 'metric_name', 'metric_type', 'expression']
     edit_columns = [
         'metric_name', 'description', 'verbose_name', 'metric_type',
         'expression', 'table', 'd3format', 'is_restricted']
@@ -701,6 +698,23 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
 
+    def get_object_list_data(self, **kwargs):
+        table_id = kwargs.get('table_id')
+        if not table_id:
+            logging.exception("Need parameter 'table_id' to query columns")
+
+        rows = db.session.query(self.model) \
+            .filter_by(table_id=table_id).all()
+        data = []
+        for row in rows:
+            line = {}
+            for col in self.list_columns:
+                line[col] = str(getattr(row, col, None))
+            data.append(line)
+
+        response = {}
+        response['data'] = data
+        return response
 
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Database
