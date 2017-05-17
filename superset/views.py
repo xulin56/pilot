@@ -383,9 +383,10 @@ class SupersetModelView(ModelView):
     #         self.datamodel.add(obj)
     #         self.post_add(obj)
     #     except Exception as e:
+    #         logging.error(str(e))
     #         return self.build_response(500, False, str(e))
     #     else:
-    #         return self.build_response(202, True, ADD_SUCCESS)
+    #         return self.build_response(500, False, str(e))
 
     # @expose('/list/')
     # def list(self):
@@ -416,23 +417,24 @@ class SupersetModelView(ModelView):
     #         if self.datamodel.edit(obj):
     #             self.post_update(obj)
 
-    # @expose('/delete/<pk>')
-    # def delete(self, pk):
-    #     obj = self.get_object(pk)
-    #     try:
-    #         self.pre_delete(obj)
-    #     except Exception as e:
-    #         flash(str(e), "danger")
-    #     else:
-    #         if self.datamodel.delete(obj):
-    #             self.post_delete(obj)
-    #         flash(*self.datamodel.message)
-    #         self.update_redirect()
+    @expose('/delete/<pk>')
+    def delete(self, pk):
+        try:
+            obj = self.get_object(pk)
+            self.pre_delete(obj)
+            self.datamodel.delete(obj)
+            self.post_delete(obj)
+        except Exception as e:
+            logging.error(str(e))
+            return self.build_response(500, success=False, message=str(e))
+        else:
+            self.update_redirect()
+            return self.build_response(500, True, DELETE_SUCCESS)
 
-    def build_response(self, status=None, success=True, message=None):
+    def build_response(self, status=None, success=None, message=None):
         response = {}
         response['status'] = status if status else self.status
-        response['status'] = success if success else self.success
+        response['success'] = success if success is not None else self.success
         response['message'] = message if message else self.message
         return json.dumps(response)
 
@@ -547,9 +549,12 @@ class SupersetModelView(ModelView):
 
     def get_object(self, obj_id):
         obj_id = int(obj_id)
-        obj = db.session.query(self.model).filter_by(id=obj_id).one()
-        if not obj:
-            abort(404)
+        try:
+            obj = db.session.query(self.model).filter_by(id=obj_id).one()
+        except sqla.orm.exc.NoResultFound:
+            msg = "{}. Model: {} id: {}".format(OBJECT_NOT_FOUND, self.model.__name__, obj_id)
+            self.status = 404
+            raise sqla.orm.exc.NoResultFound(msg)
         else:
             return obj
 
