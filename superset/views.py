@@ -457,9 +457,14 @@ class SupersetModelView(ModelView):
         attributes = {}
         for col in self.show_columns:
             if not hasattr(obj, col):
-                logging.error("Class: \'{}\' does not have the attribute: \'{}\'"
-                              .format(obj.__class__.__name__, col))
-            attributes[col] = str(getattr(obj, col, None))
+                msg = "Class: \'{}\' does not have the attribute: \'{}\'"\
+                    .format(obj.__class__.__name__, col)
+                logging.error(msg)
+                raise KeyError(msg)
+            if col in self.str_columns:
+                attributes[col] = str(getattr(obj, col, None))
+            else:
+                attributes[col] = getattr(obj, col, None)
 
         attributes['created_by_user'] = obj.created_by.username \
             if obj.created_by else None
@@ -473,9 +478,16 @@ class SupersetModelView(ModelView):
         attributes['created_on'] = datetime.now()
         for col in self.add_columns:
             if col not in data:
-                logging.error("The attribute: \'{}\' not in the needed attributes: \'{}\'"
-                              .format(col, ','.join(data.keys())))
-            attributes[col] = data.get(col)
+                msg = "The needed attribute: \'{}\' not in attributes: \'{}\'"\
+                    .format(col, ','.join(data.keys()))
+                logging.error(msg)
+                raise KeyError(msg)
+            if col in self.bool_columns:
+                attributes[col] = strtobool(data.get(col))
+            elif col in self.int_columns:
+                attributes[col] = int(data.get(col))
+            else:
+                attributes[col] = data.get(col)
         return attributes
 
     def get_edit_attributes(self, data, user_id):
@@ -484,9 +496,16 @@ class SupersetModelView(ModelView):
         attributes['changed_on'] = datetime.now()
         for col in self.edit_columns:
             if col not in data:
-                logging.error("The attribute: \'{}\' not in the needed attributes: \'{}\'"
-                              .format(col, ','.join(data.keys())))
-            attributes[col] = data.get(col)
+                msg = "The needed attribute: \'{}\' not in attributes: \'{}\'" \
+                    .format(col, ','.join(data.keys()))
+                logging.error(msg)
+                raise KeyError(msg)
+            if col in self.bool_columns:
+                attributes[col] = strtobool(data.get(col))
+            elif col in self.int_columns:
+                attributes[col] = int(data.get(col))
+            else:
+                attributes[col] = data.get(col)
         return attributes
 
     def query_own_or_online(self, class_name, user_id, only_favorite):
@@ -517,14 +536,12 @@ class SupersetModelView(ModelView):
 
         return query
 
-    # TODO add @property, rename to user_id()
     def get_user_id(self):
         if g.user:
             return g.user.get_id()
         else:
             abort(404)
 
-    # TODO add @property, rename to request_data()
     def get_request_data(self):
         data = request.data
         data = str(data, encoding='utf-8')
@@ -1078,7 +1095,6 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Slice
     datamodel = SQLAInterface(models.Slice)
     can_add = False
-    label_columns = {'datasource_link': 'Datasource', }
     list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
                     'viz_type', 'online', 'changed_on']
     edit_columns = ['slice_name', 'description', 'online', 'viz_type']
@@ -1322,7 +1338,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Dashboard)
     list_columns = ['id', 'dashboard_title', 'url', 'description',
                     'online',  'changed_on']
-    edit_columns = ['dashboard_title', 'description', 'online', 'slices']
+    edit_columns = ['dashboard_title', 'description']
     show_columns = ['id', 'dashboard_title', 'description', 'table_names']
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
@@ -1527,6 +1543,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                 .filter_by(id=slice_dict.get('id')).one()
             slices.append(slice_obj)
         attributes['slices'] = slices
+        return attributes
 
     def get_edit_attributes(self, data, user_id):
         attributes = super().get_add_attributes(data, user_id)
