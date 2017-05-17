@@ -445,7 +445,6 @@ class SupersetModelView(ModelView):
         pass
 
     def populate_object(self, obj_id, user_id, data):
-        user_id = int(user_id)
         if obj_id:
             obj = self.get_object(obj_id)
             attributes = self.get_edit_attributes(data, user_id)
@@ -564,17 +563,15 @@ class SupersetModelView(ModelView):
         else:
             return obj
 
-    def get_available_dashboards(self):
-        user_id = self.get_user_id()
+    def get_available_dashboards(self, user_id):
         dashs = db.session.query(models.Dashboard) \
             .filter_by(created_by_fk=user_id).all()
         return dashs
 
     def get_available_slices(self, user_id):
-        user_id = int(user_id)
         slices = (
             db.session.query(models.Slice)
-                .filter(
+            .filter(
                 or_(models.Slice.created_by_fk == user_id,
                     models.Slice.online == 1)
             ).all()
@@ -1170,14 +1167,14 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @expose('/addablechoices/', methods=['GET'])
     def addable_choices(self):
-        dashs = self.get_available_dashboards()
+        dashs = self.get_available_dashboards(self.get_user_id())
         d = self.dashboards_to_dict(dashs)
         return json.dumps({'available_dashboards': d})
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
         attributes['dashboards'] = self.dashboards_to_dict(obj.dashboards)
-        dashs = self.get_available_dashboards()
+        dashs = self.get_available_dashboards(self.get_user_id())
         available_dashs = self.dashboards_to_dict(dashs)
         attributes['available_dashboards'] = available_dashs
         return attributes
@@ -1531,8 +1528,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         return response
 
     def available_slices_json(self):
-        user_id = self.get_user_id()
-        slices = self.get_available_slices(user_id)
+        slices = self.get_available_slices(self.get_user_id())
         d = self.slices_to_dict(slices)
         return json.dumps({'available_slices': d})
 
