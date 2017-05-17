@@ -1,5 +1,4 @@
 from flask_babel import gettext as __
-from flask_babel import lazy_gettext as _
 
 
 ALL_DATASOURCE_ACCESS_ERR = __(
@@ -22,9 +21,9 @@ ERROR_CLASS_TYPE = __("Error model type")
 NO_USER = __("Can't get user")
 NO_PERMISSION = __("No permission for 'online' and 'offline'")
 
-ADD_SUCCESS = __("Add success")
-ADD_FAILED = __("Add failed")
-UPDATE_SUCCESS = __("Update success")
-UPDATE_FAILED = __("Update failed")
-DELETE_SUCCESS = __("Delete success")
-DELETE_FAILED = __("Delete failed")
+ADD_SUCCESS = __("Added success")
+ADD_FAILED = __("Added failed")
+UPDATE_SUCCESS = __("Updated success")
+UPDATE_FAILED = __("Updated failed")
+DELETE_SUCCESS = __("Deleted success")
+DELETE_FAILED = __("Deleted failed")
