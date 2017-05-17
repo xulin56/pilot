@@ -383,11 +383,6 @@ class SupersetModelView(ModelView):
             if args.get('table_id') else None
         return kwargs
 
-    @expose('/addablechoices/', methods=['GET'])
-    def addable_choices(self):
-        """Called before 'add' to provide select choices"""
-        return json.dumps("None")
-
     # @expose('/add', methods=['GET', 'POST'])
     # def add(self):
     #     user_id = self.get_user_id()
@@ -1148,6 +1143,12 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     # def list(self):
     #      return self.render_template(self.list_template)
 
+    @expose('/addablechoices/', methods=['GET'])
+    def addable_choices(self):
+        dashs = self.get_available_dashboards()
+        d = self.dashboards_to_dict(dashs)
+        return json.dumps({'available_dashboards': d})
+
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
         attributes['dashboards'] = self.dashboards_to_dict(obj.dashboards)
@@ -1505,7 +1506,6 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         return response
 
     def available_slices_json(self):
-        """Called by frontend"""
         user_id = self.get_user_id()
         slices = self.get_available_slices(user_id)
         d = self.slices_to_dict(slices)
