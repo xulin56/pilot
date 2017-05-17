@@ -13,6 +13,7 @@ import time
 import traceback
 import zlib
 from collections import Counter
+from distutils.util import strtobool
 
 import functools
 import sqlalchemy as sqla
@@ -364,16 +365,22 @@ class SupersetModelView(ModelView):
     filter = None
     only_favorite = False        # all or favorite
 
+    int_columns = []
+    bool_columns = []
+    str_columns = []
+
     def get_list_args(self, args):
         kwargs = {}
         kwargs['user_id'] = self.get_user_id()
         kwargs['order_column'] = args.get('order_column', self.order_column)
         kwargs['order_direction'] = args.get('order_direction', self.order_direction)
-        kwargs['page'] = args.get('page', self.page)
-        kwargs['page_size'] = args.get('page_size', self.page_size)
+        kwargs['page'] = int(args.get('page', self.page))
+        kwargs['page_size'] = int(args.get('page_size', self.page_size))
         kwargs['filter'] = args.get('filter', self.filter)
-        kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
-        kwargs['table_id'] = args.get('table_id', None)
+        fav = args.get('only_favorite')
+        kwargs['only_favorite'] = strtobool(fav) if fav else self.only_favorite
+        kwargs['table_id'] = int(args.get('table_id')) \
+            if args.get('table_id') else None
         return kwargs
 
     @expose('/addablechoices/', methods=['GET'])
@@ -1132,6 +1139,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username,
         'created_by_user': User.username
     }
+    int_columns = ['id', 'datasource_id', 'database_id', 'cache_timeout']
+    bool_columns = ['online']
+    str_columns = ['datasource', 'created_on', 'changed_on']
 
     # @expose('/list/')
     # def list(self):
@@ -1194,9 +1204,16 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             redirect_url = table.explore_url
         return redirect(redirect_url)
 
-    def get_object_list_data(self, user_id, order_column, order_direction,
-                       page, page_size, filter, only_favorite):
+    def get_object_list_data(self, **kwargs):
         """ Return the slices with column 'favorite' and 'online' """
+        user_id = kwargs.get('user_id')
+        order_column = kwargs.get('order_column')
+        order_direction = kwargs.get('order_direction')
+        page = kwargs.get('page')
+        page_size = kwargs.get('page_size')
+        filter = kwargs.get('filter')
+        only_favorite = kwargs.get('only_favorite')
+
         query = self.query_own_or_online('slice', user_id, only_favorite)
         if filter:
             filter_str = '%{}%'.format(filter.lower())
@@ -1232,7 +1249,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         for obj, username, fav_id in rs:
             line = {}
             for col in self.list_columns:
-                line[col] = str(getattr(obj, col, None))
+                if col in self.str_columns:
+                    line[col] = str(getattr(obj, col, None))
+                else:
+                    line[col] = getattr(obj, col, None)
             line['created_by_user'] = username
             line['favorite'] = True if fav_id else False
             data.append(line)
