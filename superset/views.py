@@ -1139,7 +1139,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username,
         'created_by_user': User.username
     }
-    int_columns = ['id', 'datasource_id', 'database_id', 'cache_timeout']
+    int_columns = ['id', 'datasource_id', 'database_id', 'cache_timeout',
+                   'created_by_fk', 'changed_by_fk']
     bool_columns = ['online']
     str_columns = ['datasource', 'created_on', 'changed_on']
 
@@ -1372,6 +1373,9 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username,
         'created_by_user': User.username
     }
+    int_columns = ['id', 'created_by_fk', 'changed_by_fk']
+    bool_columns = ['online']
+    str_columns = ['created_on', 'changed_on']
 
     @expose('/addablechoices/', methods=['GET'])
     def addable_choices(self):
@@ -1439,9 +1443,16 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             dashboards_url='/dashboardmodelview/list'
         )
 
-    def get_object_list_data(self, user_id, order_column, order_direction,
-                           page, page_size, filter, only_favorite):
+    def get_object_list_data(self, **kwargs):
         """Return the dashbaords with column 'favorite' and 'online'"""
+        user_id = kwargs.get('user_id')
+        order_column = kwargs.get('order_column')
+        order_direction = kwargs.get('order_direction')
+        page = kwargs.get('page')
+        page_size = kwargs.get('page_size')
+        filter = kwargs.get('filter')
+        only_favorite = kwargs.get('only_favorite')
+
         query = self.query_own_or_online('dashboard', user_id, only_favorite)
         if filter:
             filter_str = '%{}%'.format(filter.lower())
@@ -1475,7 +1486,10 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         for obj, username, fav_id in rs:
             line = {}
             for col in self.list_columns:
-                line[col] = str(getattr(obj, col, None))
+                if col in self.str_columns:
+                    line[col] = str(getattr(obj, col, None))
+                else:
+                    line[col] = getattr(obj, col, None)
             line['created_by_user'] = username
             line['favorite'] = True if fav_id else False
             data.append(line)
