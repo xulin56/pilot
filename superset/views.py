@@ -48,6 +48,8 @@ from superset.models import Database, SqlaTable, Slice, \
     Dashboard, FavStar, Log, DailyNumber, str_to_model
 from sqlalchemy import func, and_, or_
 from flask_appbuilder.security.sqla.models import User
+from superset.message import *
+
 
 config = app.config
 log_this = models.Log.log_this
@@ -107,25 +109,6 @@ class ListWidgetWithCheckboxes(ListWidget):
 
     Works in conjunction with the `checkbox` view."""
     template = 'superset/fab_overrides/list_with_checkboxes.html'
-
-
-ALL_DATASOURCE_ACCESS_ERR = __(
-    "This endpoint requires the `all_datasource_access` permission")
-DATASOURCE_MISSING_ERR = __("The datasource seems to have been deleted")
-ACCESS_REQUEST_MISSING_ERR = __(
-    "The access requests seem to have been deleted")
-USER_MISSING_ERR = __("The user seems to have been deleted")
-DATASOURCE_ACCESS_ERR = __("You don't have access to this datasource")
-OBJECT_NOT_FOUND = __("Not found this object")
-ONLINE_SUCCESS = __("Change to online success")
-OFFLINE_SUCCESS = __("Change to offline success")
-OBJECT_IS_ONLINE= __("This object is already online")
-OBJECT_IS_OFFLINE = __("This object is already offline")
-ERROR_URL = __("Error request url")
-ERROR_REQUEST_PARAM = __("Error request parameter")
-ERROR_CLASS_TYPE = __("Error model type")
-NO_USER = __("Can't get user")
-NO_PERMISSION = __("No permission for 'online' and 'offline'")
 
 
 def get_database_access_error_msg(database_name):
@@ -358,6 +341,7 @@ class DeleteMixin(object):
 
 class SupersetModelView(ModelView):
     model = models.Model
+    # used for querying
     page = 0
     page_size = 10
     order_column = 'changed_on'
@@ -365,9 +349,15 @@ class SupersetModelView(ModelView):
     filter = None
     only_favorite = False        # all or favorite
 
+    # used for Data type conversion
     int_columns = []
     bool_columns = []
     str_columns = []
+
+    # used for returning to frontend
+    status = 202
+    success = True
+    message = ""
 
     def get_list_args(self, args):
         kwargs = {}
@@ -390,11 +380,12 @@ class SupersetModelView(ModelView):
     #     obj = self.populate_object(None, user_id, json_data)
     #     try:
     #         self.pre_add(obj)
+    #         self.datamodel.add(obj)
+    #         self.post_add(obj)
     #     except Exception as e:
-    #         flash(str(e), "danger")
+    #         return self.build_response(500, False, str(e))
     #     else:
-    #         if self.datamodel.add(obj):
-    #             self.post_add(obj)
+    #         return self.build_response(202, True, ADD_SUCCESS)
 
     # @expose('/list/')
     # def list(self):
@@ -437,6 +428,13 @@ class SupersetModelView(ModelView):
     #             self.post_delete(obj)
     #         flash(*self.datamodel.message)
     #         self.update_redirect()
+
+    def build_response(self, status=None, success=True, message=None):
+        response = {}
+        response['status'] = status if status else self.status
+        response['status'] = success if success else self.success
+        response['message'] = message if message else self.message
+        return json.dumps(response)
 
     def get_object_list_data(self, **kwargs):
         pass
