@@ -400,9 +400,12 @@ class SupersetModelView(ModelView):
 
     @expose('/show/<pk>', methods=['GET'])
     def show(self, pk):
-        obj = self.get_object(pk)
-        attributes = self.get_show_attributes(obj)
-        return json.dumps(attributes)
+        try:
+            obj = self.get_object(pk)
+            attributes = self.get_show_attributes(obj)
+            return json.dumps(attributes)
+        except Exception as e:
+            return self.build_response(self.status, success=False, message=str(e))
 
     # @expose('/edit/<pk>', methods=['GET', 'POST'])
     # def edit(self, pk):
@@ -537,10 +540,13 @@ class SupersetModelView(ModelView):
         return query
 
     def get_user_id(self):
-        if g.user:
-            return g.user.get_id()
-        else:
-            abort(404)
+        try:
+            user_id = g.user.get_id()
+            return int(user_id)
+        except Exception:
+            self.status = 500
+            logging.error(NO_USER)
+            raise Exception(NO_USER)
 
     def get_request_data(self):
         data = request.data
