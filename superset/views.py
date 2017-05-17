@@ -13,6 +13,7 @@ import time
 import traceback
 import zlib
 from collections import Counter
+from distutils.util import strtobool
 
 import functools
 import sqlalchemy as sqla
@@ -364,15 +365,22 @@ class SupersetModelView(ModelView):
     filter = None
     only_favorite = False        # all or favorite
 
+    int_columns = []
+    bool_columns = []
+    str_columns = []
+
     def get_list_args(self, args):
         kwargs = {}
         kwargs['user_id'] = self.get_user_id()
         kwargs['order_column'] = args.get('order_column', self.order_column)
         kwargs['order_direction'] = args.get('order_direction', self.order_direction)
-        kwargs['page'] = args.get('page', self.page)
-        kwargs['page_size'] = args.get('page_size', self.page_size)
+        kwargs['page'] = int(args.get('page', self.page))
+        kwargs['page_size'] = int(args.get('page_size', self.page_size))
         kwargs['filter'] = args.get('filter', self.filter)
-        kwargs['only_favorite'] = args.get('only_favorite', self.only_favorite)
+        fav = args.get('only_favorite')
+        kwargs['only_favorite'] = strtobool(fav) if fav else self.only_favorite
+        kwargs['table_id'] = int(args.get('table_id')) \
+            if args.get('table_id') else None
         return kwargs
 
     @expose('/add', methods=['GET', 'POST'])
@@ -449,9 +457,14 @@ class SupersetModelView(ModelView):
         attributes = {}
         for col in self.show_columns:
             if not hasattr(obj, col):
-                logging.error("Class: \'{}\' does not have the attribute: \'{}\'"
-                              .format(obj.__class__.__name__, col))
-            attributes[col] = str(getattr(obj, col, None))
+                msg = "Class: \'{}\' does not have the attribute: \'{}\'"\
+                    .format(obj.__class__.__name__, col)
+                logging.error(msg)
+                raise KeyError(msg)
+            if col in self.str_columns:
+                attributes[col] = str(getattr(obj, col, None))
+            else:
+                attributes[col] = getattr(obj, col, None)
 
         attributes['created_by_user'] = obj.created_by.username \
             if obj.created_by else None
@@ -465,9 +478,16 @@ class SupersetModelView(ModelView):
         attributes['created_on'] = datetime.now()
         for col in self.add_columns:
             if col not in data:
-                logging.error("The attribute: \'{}\' not in the needed attributes: \'{}\'"
-                              .format(col, ','.join(data.keys())))
-            attributes[col] = data.get(col)
+                msg = "The needed attribute: \'{}\' not in attributes: \'{}\'"\
+                    .format(col, ','.join(data.keys()))
+                logging.error(msg)
+                raise KeyError(msg)
+            if col in self.bool_columns:
+                attributes[col] = strtobool(data.get(col))
+            elif col in self.int_columns:
+                attributes[col] = int(data.get(col))
+            else:
+                attributes[col] = data.get(col)
         return attributes
 
     def get_edit_attributes(self, data, user_id):
@@ -476,9 +496,16 @@ class SupersetModelView(ModelView):
         attributes['changed_on'] = datetime.now()
         for col in self.edit_columns:
             if col not in data:
-                logging.error("The attribute: \'{}\' not in the needed attributes: \'{}\'"
-                              .format(col, ','.join(data.keys())))
-            attributes[col] = data.get(col)
+                msg = "The needed attribute: \'{}\' not in attributes: \'{}\'" \
+                    .format(col, ','.join(data.keys()))
+                logging.error(msg)
+                raise KeyError(msg)
+            if col in self.bool_columns:
+                attributes[col] = strtobool(data.get(col))
+            elif col in self.int_columns:
+                attributes[col] = int(data.get(col))
+            else:
+                attributes[col] = data.get(col)
         return attributes
 
     def query_own_or_online(self, class_name, user_id, only_favorite):
@@ -509,14 +536,12 @@ class SupersetModelView(ModelView):
 
         return query
 
-    # TODO add @property, rename to user_id()
     def get_user_id(self):
         if g.user:
             return g.user.get_id()
         else:
             abort(404)
 
-    # TODO add @property, rename to request_data()
     def get_request_data(self):
         data = request.data
         data = str(data, encoding='utf-8')
@@ -572,24 +597,17 @@ class SupersetModelView(ModelView):
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.TableColumn
     datamodel = SQLAInterface(models.TableColumn)
-    list_title = _("List Table Column")
-    show_title = _("Show Table Column")
-    add_title = _("Add Table Column")
-    edit_title = _("Edit Table Column")
     can_delete = False
     list_widget = ListWidgetWithCheckboxes
-    show_columns = [
-        'id', 'column_name', 'verbose_name', 'description', 'groupby', 'filterable',
-        'table', 'count_distinct', 'sum', 'min', 'max', 'expression',
-        'is_dttm', 'python_date_format', 'database_expression']
     edit_columns = [
-        'column_name', 'verbose_name', 'description', 'groupby', 'filterable',
+        'column_name', 'verbose_name', 'groupby', 'filterable',
         'table', 'count_distinct', 'sum', 'min', 'max', 'expression',
         'is_dttm', 'python_date_format', 'database_expression']
+    show_columns = edit_columns + ['id']
     add_columns = edit_columns
     list_columns = [
-        'column_name', 'type', 'groupby', 'filterable', 'count_distinct',
-        'sum', 'min', 'max', 'is_dttm']
+        'id', 'column_name', 'type', 'groupby', 'filterable',
+        'count_distinct', 'sum', 'min', 'max', 'is_dttm']
     description_columns = {
         'is_dttm': (_(
             "Whether to make this column available as a "
@@ -635,14 +653,29 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'database_expression': _("Database Expression")
     }
 
+    def get_object_list_data(self, **kwargs):
+        table_id = kwargs.get('table_id')
+        if not table_id:
+            logging.exception("Need parameter 'table_id' to query columns")
+
+        rows = db.session.query(self.model)\
+            .filter_by(table_id=table_id).all()
+        data = []
+        for row in rows:
+            line = {}
+            for col in self.list_columns:
+                line[col] = str(getattr(row, col, None))
+            data.append(line)
+
+        response = {}
+        response['data'] = data
+        return response
+
 
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
+    model = models.SqlMetric
     datamodel = SQLAInterface(models.SqlMetric)
-    list_title = _("List Sql Metric")
-    show_title = _("Show Sql Metric")
-    add_title = _("Add Sql Metric")
-    edit_title = _("Edit Sql Metric")
-    list_columns = ['metric_name', 'verbose_name', 'metric_type']
+    list_columns = ['id', 'metric_name', 'metric_type', 'expression']
     edit_columns = [
         'metric_name', 'description', 'verbose_name', 'metric_type',
         'expression', 'table', 'd3format', 'is_restricted']
@@ -680,6 +713,24 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     def post_update(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
+
+    def get_object_list_data(self, **kwargs):
+        table_id = kwargs.get('table_id')
+        if not table_id:
+            logging.exception("Need parameter 'table_id' to query columns")
+
+        rows = db.session.query(self.model) \
+            .filter_by(table_id=table_id).all()
+        data = []
+        for row in rows:
+            line = {}
+            for col in self.list_columns:
+                line[col] = str(getattr(row, col, None))
+            data.append(line)
+
+        response = {}
+        response['data'] = data
+        return response
 
 
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
@@ -1043,12 +1094,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Slice
     datamodel = SQLAInterface(models.Slice)
-    list_title = _("List Slice")
-    show_title = _("Show Slice")
-    add_title = _("Add Slice")
-    edit_title = _("Edit Slice")
     can_add = False
-    label_columns = {'datasource_link': 'Datasource', }
     list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
                     'viz_type', 'online', 'changed_on']
     edit_columns = ['slice_name', 'description', 'online', 'viz_type']
@@ -1095,19 +1141,29 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
 
     list_template = "superset/partials/slice/slice.html"
 
-    # used for order column
     str_to_column = {
         'title': Slice.slice_name,
         'description': Slice.description,
         'viz_type': Slice.viz_type,
         'table': Slice.datasource_name,
         'changed_on': Slice.changed_on,
-        'owner': User.username
+        'owner': User.username,
+        'created_by_user': User.username
     }
+    int_columns = ['id', 'datasource_id', 'database_id', 'cache_timeout',
+                   'created_by_fk', 'changed_by_fk']
+    bool_columns = ['online']
+    str_columns = ['datasource', 'created_on', 'changed_on']
 
     # @expose('/list/')
     # def list(self):
     #      return self.render_template(self.list_template)
+
+    @expose('/addablechoices/', methods=['GET'])
+    def addable_choices(self):
+        dashs = self.get_available_dashboards()
+        d = self.dashboards_to_dict(dashs)
+        return json.dumps({'available_dashboards': d})
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
@@ -1166,9 +1222,16 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             redirect_url = table.explore_url
         return redirect(redirect_url)
 
-    def get_object_list_data(self, user_id, order_column, order_direction,
-                       page, page_size, filter, only_favorite):
+    def get_object_list_data(self, **kwargs):
         """ Return the slices with column 'favorite' and 'online' """
+        user_id = kwargs.get('user_id')
+        order_column = kwargs.get('order_column')
+        order_direction = kwargs.get('order_direction')
+        page = kwargs.get('page')
+        page_size = kwargs.get('page_size')
+        filter = kwargs.get('filter')
+        only_favorite = kwargs.get('only_favorite')
+
         query = self.query_own_or_online('slice', user_id, only_favorite)
         if filter:
             filter_str = '%{}%'.format(filter.lower())
@@ -1204,7 +1267,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         for obj, username, fav_id in rs:
             line = {}
             for col in self.list_columns:
-                line[col] = str(getattr(obj, col, None))
+                if col in self.str_columns:
+                    line[col] = str(getattr(obj, col, None))
+                else:
+                    line[col] = getattr(obj, col, None)
             line['created_by_user'] = username
             line['favorite'] = True if fav_id else False
             data.append(line)
@@ -1272,7 +1338,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Dashboard)
     list_columns = ['id', 'dashboard_title', 'url', 'description',
                     'online',  'changed_on']
-    edit_columns = ['dashboard_title', 'description', 'online', 'slices']
+    edit_columns = ['dashboard_title', 'description']
     show_columns = ['id', 'dashboard_title', 'description', 'table_names']
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
@@ -1317,13 +1383,20 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
     list_template = "superset/partials/dashboard/dashboard.html"
 
-    # used for order column
     str_to_column = {
         'title': Dashboard.dashboard_title,
         'description': Dashboard.description,
         'changed_on': Dashboard.changed_on,
         'owner': User.username,
+        'created_by_user': User.username
     }
+    int_columns = ['id', 'created_by_fk', 'changed_by_fk']
+    bool_columns = ['online']
+    str_columns = ['created_on', 'changed_on']
+
+    @expose('/addablechoices/', methods=['GET'])
+    def addable_choices(self):
+        return self.available_slices_json()
 
     def pre_add(self, obj):
         if not obj.slug:
@@ -1387,9 +1460,16 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             dashboards_url='/dashboardmodelview/list'
         )
 
-    def get_object_list_data(self, user_id, order_column, order_direction,
-                           page, page_size, filter, only_favorite):
+    def get_object_list_data(self, **kwargs):
         """Return the dashbaords with column 'favorite' and 'online'"""
+        user_id = kwargs.get('user_id')
+        order_column = kwargs.get('order_column')
+        order_direction = kwargs.get('order_direction')
+        page = kwargs.get('page')
+        page_size = kwargs.get('page_size')
+        filter = kwargs.get('filter')
+        only_favorite = kwargs.get('only_favorite')
+
         query = self.query_own_or_online('dashboard', user_id, only_favorite)
         if filter:
             filter_str = '%{}%'.format(filter.lower())
@@ -1423,7 +1503,10 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         for obj, username, fav_id in rs:
             line = {}
             for col in self.list_columns:
-                line[col] = str(getattr(obj, col, None))
+                if col in self.str_columns:
+                    line[col] = str(getattr(obj, col, None))
+                else:
+                    line[col] = getattr(obj, col, None)
             line['created_by_user'] = username
             line['favorite'] = True if fav_id else False
             data.append(line)
@@ -1439,7 +1522,6 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         return response
 
     def available_slices_json(self):
-        """Called by frontend"""
         user_id = self.get_user_id()
         slices = self.get_available_slices(user_id)
         d = self.slices_to_dict(slices)
@@ -1461,6 +1543,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                 .filter_by(id=slice_dict.get('id')).one()
             slices.append(slice_obj)
         attributes['slices'] = slices
+        return attributes
 
     def get_edit_attributes(self, data, user_id):
         attributes = super().get_add_attributes(data, user_id)

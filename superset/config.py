@@ -38,6 +38,15 @@ PILOT_WEBSERVER_TIMEOUT = 60
 CUSTOM_SECURITY_MANAGER = None
 # ---------------------------------------------------------
 
+
+# License check
+LICENSE_CHECK = True
+LICENSE_CHECK_SERVER = '172.16.2.41:2291'
+# The jar has default path.
+# if you have not moved it, then no need to changed it.
+# LICENSE_CHECK_JAR = '/usr/local/lib/pilot-license.jar'
+
+
 # Your App secret key
 SECRET_KEY = '=== Transwarp Studio Pilot ==='  # noqa
 
