@@ -925,17 +925,12 @@ class DatabaseTablesAsync(DatabaseView):
 class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.SqlaTable
     datamodel = SQLAInterface(models.SqlaTable)
-    list_title = _("List Table")
-    show_title = _("Show Table")
-    add_title = _("Add Table")
-    edit_title = _("Edit Table")
     list_columns = ['link', 'database', 'changed_by_', 'changed_on_']
     order_columns = ['link', 'database', 'changed_on_']
     add_columns = ['database', 'schema', 'table_name', 'sql']
     show_columns = add_columns + ['id', 'database_id']
     edit_columns = add_columns
     related_views = [TableColumnInlineView, SqlMetricInlineView]
-    base_order = ('changed_on', 'desc')
     description_columns = {
         'offset': _("Timezone offset (in hours) for this datasource"),
         'table_name': _(
@@ -969,10 +964,10 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         'cache_timeout': _("Cache Timeout"),
     }
 
-    # used for order column
     str_to_column = {
         'title': SqlaTable.table_name,
         'time': SqlaTable.changed_on,
+        'changed_on': SqlaTable.changed_on,
         'owner': User.username
     }
 
