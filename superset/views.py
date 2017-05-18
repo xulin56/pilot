@@ -460,6 +460,7 @@ class SupersetModelView(ModelView):
             if not hasattr(obj, col):
                 msg = "Class: \'{}\' does not have the attribute: \'{}\'"\
                     .format(obj.__class__.__name__, col)
+                self.status = 500
                 logging.error(msg)
                 raise KeyError(msg)
             if col in self.str_columns:
@@ -481,6 +482,7 @@ class SupersetModelView(ModelView):
             if col not in data:
                 msg = "The needed attribute: \'{}\' not in attributes: \'{}\'"\
                     .format(col, ','.join(data.keys()))
+                self.status = 404
                 logging.error(msg)
                 raise KeyError(msg)
             if col in self.bool_columns:
@@ -499,6 +501,7 @@ class SupersetModelView(ModelView):
             if col not in data:
                 msg = "The needed attribute: \'{}\' not in attributes: \'{}\'" \
                     .format(col, ','.join(data.keys()))
+                self.status = 404
                 logging.error(msg)
                 raise KeyError(msg)
             if col in self.bool_columns:
@@ -1102,7 +1105,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     can_add = False
     list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
                     'viz_type', 'online', 'changed_on']
-    edit_columns = ['slice_name', 'description', 'online', 'viz_type']
+    edit_columns = ['slice_name', 'description']
     show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
@@ -1179,17 +1182,16 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         return attributes
 
     def get_edit_attributes(self, data, user_id):
-        attributes = {}
-        attributes['changed_by_fk'] = user_id
-        attributes['changed_on'] = datetime.now()
-        for col in self.edit_columns:
-            attributes[col] = data.get(col)
-
+        attributes = super().get_edit_attributes(data, user_id)
         dashs_list = data.get('dashboards')
         dashboards = []
         for dash_dict in dashs_list:
             dash_obj = db.session.query(models.Dashboard) \
-                .filter_by(dashboard_title=dash_dict.get('dashboard_title')).one()
+                .filter_by(id=dash_dict.get('id')).first()
+            if not dash_obj:
+                self.status = 404
+                raise Exception("Dashboard not found. Name:{} Id:{}".format(
+                    dash_dict.get('dashboard_title'), dash_dict.get('id')))
             dashboards.append(dash_obj)
         attributes['dashboards'] = dashboards
         return attributes
