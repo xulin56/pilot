@@ -404,20 +404,21 @@ class SupersetModelView(ModelView):
             attributes = self.get_show_attributes(obj)
             return json.dumps(attributes)
         except Exception as e:
-            return self.build_response(self.status, success=False, message=str(e))
+            return self.build_response(self.status, False, str(e))
 
     # @expose('/edit/<pk>', methods=['GET', 'POST'])
     # def edit(self, pk):
-    #     user_id = self.get_user_id()
-    #     json_data = self.get_request_data()
-    #     obj = self.populate_object(pk, user_id, json_data)
     #     try:
+    #         user_id = self.get_user_id()
+    #         json_data = self.get_request_data()
+    #         obj = self.populate_object(pk, user_id, json_data)
     #         self.pre_update(obj)
+    #         self.datamodel.edit(obj)
+    #         self.post_update(obj)
     #     except Exception as e:
-    #         flash(str(e), "danger")
+    #         return self.build_response(self.status, False, str(e))
     #     else:
-    #         if self.datamodel.edit(obj):
-    #             self.post_update(obj)
+    #         return self.build_response(200, True, UPDATE_SUCCESS)
 
     @expose('/delete/<pk>')
     def delete(self, pk):
@@ -1556,7 +1557,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         return attributes
 
     def get_edit_attributes(self, data, user_id):
-        attributes = super().get_add_attributes(data, user_id)
+        attributes = super().get_edit_attributes(data, user_id)
         slices_list = data.get('slices')
         slices = []
         for slice_dict in slices_list:
@@ -1564,6 +1565,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                 .filter_by(id=slice_dict.get('id')).one()
             slices.append(slice_obj)
         attributes['slices'] = slices
+        return attributes
 
     @expose("/release/<action>/<dashboard_id>", methods=['GET'])
     def dashbaord_online_or_offline(self, action, dashboard_id):
