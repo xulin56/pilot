@@ -375,18 +375,17 @@ class SupersetModelView(ModelView):
 
     # @expose('/add', methods=['GET', 'POST'])
     # def add(self):
-    #     user_id = self.get_user_id()
-    #     json_data = self.get_request_data()
-    #     obj = self.populate_object(None, user_id, json_data)
     #     try:
+    #         user_id = self.get_user_id()
+    #         json_data = self.get_request_data()
+    #         obj = self.populate_object(None, user_id, json_data)
     #         self.pre_add(obj)
     #         self.datamodel.add(obj)
     #         self.post_add(obj)
     #     except Exception as e:
-    #         logging.error(str(e))
     #         return self.build_response(500, False, str(e))
     #     else:
-    #         return self.build_response(500, False, str(e))
+    #         return self.build_response(200, True, ADD_SUCCESS)
 
     # @expose('/list/')
     # def list(self):
@@ -428,7 +427,6 @@ class SupersetModelView(ModelView):
             self.datamodel.delete(obj)
             self.post_delete(obj)
         except Exception as e:
-            logging.error(str(e))
             return self.build_response(500, success=False, message=str(e))
         else:
             self.update_redirect()
