@@ -744,15 +744,10 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Database
     datamodel = SQLAInterface(models.Database)
-    list_title = _("List Database")
-    show_title = _("Show Database")
-    add_title = _("Add Database")
-    edit_title = _("Edit Database")
     list_columns = [
         'database_name', 'backend', 'allow_dml', 'creator', 'changed_on']
     show_columns = ['id', 'database_name', 'sqlalchemy_uri']
     add_columns = ['database_name', 'sqlalchemy_uri']
-    search_exclude_columns = ('password',)
     edit_columns = add_columns
     add_template = "superset/models/database/add.html"
     edit_template = "superset/models/database/edit.html"
@@ -797,10 +792,10 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         'changed_on': _("Changed On"),
     }
 
-    # used for order column
     str_to_column = {
         'title': Database.database_name,
         'time': Database.changed_on,
+        'changed_on': Database.changed_on,
         'owner': User.username
     }
 
