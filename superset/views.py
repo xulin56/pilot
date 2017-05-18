@@ -375,16 +375,17 @@ class SupersetModelView(ModelView):
 
     @expose('/add', methods=['GET', 'POST'])
     def add(self):
-        user_id = self.get_user_id()
-        json_data = self.get_request_data()
-        obj = self.populate_object(None, user_id, json_data)
         try:
+            user_id = self.get_user_id()
+            json_data = self.get_request_data()
+            obj = self.populate_object(None, user_id, json_data)
             self.pre_add(obj)
+            self.datamodel.add(obj)
+            self.post_add(obj)
         except Exception as e:
-            flash(str(e), "danger")
+            return self.build_response(500, False, str(e))
         else:
-            if self.datamodel.add(obj):
-                self.post_add(obj)
+            return self.build_response(200, True, ADD_SUCCESS)
 
     @expose('/list/')
     def list(self):
