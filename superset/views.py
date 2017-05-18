@@ -664,7 +664,10 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     def get_object_list_data(self, **kwargs):
         table_id = kwargs.get('table_id')
         if not table_id:
-            logging.exception("Need parameter 'table_id' to query columns")
+            msg = "Need parameter 'table_id' to query columns"
+            logging.exception(msg)
+            self.status = 404
+            raise KeyError(msg)
 
         rows = db.session.query(self.model)\
             .filter_by(table_id=table_id).all()
