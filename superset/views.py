@@ -1514,8 +1514,10 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             try:
                 column = self.str_to_column.get(order_column)
             except KeyError:
-                logging.error('Error order column name: \'{}\' passed to get_dashboard_list()'
-                              .format(order_column))
+                msg = 'Error order column name: \'{}\''.format(order_column)
+                logging.error(msg)
+                self.status = 404
+                raise KeyError(msg)
             else:
                 if order_direction == 'desc':
                     query = query.order_by(column.desc())
