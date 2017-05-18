@@ -802,7 +802,6 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     bool_columns = ['expose_in_sqllab', 'allow_run_sync', 'allow_dml']
     str_columns = ['created_on', 'changed_on']
 
-
     def pre_add(self, obj):
         if obj.test_uri(obj.sqlalchemy_uri):
             obj.set_sqlalchemy_uri(obj.sqlalchemy_uri)
@@ -936,7 +935,7 @@ class DatabaseTablesAsync(DatabaseView):
 class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.SqlaTable
     datamodel = SQLAInterface(models.SqlaTable)
-    list_columns = ['link', 'database', 'changed_by_', 'changed_on_']
+    list_columns = ['id', 'table_name', 'explore_url', 'database', 'changed_on']
     order_columns = ['link', 'database', 'changed_on_']
     add_columns = ['database', 'schema', 'table_name', 'sql']
     show_columns = add_columns + ['id', 'database_id']
@@ -982,9 +981,18 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username
     }
 
-    def get_table_list(self, order_column, order_direction,
-                       page, page_size, filter_str, type=None):
+    int_columns = ['user_id', 'database_id', 'offset', 'cache_timeout']
+    bool_columns = ['is_featured', 'filter_select_enabled']
+    str_columns = ['database', 'created_on', 'changed_on']
+
+    def get_object_list_data(self, **kwargs):
         """Return the table list"""
+        order_column = kwargs.get('order_column')
+        order_direction = kwargs.get('order_direction')
+        page = kwargs.get('page')
+        page_size = kwargs.get('page_size')
+        filter = kwargs.get('filter')
+
         query = (
             db.session.query(SqlaTable, Database, User)
             .filter(SqlaTable.database_id == Database.id,
@@ -994,8 +1002,8 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         # todo add column backend for filter
         # if type:      # hdfs, inceptor, mysql
         #     query = query.filter(Database.backend.like(type))
-        if filter_str:
-            filter_str = '%{}%'.format(filter_str.lower())
+        if filter:
+            filter_str = '%{}%'.format(filter.lower())
             query = query.filter(
                 or_(
                     SqlaTable.table_name.ilike(filter_str),
@@ -1009,8 +1017,11 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
             try:
                 column = self.str_to_column.get(order_column)
             except KeyError:
-                logging.error('Error order column name: \'{}\' passed to get_table_list()'
-                              .format(order_column))
+                msg = 'Error order column name: \'{}\''\
+                    .format(order_column)
+                logging.error(msg)
+                self.status = 404
+                raise KeyError(msg)
             else:
                 if order_direction == 'desc':
                     query = query.order_by(column.desc())
@@ -1022,16 +1033,16 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 
         rs = query.all()
         data = []
-        for table, database, user in rs:
-            line = {
-                'id': table.id,
-                'title': table.table_name,
-                'link': table.explore_url,
-                'type': database.backend,
-                'connection': database.database_name,
-                'owner': user.username,
-                'time': str(table.changed_on)
-            }
+        for obj, database, user in rs:
+            line = {}
+            for col in self.list_columns:
+                if col in self.str_columns:
+                    line[col] = str(getattr(obj, col, None))
+                else:
+                    line[col] = getattr(obj, col, None)
+            line['backend'] = database.backend
+            line['created_by_user'] = obj.created_by.username \
+                if obj.created_by else None
             data.append(line)
 
         response = {}
@@ -1040,7 +1051,6 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         response['order_direction'] = 'desc' if order_direction == 'desc' else 'asc'
         response['page'] = page
         response['page_size'] = page_size
-        response['type'] = type
         response['data'] = data
         return response
 
