@@ -999,7 +999,7 @@ class TableColumn(Model, AuditMixinNullable, ImportMixin):
     avg = Column(Boolean, default=False)
     max = Column(Boolean, default=False)
     min = Column(Boolean, default=False)
-    filterable = Column(Boolean, default=False)
+    filterable = Column(Boolean, default=True)
     expression = Column(Text, default='')
     description = Column(Text, default='')
     python_date_format = Column(String(255))
