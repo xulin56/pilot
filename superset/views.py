@@ -559,7 +559,7 @@ class SupersetModelView(ModelView):
         try:
             obj = db.session.query(self.model).filter_by(id=obj_id).one()
         except sqla.orm.exc.NoResultFound:
-            msg = "{}. Model: {} id: {}".format(OBJECT_NOT_FOUND, self.model.__name__, obj_id)
+            msg = "{}. Model:{} Id:{}".format(OBJECT_NOT_FOUND, self.model.__name__, obj_id)
             self.status = 404
             raise sqla.orm.exc.NoResultFound(msg)
         else:
@@ -1190,8 +1190,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
                 .filter_by(id=dash_dict.get('id')).first()
             if not dash_obj:
                 self.status = 404
-                raise Exception("Dashboard not found. Name:{} Id:{}".format(
-                    dash_dict.get('dashboard_title'), dash_dict.get('id')))
+                msg = "Dashboard not found. Name:{} Id:{}".format(
+                    dash_dict.get('dashboard_title'), dash_dict.get('id'))
+                logging.error(msg)
+                raise Exception(msg)
             dashboards.append(dash_obj)
         attributes['dashboards'] = dashboards
         return attributes
@@ -1554,6 +1556,12 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         for slice_dict in slices_list:
             slice_obj = db.session.query(models.Slice) \
                 .filter_by(id=slice_dict.get('id')).one()
+            if not slice_obj:
+                self.status = 404
+                msg = "Slice not found. Name:{} Id:{}".format(
+                    slice_dict.get('slice_name'), slice_dict.get('id'))
+                logging.error(msg)
+                raise Exception(msg)
             slices.append(slice_obj)
         attributes['slices'] = slices
         return attributes
@@ -1565,6 +1573,12 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         for slice_dict in slices_list:
             slice_obj = db.session.query(models.Slice) \
                 .filter_by(id=slice_dict.get('id')).one()
+            if not slice_obj:
+                self.status = 404
+                msg = "Slice not found. Name:{} Id:{}".format(
+                    slice_dict.get('slice_name'), slice_dict.get('id'))
+                logging.error(msg)
+                raise Exception(msg)
             slices.append(slice_obj)
         attributes['slices'] = slices
         return attributes
