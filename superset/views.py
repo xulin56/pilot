@@ -460,9 +460,7 @@ class SupersetModelView(ModelView):
             if not hasattr(obj, col):
                 msg = "Class: \'{}\' does not have the attribute: \'{}\'"\
                     .format(obj.__class__.__name__, col)
-                self.status = 500
-                logging.error(msg)
-                raise KeyError(msg)
+                self.handle_exception(500, KeyError, msg)
             if col in self.str_columns:
                 attributes[col] = str(getattr(obj, col, None))
             else:
@@ -482,9 +480,7 @@ class SupersetModelView(ModelView):
             if col not in data:
                 msg = "The needed attribute: \'{}\' not in attributes: \'{}\'"\
                     .format(col, ','.join(data.keys()))
-                self.status = 404
-                logging.error(msg)
-                raise KeyError(msg)
+                self.handle_exception(404, KeyError, msg)
             if col in self.bool_columns:
                 attributes[col] = strtobool(data.get(col))
             elif col in self.int_columns:
@@ -501,9 +497,7 @@ class SupersetModelView(ModelView):
             if col not in data:
                 msg = "The needed attribute: \'{}\' not in attributes: \'{}\'" \
                     .format(col, ','.join(data.keys()))
-                self.status = 404
-                logging.error(msg)
-                raise KeyError(msg)
+                self.handle_exception(404, KeyError, msg)
             if col in self.bool_columns:
                 attributes[col] = strtobool(data.get(col))
             elif col in self.int_columns:
@@ -545,9 +539,7 @@ class SupersetModelView(ModelView):
             user_id = g.user.get_id()
             return int(user_id)
         except Exception:
-            self.status = 500
-            logging.error(NO_USER)
-            raise Exception(NO_USER)
+            self.handle_exception(500, Exception, NO_USER)
 
     def get_request_data(self):
         data = request.data
@@ -559,11 +551,15 @@ class SupersetModelView(ModelView):
         try:
             obj = db.session.query(self.model).filter_by(id=obj_id).one()
         except sqla.orm.exc.NoResultFound:
-            msg = "{}. Model:{} Id:{}".format(OBJECT_NOT_FOUND, self.model.__name__, obj_id)
-            self.status = 404
-            raise sqla.orm.exc.NoResultFound(msg)
+            msg = "{}. model:{} id:{}".format(OBJECT_NOT_FOUND, self.model.__name__, obj_id)
+            self.handle_exception(500, sqla.orm.exc.NoResultFound, msg)
         else:
             return obj
+
+    def handle_exception(self, status, exception, msg):
+        self.status = status
+        logging.error(msg)
+        raise exception(msg)
 
     def get_available_dashboards(self, user_id):
         dashs = db.session.query(models.Dashboard) \
@@ -665,9 +661,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         table_id = kwargs.get('table_id')
         if not table_id:
             msg = "Need parameter 'table_id' to query columns"
-            logging.exception(msg)
-            self.status = 404
-            raise KeyError(msg)
+            self.handle_exception(404, Exception, msg)
         rows = db.session.query(self.model)\
             .filter_by(table_id=table_id).all()
         data = []
@@ -728,9 +722,7 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         table_id = kwargs.get('table_id')
         if not table_id:
             msg = "Need parameter 'table_id' to query metrics"
-            logging.exception(msg)
-            self.status = 404
-            raise KeyError(msg)
+            self.handle_exception(404, Exception, msg)
         rows = db.session.query(self.model) \
             .filter_by(table_id=table_id).all()
         data = []
@@ -878,11 +870,8 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             try:
                 column = self.str_to_column.get(order_column)
             except KeyError:
-                msg = 'Error order column name: \'{}\' passed to get_database_list()'\
-                    .format(order_column)
-                logging.error(msg)
-                self.status = 404
-                raise KeyError(msg)
+                msg = 'Error order column name: \'{}\''.format(order_column)
+                self.handle_exception(404, KeyError, msg)
             else:
                 if order_direction == 'desc':
                     query = query.order_by(column.desc())
@@ -1021,11 +1010,8 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
             try:
                 column = self.str_to_column.get(order_column)
             except KeyError:
-                msg = 'Error order column name: \'{}\''\
-                    .format(order_column)
-                logging.error(msg)
-                self.status = 404
-                raise KeyError(msg)
+                msg = 'Error order column name: \'{}\''.format(order_column)
+                self.handle_exception(404, KeyError, msg)
             else:
                 if order_direction == 'desc':
                     query = query.order_by(column.desc())
@@ -1204,11 +1190,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             dash_obj = db.session.query(models.Dashboard) \
                 .filter_by(id=dash_dict.get('id')).first()
             if not dash_obj:
-                self.status = 404
-                msg = "Dashboard not found. Name:{} Id:{}".format(
+                msg = "Dashboard not found. name:{} id:{}".format(
                     dash_dict.get('dashboard_title'), dash_dict.get('id'))
-                logging.error(msg)
-                raise Exception(msg)
+                self.handle_exception(404, Exception, msg)
             dashboards.append(dash_obj)
         attributes['dashboards'] = dashboards
         return attributes
@@ -1519,9 +1503,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
                 column = self.str_to_column.get(order_column)
             except KeyError:
                 msg = 'Error order column name: \'{}\''.format(order_column)
-                logging.error(msg)
-                self.status = 404
-                raise KeyError(msg)
+                self.handle_exception(404, KeyError, msg)
             else:
                 if order_direction == 'desc':
                     query = query.order_by(column.desc())
@@ -1574,11 +1556,9 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             slice_obj = db.session.query(models.Slice) \
                 .filter_by(id=slice_dict.get('id')).one()
             if not slice_obj:
-                self.status = 404
-                msg = "Slice not found. Name:{} Id:{}".format(
+                msg = "Slice not found. name:{} id:{}".format(
                     slice_dict.get('slice_name'), slice_dict.get('id'))
-                logging.error(msg)
-                raise Exception(msg)
+                self.handle_exception(404, Exception, msg)
             slices.append(slice_obj)
         attributes['slices'] = slices
         return attributes
@@ -1591,11 +1571,9 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             slice_obj = db.session.query(models.Slice) \
                 .filter_by(id=slice_dict.get('id')).one()
             if not slice_obj:
-                self.status = 404
-                msg = "Slice not found. Name:{} Id:{}".format(
+                msg = "Slice not found. name:{} id:{}".format(
                     slice_dict.get('slice_name'), slice_dict.get('id'))
-                logging.error(msg)
-                raise Exception(msg)
+                self.handle_exception(404, Exception, msg)
             slices.append(slice_obj)
         attributes['slices'] = slices
         return attributes
