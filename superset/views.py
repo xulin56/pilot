@@ -1558,36 +1558,43 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             slices.append(slice_obj)
         attributes['slices'] = slices
 
-    @expose("/action/<action>/<dashboard_id>")
+    @expose("/release/<action>/<dashboard_id>", methods=['GET'])
     def dashbaord_online_or_offline(self, action, dashboard_id):
         obj = db.session.query(models.Dashboard) \
             .filter_by(id=dashboard_id).first()
         if not obj:
-            flash(OBJECT_NOT_FOUND, 'danger')
-        elif obj.created_by_fk != int(g.user.get_id()):
-            flash(NO_PERMISSION + ': {}'.format(obj.dashboard_title), 'danger')
+            msg = '{}. Model:{} Id:{}'.format(
+                OBJECT_NOT_FOUND, self.__class__.__name__, dashboard_id)
+            logging.error(msg)
+            return self.build_response(400, False, msg)
+        elif obj.created_by_fk != self.get_user_id():
+            msg = NO_ONLINE_PERMISSION + ': {}'.format(obj.dashboard_title)
+            return self.build_response(200, True, msg)
         elif action.lower() == 'online':
             if obj.online is True:
-                flash(OBJECT_IS_ONLINE + ': {}'.format(obj.dashboard_title), 'warning')
+                msg = OBJECT_IS_ONLINE + ': {}'.format(obj.dashboard_title)
+                return self.build_response(200, True, msg)
             else:
                 obj.online = True
                 db.session.commit()
-                flash(ONLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
                 action_str = 'Change dashboard to online: {}'.format(repr(obj))
                 log_action('online', action_str, 'dashboard', dashboard_id)
+                msg = ONLINE_SUCCESS + ': {}'.format(obj.dashboard_title)
+                return self.build_response(200, True, msg)
         elif action.lower() == 'offline':
             if obj.online is False:
-                flash(OBJECT_IS_OFFLINE + ': {}'.format(obj.dashboard_title), 'warning')
+                msg = OBJECT_IS_OFFLINE + ': {}'.format(obj.dashboard_title)
+                return self.build_response(200, True, msg)
             else:
                 obj.online = False
                 db.session.commit()
-                flash(OFFLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
                 action_str = 'Change dashboard to offline: {}'.format(repr(obj))
                 log_action('offline', action_str, 'dashboard', dashboard_id)
+                msg = OFFLINE_SUCCESS + ': {}'.format(obj.dashboard_title)
+                return self.build_response(200, True, msg)
         else:
-            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
-        redirect_url = '/dashboardmodelview/list/'
-        return redirect(redirect_url)
+            msg = ERROR_URL + ': {}'.format(request.url)
+            return self.build_response(400, False, msg)
 
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
