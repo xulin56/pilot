@@ -19,7 +19,7 @@ ERROR_URL = __("Error request url")
 ERROR_REQUEST_PARAM = __("Error request parameter")
 ERROR_CLASS_TYPE = __("Error model type")
 NO_USER = __("Can't get user")
-NO_PERMISSION = __("No permission for 'online' and 'offline'")
+NO_ONLINE_PERMISSION = __("No permission for 'online' and 'offline'")
 
 ADD_SUCCESS = __("Added success")
 ADD_FAILED = __("Added failed")
