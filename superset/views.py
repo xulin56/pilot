@@ -1289,36 +1289,43 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         response['data'] = data
         return response
 
-    @expose("/action/<action>/<slice_id>")
+    @expose("/release/<action>/<slice_id>", methods=['GET'])
     def slice_online_or_offline(self, action, slice_id):
         obj = db.session.query(models.Slice) \
             .filter_by(id=slice_id).first()
         if not obj:
-            flash(OBJECT_NOT_FOUND, 'danger')
+            msg = '{}. Model:{} Id:{}'.format(
+                OBJECT_NOT_FOUND, self.model.__name__, slice_id)
+            logging.error(msg)
+            return self.build_response(400, False, msg)
         elif obj.created_by_fk != int(g.user.get_id()):
-            flash(NO_PERMISSION + ': {}'.format(obj.slice_name), 'danger')
+            msg = NO_ONLINE_PERMISSION + ': {}'.format(obj.slice_name)
+            return self.build_response(200, True, msg)
         elif action.lower() == 'online':
             if obj.online is True:
-                flash(OBJECT_IS_ONLINE + ': {}'.format(obj.slice_name), 'warning')
+                msg = OBJECT_IS_ONLINE + ': {}'.format(obj.slice_name)
+                return self.build_response(200, True, msg)
             else:
                 obj.online = True
                 db.session.commit()
-                flash(ONLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
                 action_str = 'Change slice to online: {}'.format(repr(obj))
                 log_action('online', action_str, 'slice', slice_id)
+                msg = ONLINE_SUCCESS + ': {}'.format(obj.slice_name)
+                return self.build_response(200, True, msg)
         elif action.lower() == 'offline':
             if obj.online is False:
-                flash(OBJECT_IS_OFFLINE + ': {}'.format(obj.slice_name), 'warning')
+                msg = OBJECT_IS_OFFLINE + ': {}'.format(obj.slice_name)
+                return self.build_response(200, True, msg)
             else:
                 obj.online = False
                 db.session.commit()
-                flash(OFFLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
                 action_str = 'Change slice to offline: {}'.format(repr(obj))
                 log_action('offline', action_str, 'slice', slice_id)
+                msg = OFFLINE_SUCCESS + ': {}'.format(obj.slice_name)
+                return self.build_response(200, True, msg)
         else:
-            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
-        redirect_url = '/slicemodelview/list/'
-        return redirect(redirect_url)
+            msg = ERROR_URL + ': {}'.format(request.url)
+            return self.build_response(400, False, msg)
 
 
 class SliceAsync(SliceModelView):  # noqa
@@ -1564,7 +1571,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             .filter_by(id=dashboard_id).first()
         if not obj:
             msg = '{}. Model:{} Id:{}'.format(
-                OBJECT_NOT_FOUND, self.__class__.__name__, dashboard_id)
+                OBJECT_NOT_FOUND, self.model.__name__, dashboard_id)
             logging.error(msg)
             return self.build_response(400, False, msg)
         elif obj.created_by_fk != self.get_user_id():
