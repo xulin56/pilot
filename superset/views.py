@@ -398,9 +398,12 @@ class SupersetModelView(ModelView):
 
     @expose('/show/<pk>', methods=['GET'])
     def show(self, pk):
-        obj = self.get_object(pk)
-        attributes = self.get_show_attributes(obj)
-        return json.dumps(attributes)
+        try:
+            obj = self.get_object(pk)
+            attributes = self.get_show_attributes(obj)
+            return json.dumps(attributes)
+        except Exception as e:
+            return self.build_response(self.status, success=False, message=str(e))
 
     @expose('/edit/<pk>', methods=['GET', 'POST'])
     def edit(self, pk):
@@ -423,7 +426,6 @@ class SupersetModelView(ModelView):
             self.datamodel.delete(obj)
             self.post_delete(obj)
         except Exception as e:
-            logging.error(str(e))
             return self.build_response(500, success=False, message=str(e))
         else:
             self.update_redirect()
@@ -440,7 +442,6 @@ class SupersetModelView(ModelView):
         pass
 
     def populate_object(self, obj_id, user_id, data):
-        user_id = int(user_id)
         if obj_id:
             obj = self.get_object(obj_id)
             attributes = self.get_edit_attributes(data, user_id)
@@ -535,10 +536,13 @@ class SupersetModelView(ModelView):
         return query
 
     def get_user_id(self):
-        if g.user:
-            return g.user.get_id()
-        else:
-            abort(404)
+        try:
+            user_id = g.user.get_id()
+            return int(user_id)
+        except Exception:
+            self.status = 500
+            logging.error(NO_USER)
+            raise Exception(NO_USER)
 
     def get_request_data(self):
         data = request.data
@@ -556,17 +560,15 @@ class SupersetModelView(ModelView):
         else:
             return obj
 
-    def get_available_dashboards(self):
-        user_id = self.get_user_id()
+    def get_available_dashboards(self, user_id):
         dashs = db.session.query(models.Dashboard) \
             .filter_by(created_by_fk=user_id).all()
         return dashs
 
     def get_available_slices(self, user_id):
-        user_id = int(user_id)
         slices = (
             db.session.query(models.Slice)
-                .filter(
+            .filter(
                 or_(models.Slice.created_by_fk == user_id,
                     models.Slice.online == 1)
             ).all()
@@ -1162,14 +1164,14 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @expose('/addablechoices/', methods=['GET'])
     def addable_choices(self):
-        dashs = self.get_available_dashboards()
+        dashs = self.get_available_dashboards(self.get_user_id())
         d = self.dashboards_to_dict(dashs)
         return json.dumps({'available_dashboards': d})
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
         attributes['dashboards'] = self.dashboards_to_dict(obj.dashboards)
-        dashs = self.get_available_dashboards()
+        dashs = self.get_available_dashboards(self.get_user_id())
         available_dashs = self.dashboards_to_dict(dashs)
         attributes['available_dashboards'] = available_dashs
         return attributes
@@ -1286,36 +1288,43 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         response['data'] = data
         return response
 
-    @expose("/action/<action>/<slice_id>")
+    @expose("/release/<action>/<slice_id>", methods=['GET'])
     def slice_online_or_offline(self, action, slice_id):
         obj = db.session.query(models.Slice) \
             .filter_by(id=slice_id).first()
         if not obj:
-            flash(OBJECT_NOT_FOUND, 'danger')
+            msg = '{}. Model:{} Id:{}'.format(
+                OBJECT_NOT_FOUND, self.model.__name__, slice_id)
+            logging.error(msg)
+            return self.build_response(400, False, msg)
         elif obj.created_by_fk != int(g.user.get_id()):
-            flash(NO_PERMISSION + ': {}'.format(obj.slice_name), 'danger')
+            msg = NO_ONLINE_PERMISSION + ': {}'.format(obj.slice_name)
+            return self.build_response(200, True, msg)
         elif action.lower() == 'online':
             if obj.online is True:
-                flash(OBJECT_IS_ONLINE + ': {}'.format(obj.slice_name), 'warning')
+                msg = OBJECT_IS_ONLINE + ': {}'.format(obj.slice_name)
+                return self.build_response(200, True, msg)
             else:
                 obj.online = True
                 db.session.commit()
-                flash(ONLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
                 action_str = 'Change slice to online: {}'.format(repr(obj))
                 log_action('online', action_str, 'slice', slice_id)
+                msg = ONLINE_SUCCESS + ': {}'.format(obj.slice_name)
+                return self.build_response(200, True, msg)
         elif action.lower() == 'offline':
             if obj.online is False:
-                flash(OBJECT_IS_OFFLINE + ': {}'.format(obj.slice_name), 'warning')
+                msg = OBJECT_IS_OFFLINE + ': {}'.format(obj.slice_name)
+                return self.build_response(200, True, msg)
             else:
                 obj.online = False
                 db.session.commit()
-                flash(OFFLINE_SUCCESS + ': {}'.format(obj.slice_name), 'info')
                 action_str = 'Change slice to offline: {}'.format(repr(obj))
                 log_action('offline', action_str, 'slice', slice_id)
+                msg = OFFLINE_SUCCESS + ': {}'.format(obj.slice_name)
+                return self.build_response(200, True, msg)
         else:
-            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
-        redirect_url = '/slicemodelview/list/'
-        return redirect(redirect_url)
+            msg = ERROR_URL + ': {}'.format(request.url)
+            return self.build_response(400, False, msg)
 
 
 class SliceAsync(SliceModelView):  # noqa
@@ -1523,8 +1532,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         return response
 
     def available_slices_json(self):
-        user_id = self.get_user_id()
-        slices = self.get_available_slices(user_id)
+        slices = self.get_available_slices(self.get_user_id())
         d = self.slices_to_dict(slices)
         return json.dumps({'available_slices': d})
 
@@ -1556,36 +1564,43 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             slices.append(slice_obj)
         attributes['slices'] = slices
 
-    @expose("/action/<action>/<dashboard_id>")
+    @expose("/release/<action>/<dashboard_id>", methods=['GET'])
     def dashbaord_online_or_offline(self, action, dashboard_id):
         obj = db.session.query(models.Dashboard) \
             .filter_by(id=dashboard_id).first()
         if not obj:
-            flash(OBJECT_NOT_FOUND, 'danger')
-        elif obj.created_by_fk != int(g.user.get_id()):
-            flash(NO_PERMISSION + ': {}'.format(obj.dashboard_title), 'danger')
+            msg = '{}. Model:{} Id:{}'.format(
+                OBJECT_NOT_FOUND, self.model.__name__, dashboard_id)
+            logging.error(msg)
+            return self.build_response(400, False, msg)
+        elif obj.created_by_fk != self.get_user_id():
+            msg = NO_ONLINE_PERMISSION + ': {}'.format(obj.dashboard_title)
+            return self.build_response(200, True, msg)
         elif action.lower() == 'online':
             if obj.online is True:
-                flash(OBJECT_IS_ONLINE + ': {}'.format(obj.dashboard_title), 'warning')
+                msg = OBJECT_IS_ONLINE + ': {}'.format(obj.dashboard_title)
+                return self.build_response(200, True, msg)
             else:
                 obj.online = True
                 db.session.commit()
-                flash(ONLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
                 action_str = 'Change dashboard to online: {}'.format(repr(obj))
                 log_action('online', action_str, 'dashboard', dashboard_id)
+                msg = ONLINE_SUCCESS + ': {}'.format(obj.dashboard_title)
+                return self.build_response(200, True, msg)
         elif action.lower() == 'offline':
             if obj.online is False:
-                flash(OBJECT_IS_OFFLINE + ': {}'.format(obj.dashboard_title), 'warning')
+                msg = OBJECT_IS_OFFLINE + ': {}'.format(obj.dashboard_title)
+                return self.build_response(200, True, msg)
             else:
                 obj.online = False
                 db.session.commit()
-                flash(OFFLINE_SUCCESS + ': {}'.format(obj.dashboard_title), 'info')
                 action_str = 'Change dashboard to offline: {}'.format(repr(obj))
                 log_action('offline', action_str, 'dashboard', dashboard_id)
+                msg = OFFLINE_SUCCESS + ': {}'.format(obj.dashboard_title)
+                return self.build_response(200, True, msg)
         else:
-            flash(ERROR_URL + ': {}'.format(request.url), 'danger')
-        redirect_url = '/dashboardmodelview/list/'
-        return redirect(redirect_url)
+            msg = ERROR_URL + ': {}'.format(request.url)
+            return self.build_response(400, False, msg)
 
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
