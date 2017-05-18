@@ -744,9 +744,8 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Database
     datamodel = SQLAInterface(models.Database)
-    list_columns = [
-        'database_name', 'backend', 'allow_dml', 'creator', 'changed_on']
-    show_columns = ['id', 'database_name', 'sqlalchemy_uri']
+    list_columns = ['id', 'database_name', 'backend', 'changed_on']
+    show_columns = ['id', 'database_name', 'sqlalchemy_uri', 'created_on', 'changed_on']
     add_columns = ['database_name', 'sqlalchemy_uri']
     edit_columns = add_columns
     add_template = "superset/models/database/add.html"
@@ -799,6 +798,11 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         'owner': User.username
     }
 
+    int_columns = ['id']
+    bool_columns = ['expose_in_sqllab', 'allow_run_sync', 'allow_dml']
+    str_columns = ['created_on', 'changed_on']
+
+
     def pre_add(self, obj):
         if obj.test_uri(obj.sqlalchemy_uri):
             obj.set_sqlalchemy_uri(obj.sqlalchemy_uri)
@@ -846,16 +850,19 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         db_account.insert_or_update_account(
             user_id, obj.id, url.username, url.password)
 
-    def get_database_list(self, order_column, order_direction,
-                       page, page_size, filter_str):
+    def get_object_list_data(self, **kwargs):
         """Return the database(connection) list"""
-        query = (
-            db.session.query(Database, User)
-            .filter(Database.created_by_fk == User.id)
-        )
+        order_column = kwargs.get('order_column')
+        order_direction = kwargs.get('order_direction')
+        page = kwargs.get('page')
+        page_size = kwargs.get('page_size')
+        filter = kwargs.get('filter')
 
-        if filter_str:
-            filter_str = '%{}%'.format(filter_str.lower())
+        query = db.session.query(Database, User)\
+            .filter(Database.created_by_fk == User.id)
+
+        if filter:
+            filter_str = '%{}%'.format(filter.lower())
             query = query.filter(
                 or_(
                     Database.database_name.ilike(filter_str),
@@ -868,8 +875,11 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             try:
                 column = self.str_to_column.get(order_column)
             except KeyError:
-                logging.error('Error order column name: \'{}\' passed to get_database_list()'
-                              .format(order_column))
+                msg = 'Error order column name: \'{}\' passed to get_database_list()'\
+                    .format(order_column)
+                logging.error(msg)
+                self.status = 404
+                raise KeyError(msg)
             else:
                 if order_direction == 'desc':
                     query = query.order_by(column.desc())
@@ -881,14 +891,15 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
 
         rs = query.all()
         data = []
-        for database, user in rs:
-            line = {
-                'id': database.id,
-                'title': database.database_name,
-                'type': database.backend,
-                'owner': user.username,
-                'time': str(database.changed_on)
-            }
+        for obj, user in rs:
+            line = {}
+            for col in self.list_columns:
+                if col in self.str_columns:
+                    line[col] = str(getattr(obj, col, None))
+                else:
+                    line[col] = getattr(obj, col, None)
+            line['created_by_user'] = obj.created_by.username \
+                if obj.created_by else None
             data.append(line)
 
         response = {}
