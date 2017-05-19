@@ -1187,6 +1187,7 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
             name='_customer_location_uc'),)
 
     table_type_dict = {
+        'database': 'Database',
         'inceptor': 'Database',
         'mysql': 'Database',
         'hdfs': 'HDFS',
@@ -1195,6 +1196,14 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
 
     def __repr__(self):
         return self.name
+
+    @property
+    def backend(self):
+        if self.table_name.lower() == 'database':
+            return self.database.backend
+        else:
+            # TODO get hdfs backend
+            return 'Unknown backend'
 
     @property
     def columns(self):
