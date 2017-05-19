@@ -13,6 +13,7 @@ import re
 import textwrap
 from copy import deepcopy, copy
 from datetime import timedelta, datetime, date
+from itertools import groupby
 
 import humanize
 import pandas as pd
@@ -865,9 +866,12 @@ class Database(Model, AuditMixinNullable):
 
     def all_schema_table_names(self):
         st = {}
-        schemas = self.all_schema_names()
-        for schema in schemas:
-            tables = self.all_table_names(schema)
+        st_list = self.inspector.get_schema_and_table_names()
+        st_group = groupby(st_list, lambda item: item[0])
+        for schema, tb_group in st_group:
+            tables = []
+            for i in list(tb_group):
+                tables.append(i[1])
             st[schema] = tables
         return OrderedDict(sorted(st.items(), key=lambda s: s[0]))
 

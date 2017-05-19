@@ -1012,6 +1012,13 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
             logging.error(e)
             return self.build_response(500, False, str(e))
 
+    @expose('/alltables/<database_id>', methods=['GET', ])
+    def all_schemas_and_tables(self, database_id):
+        d = db.session.query(models.Database)\
+            .filter_by(id=database_id).first()
+        all_tb = d.all_schema_table_names()
+        return json.dumps(all_tb)
+
     def get_object_list_data(self, **kwargs):
         """Return the table list"""
         order_column = kwargs.get('order_column')
