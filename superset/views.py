@@ -374,6 +374,27 @@ class SupersetModelView(ModelView):
             if args.get('table_id') else None
         return kwargs
 
+    # @expose('/list/')
+    # def list(self):
+    #      return self.render_template(self.list_template)
+
+    @expose('/listdata/')
+    def get_list_data(self):
+        kwargs = self.get_list_args(request.args)
+        list_data = self.get_object_list_data(**kwargs)
+        return json.dumps(list_data)
+
+    @expose('/addablechoices/', methods=['GET'])
+    def addable_choices(self):
+        try:
+            readme = {}
+            readme['readme'] = self.get_column_readme()
+        except Exception as e:
+            logging.error(str(e))
+            self.build_response(500, False, str(e))
+        else:
+            return json.dumps({'date': readme})
+
     # @expose('/add', methods=['GET', 'POST'])
     # def add(self):
     #     try:
@@ -387,16 +408,6 @@ class SupersetModelView(ModelView):
     #         return self.build_response(500, False, str(e))
     #     else:
     #         return self.build_response(200, True, ADD_SUCCESS)
-
-    # @expose('/list/')
-    # def list(self):
-    #      return self.render_template(self.list_template)
-
-    @expose('/listdata/')
-    def get_list_data(self):
-        kwargs = self.get_list_args(request.args)
-        list_data = self.get_object_list_data(**kwargs)
-        return json.dumps(list_data)
 
     @expose('/show/<pk>', methods=['GET'])
     def show(self, pk):
@@ -467,11 +478,21 @@ class SupersetModelView(ModelView):
             else:
                 attributes[col] = getattr(obj, col, None)
 
+        attributes['readme'] = self.get_column_readme()
         attributes['created_by_user'] = obj.created_by.username \
             if obj.created_by else None
         attributes['changed_by_user'] = obj.changed_by.username \
             if obj.changed_by else None
         return attributes
+
+    def get_column_readme(self):
+        if self.readme_columns:
+            readme = {}
+            for col in self.readme_columns:
+                readme[col] = self.description_columns.get(col)
+            return readme
+        else:
+            return {}
 
     def get_add_attributes(self, data, user_id):
         attributes = {}
@@ -742,9 +763,11 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Database
     datamodel = SQLAInterface(models.Database)
     list_columns = ['id', 'database_name', 'backend', 'changed_on']
-    show_columns = ['id', 'database_name', 'sqlalchemy_uri', 'created_on', 'changed_on']
+    show_columns = ['id', 'database_name', 'sqlalchemy_uri',
+                    'backend',  'created_on', 'changed_on']
     add_columns = ['database_name', 'sqlalchemy_uri']
     edit_columns = add_columns
+    readme_columns = ['sqlalchemy_uri']
     add_template = "superset/models/database/add.html"
     edit_template = "superset/models/database/edit.html"
     base_order = ('changed_on', 'desc')
