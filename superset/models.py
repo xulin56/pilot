@@ -1169,6 +1169,7 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
     sql = Column(Text)
     params = Column(Text)
     perm = Column(String(1000))
+    table_type = Column(String(250))
 
     baselink = "tablemodelview"
     column_cls = TableColumn
@@ -1184,6 +1185,13 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
         sqla.UniqueConstraint(
             'database_id', 'schema', 'table_name',
             name='_customer_location_uc'),)
+
+    table_type_dict = {
+        'inceptor': 'Database',
+        'mysql': 'Database',
+        'hdfs': 'HDFS',
+        'upload': 'UploadFile'
+    }
 
     def __repr__(self):
         return self.name
