@@ -1001,6 +1001,17 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     bool_columns = ['is_featured', 'filter_select_enabled']
     str_columns = ['database', 'created_on', 'changed_on']
 
+    @expose('/addablechoices/', methods=['GET', ])
+    def addable_choices(self):
+        try:
+            data = {}
+            data['available_databases'] = self.get_available_databases()
+            data['readme'] = self.get_column_readme()
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
+
     def get_object_list_data(self, **kwargs):
         """Return the table list"""
         order_column = kwargs.get('order_column')
@@ -1062,6 +1073,15 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         response['page_size'] = page_size
         response['data'] = data
         return response
+
+    def get_available_databases(self):
+        dbs = db.session.query(models.Database)\
+            .filter(models.Database.database_name != 'main').all()
+        dbs_list = []
+        for d in dbs:
+            row = {'id': d.id, 'database_name': d.database_name}
+            dbs_list.append(row)
+        return dbs_list
 
     def pre_add(self, table):
         number_of_existing_tables = db.session.query(
