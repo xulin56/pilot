@@ -1199,7 +1199,7 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
 
     @property
     def backend(self):
-        if self.table_name.lower() == 'database':
+        if self.table_type.lower() == 'database':
             return self.database.backend
         else:
             # TODO get hdfs backend
