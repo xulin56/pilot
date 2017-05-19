@@ -9,18 +9,22 @@ const propTypes = {
 };
 
 const defaultProps = {
+
 };
 
 class DashboardEdit extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-
+            slice: this.props.slice
         };
         // bindings
         this.confirm = this.confirm.bind(this);
         this.closeDialog = this.closeDialog.bind(this);
         this.showDialog = this.showDialog.bind(this);
+
+        this.handleTitleChange = this.handleTitleChange.bind(this);
+        this.handleDescriptionChange = this.handleDescriptionChange.bind(this);
     };
 
     showDialog() {
@@ -28,24 +32,48 @@ class DashboardEdit extends React.Component {
         document.getElementById("popup_dashboard").style.display = "flex";
     }
 
-    confirm() {
-
-    }
-
     closeDialog() {
 
         document.getElementById("popup_dashboard").style.display = "none";
     }
 
-    componentWillMount() {
+    handleTitleChange(e) {
+        console.log(e.target.value);
+        this.state.slice.name = e.target.value;
+        this.setState({
+            slice: this.state.slice
+        });
+        console.log(this.state.slice);
+    }
 
+    handleDescriptionChange(e) {
+        console.log(e.target.value);
+        this.state.slice.description = e.target.value;
+        this.setState({
+            slice: this.state.slice
+        });
+    }
+
+    confirm() {
+        var url = window.location.origin + "/dashboardmodelview/edit/" + this.state.slice.id;
+        $.ajax({
+            url: url,
+            method: "POST",
+            data: this.state.slice,
+            dataType: "json",
+            success: function (e) {
+                console.log("success...");
+            },
+            error: function(e){
+                console.log("error...");
+            },
+            beforeSend: function(){
+
+            }
+        });
     }
 
     componentDidMount() {
-
-    }
-
-    componentWillUnmount() {
 
     }
 
@@ -64,7 +92,40 @@ class DashboardEdit extends React.Component {
                             </div>
                         </div>
                         <div className="popup-body">
-
+                            <div className="dialog-item">
+                                <div className="item-left">
+                                    <span>标题：</span>
+                                </div>
+                                <div className="item-right">
+                                    <input className="form-control dialog-input" value={this.props.slice.name}
+                                      onChange={this.handleTitleChange} />
+                                </div>
+                            </div>
+                            <div className="dialog-item">
+                                <div className="item-left">
+                                    <span>描述：</span>
+                                </div>
+                                <div className="item-right">
+                                    <textarea className="dialog-area" value={this.props.slice.description}
+                                        onChange={this.handleDescriptionChange}></textarea>
+                                </div>
+                            </div>
+                            <div className="dialog-item">
+                                <div className="item-left">
+                                    <span>工作表：</span>
+                                </div>
+                                <div className="item-right">
+                                    <div></div>
+                                </div>
+                            </div>
+                            <div className="dialog-item">
+                                <div className="item-left">
+                                    <span>数据集：</span>
+                                </div>
+                                <div className="item-right">
+                                    <input className="form-control dialog-input"/>
+                                </div>
+                            </div>
                         </div>
                         <div className="popup-footer">
                             <button className="tp-btn tp-btn-middle tp-btn-primary" onClick={this.confirm}>
