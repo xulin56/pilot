@@ -1192,7 +1192,10 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     def addable_choices(self):
         dashs = self.get_available_dashboards(self.get_user_id())
         d = self.dashboards_to_dict(dashs)
-        return json.dumps({'available_dashboards': d})
+        data['available_dashboards'] = d
+        data = {}
+        data['readme'] = self.get_column_readme()
+        return json.dumps({'data': data})
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
