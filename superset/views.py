@@ -369,6 +369,7 @@ class SupersetModelView(ModelView):
         kwargs['filter'] = args.get('filter', self.filter)
         fav = args.get('only_favorite')
         kwargs['only_favorite'] = strtobool(fav) if fav else self.only_favorite
+        kwargs['table_type'] = args.get('table_type')
         kwargs['table_id'] = int(args.get('table_id')) \
             if args.get('table_id') else None
         return kwargs
@@ -928,7 +929,7 @@ class DatabaseTablesAsync(DatabaseView):
 class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.SqlaTable
     datamodel = SQLAInterface(models.SqlaTable)
-    list_columns = ['id', 'table_name', 'explore_url', 'database', 'changed_on']
+    list_columns = ['id', 'table_name', 'table_type', 'explore_url', 'backend', 'changed_on']
     order_columns = ['link', 'database', 'changed_on_']
     add_columns = ['database', 'schema', 'table_name', 'sql']
     show_columns = add_columns + ['id', 'database_id']
@@ -985,22 +986,19 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         page = kwargs.get('page')
         page_size = kwargs.get('page_size')
         filter = kwargs.get('filter')
+        table_type = kwargs.get('table_type')
 
-        query = (
-            db.session.query(SqlaTable, Database, User)
-            .filter(SqlaTable.database_id == Database.id,
-                    SqlaTable.created_by_fk == User.id)
-        )
+        query = db.session.query(SqlaTable, User)\
+            .filter(SqlaTable.created_by_fk == User.id)
 
-        # todo add column backend for filter
-        # if type:      # hdfs, inceptor, mysql
+        # TODO just query this table_type
+        # if table_type:
         #     query = query.filter(Database.backend.like(type))
         if filter:
             filter_str = '%{}%'.format(filter.lower())
             query = query.filter(
                 or_(
                     SqlaTable.table_name.ilike(filter_str),
-                    Database.database_name.ilike(filter_str),
                     User.username.ilike(filter_str)
                 )
             )
@@ -1023,14 +1021,13 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 
         rs = query.all()
         data = []
-        for obj, database, user in rs:
+        for obj, user in rs:
             line = {}
             for col in self.list_columns:
                 if col in self.str_columns:
                     line[col] = str(getattr(obj, col, None))
                 else:
                     line[col] = getattr(obj, col, None)
-            line['backend'] = database.backend
             line['created_by_user'] = obj.created_by.username \
                 if obj.created_by else None
             data.append(line)
@@ -1259,8 +1256,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
             try:
                 column = self.str_to_column.get(order_column)
             except KeyError:
-                logging.error('Error order column name: \'{}\' passed to get_slice_list()'
-                              .format(order_column))
+                msg = 'Error order column name: \'{}\''.format(order_column)
+                self.handle_exception(404, KeyError, msg)
             else:
                 if order_direction == 'desc':
                     query = query.order_by(column.desc())

@@ -187,6 +187,7 @@ def upgrade():
         sa.Column('sql', sa.Text(), nullable=True),
         sa.Column('params', sa.Text(), nullable=True),
         sa.Column('perm', sa.String(length=1000), nullable=True),
+        sa.Column('table_type', sa.String(length=250), nullable=True),
         sa.Column('changed_by_fk', sa.Integer(), sa.ForeignKey("ab_user.id"), nullable=True),
         sa.Column('created_by_fk', sa.Integer(), sa.ForeignKey("ab_user.id"), nullable=True),
         sa.ForeignKeyConstraint(['database_id'], ['dbs.id'], ),

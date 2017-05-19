@@ -1169,6 +1169,7 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
     sql = Column(Text)
     params = Column(Text)
     perm = Column(String(1000))
+    table_type = Column(String(250))
 
     baselink = "tablemodelview"
     column_cls = TableColumn
@@ -1185,8 +1186,24 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
             'database_id', 'schema', 'table_name',
             name='_customer_location_uc'),)
 
+    table_type_dict = {
+        'database': 'Database',
+        'inceptor': 'Database',
+        'mysql': 'Database',
+        'hdfs': 'HDFS',
+        'upload': 'UploadFile'
+    }
+
     def __repr__(self):
         return self.name
+
+    @property
+    def backend(self):
+        if self.table_type.lower() == 'database':
+            return self.database.backend
+        else:
+            # TODO get hdfs backend
+            return 'Unknown backend'
 
     @property
     def columns(self):
