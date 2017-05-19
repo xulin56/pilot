@@ -389,11 +389,10 @@ class SupersetModelView(ModelView):
         try:
             readme = {}
             readme['readme'] = self.get_column_readme()
+            return json.dumps({'date': readme})
         except Exception as e:
             logging.error(str(e))
-            self.build_response(500, False, str(e))
-        else:
-            return json.dumps({'date': readme})
+            return self.build_response(500, False, str(e))
 
     # @expose('/add', methods=['GET', 'POST'])
     # def add(self):
@@ -1190,11 +1189,15 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @expose('/addablechoices/', methods=['GET'])
     def addable_choices(self):
-        data = {}
-        dashs = self.get_available_dashboards(self.get_user_id())
-        data['available_dashboards'] = self.dashboards_to_dict(dashs)
-        data['readme'] = self.get_column_readme()
-        return json.dumps({'data': data})
+        try:
+            data = {}
+            dashs = self.get_available_dashboards(self.get_user_id())
+            data['available_dashboards'] = self.dashboards_to_dict(dashs)
+            data['readme'] = self.get_column_readme()
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
@@ -1434,11 +1437,15 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @expose('/addablechoices/', methods=['GET'])
     def addable_choices(self):
-        data = {}
-        data['readme'] = self.get_column_readme()
-        slices = self.get_available_slices(self.get_user_id())
-        data['available_slices'] = self.slices_to_dict(slices)
-        return json.dumps({'data': data})
+        try:
+            data = {}
+            data['readme'] = self.get_column_readme()
+            slices = self.get_available_slices(self.get_user_id())
+            data['available_slices'] = self.slices_to_dict(slices)
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
 
     def pre_add(self, obj):
         if not obj.slug:
