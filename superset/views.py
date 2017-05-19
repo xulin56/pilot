@@ -486,7 +486,7 @@ class SupersetModelView(ModelView):
         return attributes
 
     def get_column_readme(self):
-        if self.readme_columns:
+        if hasattr(self, 'readme_columns'):
             readme = {}
             for col in self.readme_columns:
                 readme[col] = self.description_columns.get(col)
@@ -1190,10 +1190,9 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @expose('/addablechoices/', methods=['GET'])
     def addable_choices(self):
-        dashs = self.get_available_dashboards(self.get_user_id())
-        d = self.dashboards_to_dict(dashs)
-        data['available_dashboards'] = d
         data = {}
+        dashs = self.get_available_dashboards(self.get_user_id())
+        data['available_dashboards'] = self.dashboards_to_dict(dashs)
         data['readme'] = self.get_column_readme()
         return json.dumps({'data': data})
 
@@ -1203,6 +1202,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         dashs = self.get_available_dashboards(self.get_user_id())
         available_dashs = self.dashboards_to_dict(dashs)
         attributes['available_dashboards'] = available_dashs
+        attributes['readme'] = self.get_column_readme()
         return attributes
 
     def get_edit_attributes(self, data, user_id):
