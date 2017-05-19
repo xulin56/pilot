@@ -1434,7 +1434,11 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @expose('/addablechoices/', methods=['GET'])
     def addable_choices(self):
-        return self.available_slices_json()
+        data = {}
+        data['readme'] = self.get_column_readme()
+        slices = self.get_available_slices(self.get_user_id())
+        data['available_slices'] = self.slices_to_dict(slices)
+        return json.dumps({'data': data})
 
     def pre_add(self, obj):
         if not obj.slug:
@@ -1558,11 +1562,6 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         response['only_favorite'] = only_favorite
         response['data'] = data
         return response
-
-    def available_slices_json(self):
-        slices = self.get_available_slices(self.get_user_id())
-        d = self.slices_to_dict(slices)
-        return json.dumps({'available_slices': d})
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
