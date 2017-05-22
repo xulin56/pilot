@@ -664,10 +664,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
             for col in self.list_columns:
                 line[col] = str(getattr(row, col, None))
             data.append(line)
-
-        response = {}
-        response['data'] = data
-        return response
+        return {'data': data}
 
     @expose('/addablechoices/', methods=['GET', ])
     def addable_choices(self):
@@ -729,14 +726,6 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'table': _("Table"),
     }
 
-    def post_add(self, metric):
-        if metric.is_restricted:
-            security.merge_perm(sm, 'metric_access', metric.get_perm())
-
-    def post_update(self, metric):
-        if metric.is_restricted:
-            security.merge_perm(sm, 'metric_access', metric.get_perm())
-
     def get_object_list_data(self, **kwargs):
         table_id = kwargs.get('table_id')
         if not table_id:
@@ -750,10 +739,15 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
             for col in self.list_columns:
                 line[col] = str(getattr(row, col, None))
             data.append(line)
+        return {'data': data}
 
-        response = {}
-        response['data'] = data
-        return response
+    def post_add(self, metric):
+        if metric.is_restricted:
+            security.merge_perm(sm, 'metric_access', metric.get_perm())
+
+    def post_update(self, metric):
+        if metric.is_restricted:
+            security.merge_perm(sm, 'metric_access', metric.get_perm())
 
 
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
