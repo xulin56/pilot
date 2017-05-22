@@ -502,12 +502,13 @@ class SupersetModelView(ModelView):
                 msg = "The needed attribute: \'{}\' not in attributes: \'{}\'"\
                     .format(col, ','.join(data.keys()))
                 self.handle_exception(404, KeyError, msg)
-            if col in self.bool_columns:
-                attributes[col] = strtobool(data.get(col))
+            value = data.get(col)
+            if col in self.bool_columns and not isinstance(value, bool):
+                attributes[col] = strtobool(value)
             elif col in self.int_columns:
-                attributes[col] = int(data.get(col))
+                attributes[col] = int(value)
             else:
-                attributes[col] = data.get(col)
+                attributes[col] = value
         return attributes
 
     def get_edit_attributes(self, data, user_id):
@@ -519,12 +520,13 @@ class SupersetModelView(ModelView):
                 msg = "The needed attribute: \'{}\' not in attributes: \'{}\'" \
                     .format(col, ','.join(data.keys()))
                 self.handle_exception(404, KeyError, msg)
-            if col in self.bool_columns:
-                attributes[col] = strtobool(data.get(col))
+            value = data.get(col)
+            if col in self.bool_columns and not isinstance(value, bool):
+                attributes[col] = strtobool(value)
             elif col in self.int_columns:
-                attributes[col] = int(data.get(col))
+                attributes[col] = int(value)
             else:
-                attributes[col] = data.get(col)
+                attributes[col] = value
         return attributes
 
     def query_own_or_online(self, class_name, user_id, only_favorite):
@@ -582,42 +584,6 @@ class SupersetModelView(ModelView):
         logging.error(msg)
         raise exception(msg)
 
-    def get_available_dashboards(self, user_id):
-        dashs = db.session.query(models.Dashboard) \
-            .filter_by(created_by_fk=user_id).all()
-        return dashs
-
-    def get_available_slices(self, user_id):
-        slices = (
-            db.session.query(models.Slice)
-            .filter(
-                or_(models.Slice.created_by_fk == user_id,
-                    models.Slice.online == 1)
-            ).all()
-        )
-        return slices
-
-    def dashboards_to_dict(self, dashs):
-        dashs_list = []
-        for dash in dashs:
-            row = {'id': dash.id, 'dashboard_title': dash.dashboard_title}
-            dashs_list.append(row)
-        return dashs_list
-
-    def slices_to_dict(self, slices):
-        slices_list = []
-        for slice in slices:
-            row = {'id': slice.id, 'slice_name': slice.slice_name}
-            slices_list.append(row)
-        return slices_list
-
-    def tables_to_dict(self, tables):
-        tables_list = []
-        for table in tables:
-            row = {'id': table.id, 'table_name': table.table_name}
-            tables_list.append(row)
-        return tables_list
-
 
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.TableColumn
@@ -627,13 +593,15 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     list_widget = ListWidgetWithCheckboxes
     edit_columns = [
         'column_name', 'verbose_name', 'groupby', 'filterable',
-        'table', 'count_distinct', 'sum', 'min', 'max', 'expression',
+        'table_id', 'count_distinct', 'sum', 'min', 'max', 'expression',
         'is_dttm', 'python_date_format', 'database_expression']
     show_columns = edit_columns + ['id']
     add_columns = edit_columns
     list_columns = [
         'id', 'column_name', 'type', 'groupby', 'filterable',
         'count_distinct', 'sum', 'min', 'max', 'is_dttm']
+    # TODO can't json.dumps lazy_gettext()
+    readme_columns = ['expression', ]
     description_columns = {
         'is_dttm': (_(
             "Whether to make this column available as a "
@@ -679,6 +647,10 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'database_expression': _("Database Expression")
     }
 
+    bool_columns = ['is_dttm', 'is_active', 'groupby', 'count_distinct',
+                    'sum', 'avg', 'max', 'min', 'filterable']
+    str_columns = ['table', ]
+
     def get_object_list_data(self, **kwargs):
         table_id = kwargs.get('table_id')
         if not table_id:
@@ -696,6 +668,30 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         response = {}
         response['data'] = data
         return response
+
+    @expose('/addablechoices/', methods=['GET', ])
+    def addable_choices(self):
+        try:
+            data = {}
+            data['available_tables'] = self.get_available_tables()
+            data['readme'] = self.get_column_readme()
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
+
+    def get_available_tables(self):
+        tbs = db.session.query(models.SqlaTable).all()
+        tb_list = []
+        for t in tbs:
+            row = {'id': t.id, 'dataset_name': t.dataset_name}
+            tb_list.append(row)
+        return tb_list
+
+    def get_show_attributes(self, obj):
+        attributes = super().get_show_attributes(obj)
+        attributes['available_tables'] = self.get_available_tables()
+        return attributes
 
 
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
@@ -1262,6 +1258,18 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         attributes['dashboards'] = dashboards
         return attributes
 
+    def get_available_dashboards(self, user_id):
+        dashs = db.session.query(models.Dashboard) \
+            .filter_by(created_by_fk=user_id).all()
+        return dashs
+
+    def dashboards_to_dict(self, dashs):
+        dashs_list = []
+        for dash in dashs:
+            row = {'id': dash.id, 'dashboard_title': dash.dashboard_title}
+            dashs_list.append(row)
+        return dashs_list
+
     def pre_update(self, obj):
         check_ownership(obj)
 
@@ -1487,6 +1495,23 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             logging.error(e)
             return self.build_response(500, False, str(e))
 
+    def get_available_slices(self, user_id):
+        slices = (
+            db.session.query(models.Slice)
+                .filter(
+                or_(models.Slice.created_by_fk == user_id,
+                    models.Slice.online == 1)
+            ).all()
+        )
+        return slices
+
+    def slices_to_dict(self, slices):
+        slices_list = []
+        for slice in slices:
+            row = {'id': slice.id, 'slice_name': slice.slice_name}
+            slices_list.append(row)
+        return slices_list
+
     def pre_add(self, obj):
         if not obj.slug:
             obj.slug = obj.dashboard_title
@@ -1687,7 +1712,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
-    list_columns = ['dashboard_link', 'creator', 'modified', 'dashboard_title']
+    # list_columns = ['dashboard_link', 'creator', 'modified', 'dashboard_title']
     label_columns = {
         'dashboard_link': 'Dashboard',
     }
@@ -2880,7 +2905,6 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/sqllab_viz/", methods=['POST'])
-    #@log_this('Visualize query result')
     def sqllab_viz(self):
         data = json.loads(request.form.get('data'))
         table_name = data.get('datasourceName')
@@ -3017,7 +3041,6 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/select_star/<database_id>/<table_name>/")
-    # @log_this
     def select_star(self, database_id, table_name):
         mydb = db.session.query(
             models.Database).filter_by(id=database_id).first()
@@ -3086,7 +3109,6 @@ class Superset(BaseSupersetView):
 
     @has_access_api
     @expose("/sql_json/", methods=['POST', 'GET'])
-    #@log_this('Run sql')
     def sql_json(self):
         """Runs arbitrary sql and returns and json"""
         def table_accessible(database, full_table_name, schema_name=None):
@@ -3186,7 +3208,6 @@ class Superset(BaseSupersetView):
 
     @has_access
     @expose("/csv/<client_id>")
-    @log_this('Download the query results as csv')
     def csv(self, client_id):
         """Download the query results as csv."""
         query = (
