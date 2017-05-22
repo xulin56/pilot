@@ -502,12 +502,13 @@ class SupersetModelView(ModelView):
                 msg = "The needed attribute: \'{}\' not in attributes: \'{}\'"\
                     .format(col, ','.join(data.keys()))
                 self.handle_exception(404, KeyError, msg)
-            if col in self.bool_columns:
-                attributes[col] = strtobool(data.get(col))
+            value = data.get(col)
+            if col in self.bool_columns and not isinstance(value, bool):
+                attributes[col] = strtobool(value)
             elif col in self.int_columns:
-                attributes[col] = int(data.get(col))
+                attributes[col] = int(value)
             else:
-                attributes[col] = data.get(col)
+                attributes[col] = value
         return attributes
 
     def get_edit_attributes(self, data, user_id):
@@ -519,12 +520,13 @@ class SupersetModelView(ModelView):
                 msg = "The needed attribute: \'{}\' not in attributes: \'{}\'" \
                     .format(col, ','.join(data.keys()))
                 self.handle_exception(404, KeyError, msg)
-            if col in self.bool_columns:
-                attributes[col] = strtobool(data.get(col))
+            value = data.get(col)
+            if col in self.bool_columns and not isinstance(value, bool):
+                attributes[col] = strtobool(value)
             elif col in self.int_columns:
-                attributes[col] = int(data.get(col))
+                attributes[col] = int(value)
             else:
-                attributes[col] = data.get(col)
+                attributes[col] = value
         return attributes
 
     def query_own_or_online(self, class_name, user_id, only_favorite):
@@ -591,7 +593,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     list_widget = ListWidgetWithCheckboxes
     edit_columns = [
         'column_name', 'verbose_name', 'groupby', 'filterable',
-        'table', 'count_distinct', 'sum', 'min', 'max', 'expression',
+        'table_id', 'count_distinct', 'sum', 'min', 'max', 'expression',
         'is_dttm', 'python_date_format', 'database_expression']
     show_columns = edit_columns + ['id']
     add_columns = edit_columns
@@ -690,6 +692,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         attributes = super().get_show_attributes(obj)
         attributes['available_tables'] = self.get_available_tables()
         return attributes
+
 
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.SqlMetric
