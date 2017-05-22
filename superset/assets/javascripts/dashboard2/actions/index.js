@@ -43,8 +43,9 @@ export function getSliceListAction(json) {
 
 export function fetchSliceListPromise(url) {
     return dispatch => {
-        return fetch(url)
-            .then(response => response.json())
+        return fetch(url, {
+            credentials: "same-origin"
+        }).then(response => response.json())
             .then(json => dispatch(getSliceListAction(json)))
     }
 }
