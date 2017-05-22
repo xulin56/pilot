@@ -16,7 +16,7 @@ const config = {
     home: ['babel-polyfill', APP_DIR + '/javascripts/home.js'],
     list: ['babel-polyfill', APP_DIR + '/javascripts/list.js'],
     sliceList: ['babel-polyfill', APP_DIR + '/javascripts/sliceList.js'],
-    dashboardList: ['babel-polyfill', APP_DIR + '/javascripts/dashboardList.js'],
+    dashboardEntry: ['babel-polyfill', APP_DIR + '/javascripts/dashboardEntry.js'],
 
     common: APP_DIR + '/javascripts/common.js',
     dashboard: ['babel-polyfill', APP_DIR + '/javascripts/dashboard/Dashboard.jsx'],

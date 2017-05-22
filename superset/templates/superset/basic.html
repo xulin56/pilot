@@ -24,7 +24,8 @@
   </head>
 
   <body>
-    {% block navbar %}
+  <div id="popup_root"></div>
+  {% block navbar %}
       {% if not standalone_mode %}
         <header class="top" role="header">
           {% include 'appbuilder/navbar.html' %}
