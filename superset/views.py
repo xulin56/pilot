@@ -582,42 +582,6 @@ class SupersetModelView(ModelView):
         logging.error(msg)
         raise exception(msg)
 
-    def get_available_dashboards(self, user_id):
-        dashs = db.session.query(models.Dashboard) \
-            .filter_by(created_by_fk=user_id).all()
-        return dashs
-
-    def get_available_slices(self, user_id):
-        slices = (
-            db.session.query(models.Slice)
-            .filter(
-                or_(models.Slice.created_by_fk == user_id,
-                    models.Slice.online == 1)
-            ).all()
-        )
-        return slices
-
-    def dashboards_to_dict(self, dashs):
-        dashs_list = []
-        for dash in dashs:
-            row = {'id': dash.id, 'dashboard_title': dash.dashboard_title}
-            dashs_list.append(row)
-        return dashs_list
-
-    def slices_to_dict(self, slices):
-        slices_list = []
-        for slice in slices:
-            row = {'id': slice.id, 'slice_name': slice.slice_name}
-            slices_list.append(row)
-        return slices_list
-
-    def tables_to_dict(self, tables):
-        tables_list = []
-        for table in tables:
-            row = {'id': table.id, 'table_name': table.table_name}
-            tables_list.append(row)
-        return tables_list
-
 
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.TableColumn
@@ -1287,6 +1251,18 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         attributes['dashboards'] = dashboards
         return attributes
 
+    def get_available_dashboards(self, user_id):
+        dashs = db.session.query(models.Dashboard) \
+            .filter_by(created_by_fk=user_id).all()
+        return dashs
+
+    def dashboards_to_dict(self, dashs):
+        dashs_list = []
+        for dash in dashs:
+            row = {'id': dash.id, 'dashboard_title': dash.dashboard_title}
+            dashs_list.append(row)
+        return dashs_list
+
     def pre_update(self, obj):
         check_ownership(obj)
 
@@ -1511,6 +1487,23 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         except Exception as e:
             logging.error(e)
             return self.build_response(500, False, str(e))
+
+    def get_available_slices(self, user_id):
+        slices = (
+            db.session.query(models.Slice)
+                .filter(
+                or_(models.Slice.created_by_fk == user_id,
+                    models.Slice.online == 1)
+            ).all()
+        )
+        return slices
+
+    def slices_to_dict(self, slices):
+        slices_list = []
+        for slice in slices:
+            row = {'id': slice.id, 'slice_name': slice.slice_name}
+            slices_list.append(row)
+        return slices_list
 
     def pre_add(self, obj):
         if not obj.slug:
