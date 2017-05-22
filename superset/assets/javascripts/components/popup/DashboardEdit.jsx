@@ -28,26 +28,21 @@ class DashboardEdit extends React.Component {
     };
 
     showDialog() {
-        console.log(document.getElementById("popup_dashboard"));
         document.getElementById("popup_dashboard").style.display = "flex";
     }
 
     closeDialog() {
-
         document.getElementById("popup_dashboard").style.display = "none";
     }
 
     handleTitleChange(e) {
-        console.log(e.target.value);
-        this.state.slice.name = e.target.value;
+        this.state.slice.dashboard_title = e.target.value;
         this.setState({
             slice: this.state.slice
         });
-        console.log(this.state.slice);
     }
 
     handleDescriptionChange(e) {
-        console.log(e.target.value);
         this.state.slice.description = e.target.value;
         this.setState({
             slice: this.state.slice
@@ -55,22 +50,7 @@ class DashboardEdit extends React.Component {
     }
 
     confirm() {
-        var url = window.location.origin + "/dashboardmodelview/edit/" + this.state.slice.id;
-        $.ajax({
-            url: url,
-            method: "POST",
-            data: this.state.slice,
-            dataType: "json",
-            success: function (e) {
-                console.log("success...");
-            },
-            error: function(e){
-                console.log("error...");
-            },
-            beforeSend: function(){
-
-            }
-        });
+        document.getElementById("popup_dashboard").style.display = "none";
     }
 
     componentDidMount() {
@@ -97,7 +77,7 @@ class DashboardEdit extends React.Component {
                                     <span>标题：</span>
                                 </div>
                                 <div className="item-right">
-                                    <input className="form-control dialog-input" value={this.props.slice.name}
+                                    <input className="form-control dialog-input" value={this.props.slice.dashboard_title}
                                       onChange={this.handleTitleChange} />
                                 </div>
                             </div>
