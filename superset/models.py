@@ -1154,7 +1154,7 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
 
     __tablename__ = 'tables'
     id = Column(Integer, primary_key=True)
-    table_name = Column(String(250))
+    dataset_name = Column(String(250))
     main_dttm_col = Column(String(250))
     description = Column(Text)
     default_endpoint = Column(Text)
@@ -1169,6 +1169,7 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
         foreign_keys=[database_id])
     offset = Column(Integer, default=0)
     cache_timeout = Column(Integer)
+    table_name = Column(String(250))
     schema = Column(String(255))
     sql = Column(Text)
     params = Column(Text)
