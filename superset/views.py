@@ -374,6 +374,26 @@ class SupersetModelView(ModelView):
             if args.get('table_id') else None
         return kwargs
 
+    @expose('/list/')
+    def list(self):
+         return self.render_template(self.list_template)
+
+    @expose('/listdata/')
+    def get_list_data(self):
+        kwargs = self.get_list_args(request.args)
+        list_data = self.get_object_list_data(**kwargs)
+        return json.dumps(list_data)
+
+    @expose('/addablechoices/', methods=['GET'])
+    def addable_choices(self):
+        try:
+            readme = {}
+            readme['readme'] = self.get_column_readme()
+            return json.dumps({'date': readme})
+        except Exception as e:
+            logging.error(str(e))
+            return self.build_response(500, False, str(e))
+
     @expose('/add', methods=['GET', 'POST'])
     def add(self):
         try:
@@ -387,16 +407,6 @@ class SupersetModelView(ModelView):
             return self.build_response(500, False, str(e))
         else:
             return self.build_response(200, True, ADD_SUCCESS)
-
-    @expose('/list/')
-    def list(self):
-         return self.render_template(self.list_template)
-
-    @expose('/listdata/')
-    def get_list_data(self):
-        kwargs = self.get_list_args(request.args)
-        list_data = self.get_object_list_data(**kwargs)
-        return json.dumps(list_data)
 
     @expose('/show/<pk>', methods=['GET'])
     def show(self, pk):
@@ -467,11 +477,21 @@ class SupersetModelView(ModelView):
             else:
                 attributes[col] = getattr(obj, col, None)
 
+        attributes['readme'] = self.get_column_readme()
         attributes['created_by_user'] = obj.created_by.username \
             if obj.created_by else None
         attributes['changed_by_user'] = obj.changed_by.username \
             if obj.changed_by else None
         return attributes
+
+    def get_column_readme(self):
+        if hasattr(self, 'readme_columns'):
+            readme = {}
+            for col in self.readme_columns:
+                readme[col] = self.description_columns.get(col)
+            return readme
+        else:
+            return {}
 
     def get_add_attributes(self, data, user_id):
         attributes = {}
@@ -602,6 +622,7 @@ class SupersetModelView(ModelView):
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.TableColumn
     datamodel = SQLAInterface(models.TableColumn)
+    route_base = '/tablecolumn'
     can_delete = False
     list_widget = ListWidgetWithCheckboxes
     edit_columns = [
@@ -680,6 +701,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.SqlMetric
     datamodel = SQLAInterface(models.SqlMetric)
+    route_base = '/sqlmetric'
     list_columns = ['id', 'metric_name', 'metric_type', 'expression']
     edit_columns = [
         'metric_name', 'description', 'verbose_name', 'metric_type',
@@ -741,10 +763,13 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Database
     datamodel = SQLAInterface(models.Database)
+    route_base = '/database'
     list_columns = ['id', 'database_name', 'backend', 'changed_on']
-    show_columns = ['id', 'database_name', 'sqlalchemy_uri', 'created_on', 'changed_on']
+    show_columns = ['id', 'database_name', 'sqlalchemy_uri',
+                    'backend',  'created_on', 'changed_on']
     add_columns = ['database_name', 'sqlalchemy_uri']
     edit_columns = add_columns
+    readme_columns = ['sqlalchemy_uri']
     add_template = "superset/models/database/add.html"
     edit_template = "superset/models/database/edit.html"
     base_order = ('changed_on', 'desc')
@@ -929,10 +954,11 @@ class DatabaseTablesAsync(DatabaseView):
 class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.SqlaTable
     datamodel = SQLAInterface(models.SqlaTable)
-    list_columns = ['id', 'table_name', 'table_type', 'explore_url', 'backend', 'changed_on']
+    route_base = '/table'
+    list_columns = ['id', 'dataset_name', 'table_type', 'explore_url', 'backend', 'changed_on']
     order_columns = ['link', 'database', 'changed_on_']
-    add_columns = ['database', 'schema', 'table_name', 'sql']
-    show_columns = add_columns + ['id', 'database_id']
+    add_columns = ['dataset_name', 'schema', 'table_name', 'sql', 'database_id', 'description']
+    show_columns = add_columns + ['id']
     edit_columns = add_columns
     related_views = [TableColumnInlineView, SqlMetricInlineView]
     description_columns = {
@@ -978,6 +1004,27 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     int_columns = ['user_id', 'database_id', 'offset', 'cache_timeout']
     bool_columns = ['is_featured', 'filter_select_enabled']
     str_columns = ['database', 'created_on', 'changed_on']
+
+    @expose('/addablechoices/', methods=['GET', ])
+    def addable_choices(self):
+        try:
+            data = {}
+            data['available_databases'] = self.get_available_databases()
+            data['readme'] = self.get_column_readme()
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
+
+    @expose('/alltables/<database_id>', methods=['GET', ])
+    def all_schemas_and_tables(self, database_id):
+        try:
+            d = db.session.query(models.Database)\
+                .filter_by(id=database_id).first()
+            all_tb = d.all_schema_table_names()
+            return json.dumps(all_tb)
+        except Exception as e:
+            return self.build_response(500, False, str(e))
 
     def get_object_list_data(self, **kwargs):
         """Return the table list"""
@@ -1041,6 +1088,20 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         response['data'] = data
         return response
 
+    def get_show_attributes(self, obj):
+        attributes = super().get_show_attributes(obj)
+        attributes['available_databases'] = self.get_available_databases()
+        return attributes
+
+    def get_available_databases(self):
+        dbs = db.session.query(models.Database)\
+            .filter(models.Database.database_name != 'main').all()
+        dbs_list = []
+        for d in dbs:
+            row = {'id': d.id, 'database_name': d.database_name}
+            dbs_list.append(row)
+        return dbs_list
+
     def pre_add(self, table):
         number_of_existing_tables = db.session.query(
             sqla.func.count('*')).filter(
@@ -1100,6 +1161,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Slice
     datamodel = SQLAInterface(models.Slice)
+    route_base = '/slice'
     can_add = False
     list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
                     'viz_type', 'online', 'changed_on']
@@ -1167,9 +1229,15 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @expose('/addablechoices/', methods=['GET'])
     def addable_choices(self):
-        dashs = self.get_available_dashboards(self.get_user_id())
-        d = self.dashboards_to_dict(dashs)
-        return json.dumps({'available_dashboards': d})
+        try:
+            data = {}
+            dashs = self.get_available_dashboards(self.get_user_id())
+            data['available_dashboards'] = self.dashboards_to_dict(dashs)
+            data['readme'] = self.get_column_readme()
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
@@ -1348,6 +1416,7 @@ class SliceAddView(SliceModelView):  # noqa
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Dashboard
     datamodel = SQLAInterface(models.Dashboard)
+    route_base = '/dashboard'
     list_columns = ['id', 'dashboard_title', 'url', 'description',
                     'online',  'changed_on']
     edit_columns = ['dashboard_title', 'description']
@@ -1408,7 +1477,15 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @expose('/addablechoices/', methods=['GET'])
     def addable_choices(self):
-        return self.available_slices_json()
+        try:
+            data = {}
+            data['readme'] = self.get_column_readme()
+            slices = self.get_available_slices(self.get_user_id())
+            data['available_slices'] = self.slices_to_dict(slices)
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
 
     def pre_add(self, obj):
         if not obj.slug:
@@ -1532,11 +1609,6 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         response['only_favorite'] = only_favorite
         response['data'] = data
         return response
-
-    def available_slices_json(self):
-        slices = self.get_available_slices(self.get_user_id())
-        d = self.slices_to_dict(slices)
-        return json.dumps({'available_slices': d})
 
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
