@@ -686,6 +686,10 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
             tb_list.append(row)
         return tb_list
 
+    def get_show_attributes(self, obj):
+        attributes = super().get_show_attributes(obj)
+        attributes['available_tables'] = self.get_available_tables()
+        return attributes
 
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.SqlMetric
