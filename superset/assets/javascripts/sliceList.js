@@ -18,7 +18,7 @@ const columns = [{
     width: '5%',
     render: (text, record) => (
         <div>
-            <button class="btn btn-default">收藏</button>
+            <button className="btn btn-default">收藏</button>
         </div>
     )
 }, {
@@ -63,9 +63,9 @@ const columns = [{
     width: '15%',
     render: (text, record) => (
         <div>
-            <button class="btn btn-default">编辑</button>&nbsp;
-            <button class="btn btn-default">发布</button>&nbsp;
-            <button class="btn btn-default">删除</button>
+            <button className="btn btn-default">编辑</button>&nbsp;
+            <button className="btn btn-default">发布</button>&nbsp;
+            <button className="btn btn-default">删除</button>
         </div>
     )
 }];
