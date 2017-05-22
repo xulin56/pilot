@@ -622,6 +622,7 @@ class SupersetModelView(ModelView):
 class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.TableColumn
     datamodel = SQLAInterface(models.TableColumn)
+    route_base = '/tablecolumn'
     can_delete = False
     list_widget = ListWidgetWithCheckboxes
     edit_columns = [
@@ -700,6 +701,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     model = models.SqlMetric
     datamodel = SQLAInterface(models.SqlMetric)
+    route_base = '/sqlmetric'
     list_columns = ['id', 'metric_name', 'metric_type', 'expression']
     edit_columns = [
         'metric_name', 'description', 'verbose_name', 'metric_type',
@@ -761,6 +763,7 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Database
     datamodel = SQLAInterface(models.Database)
+    route_base = '/database'
     list_columns = ['id', 'database_name', 'backend', 'changed_on']
     show_columns = ['id', 'database_name', 'sqlalchemy_uri',
                     'backend',  'created_on', 'changed_on']
@@ -951,6 +954,7 @@ class DatabaseTablesAsync(DatabaseView):
 class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.SqlaTable
     datamodel = SQLAInterface(models.SqlaTable)
+    route_base = '/table'
     list_columns = ['id', 'dataset_name', 'table_type', 'explore_url', 'backend', 'changed_on']
     order_columns = ['link', 'database', 'changed_on_']
     add_columns = ['dataset_name', 'schema', 'table_name', 'sql', 'database_id', 'description']
@@ -1157,6 +1161,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Slice
     datamodel = SQLAInterface(models.Slice)
+    route_base = '/slice'
     can_add = False
     list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
                     'viz_type', 'online', 'changed_on']
@@ -1411,6 +1416,7 @@ class SliceAddView(SliceModelView):  # noqa
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Dashboard
     datamodel = SQLAInterface(models.Dashboard)
+    route_base = '/dashboard'
     list_columns = ['id', 'dashboard_title', 'url', 'description',
                     'online',  'changed_on']
     edit_columns = ['dashboard_title', 'description']
