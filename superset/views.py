@@ -951,10 +951,10 @@ class DatabaseTablesAsync(DatabaseView):
 class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     model = models.SqlaTable
     datamodel = SQLAInterface(models.SqlaTable)
-    list_columns = ['id', 'table_name', 'table_type', 'explore_url', 'backend', 'changed_on']
+    list_columns = ['id', 'dataset_name', 'table_type', 'explore_url', 'backend', 'changed_on']
     order_columns = ['link', 'database', 'changed_on_']
-    add_columns = ['database', 'schema', 'table_name', 'sql']
-    show_columns = add_columns + ['id', 'database_id']
+    add_columns = ['dataset_name', 'schema', 'table_name', 'sql', 'database_id', 'description']
+    show_columns = add_columns + ['id']
     edit_columns = add_columns
     related_views = [TableColumnInlineView, SqlMetricInlineView]
     description_columns = {
@@ -1014,10 +1014,13 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
 
     @expose('/alltables/<database_id>', methods=['GET', ])
     def all_schemas_and_tables(self, database_id):
-        d = db.session.query(models.Database)\
-            .filter_by(id=database_id).first()
-        all_tb = d.all_schema_table_names()
-        return json.dumps(all_tb)
+        try:
+            d = db.session.query(models.Database)\
+                .filter_by(id=database_id).first()
+            all_tb = d.all_schema_table_names()
+            return json.dumps(all_tb)
+        except Exception as e:
+            return self.build_response(500, False, str(e))
 
     def get_object_list_data(self, **kwargs):
         """Return the table list"""
@@ -1080,6 +1083,11 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         response['page_size'] = page_size
         response['data'] = data
         return response
+
+    def get_show_attributes(self, obj):
+        attributes = super().get_show_attributes(obj)
+        attributes['available_databases'] = self.get_available_databases()
+        return attributes
 
     def get_available_databases(self):
         dbs = db.session.query(models.Database)\
@@ -1232,7 +1240,6 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         dashs = self.get_available_dashboards(self.get_user_id())
         available_dashs = self.dashboards_to_dict(dashs)
         attributes['available_dashboards'] = available_dashs
-        attributes['readme'] = self.get_column_readme()
         return attributes
 
     def get_edit_attributes(self, data, user_id):
