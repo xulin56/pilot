@@ -696,10 +696,12 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.SqlMetric)
     route_base = '/sqlmetric'
     list_columns = ['id', 'metric_name', 'metric_type', 'expression']
+    show_columns = [
+        'id', 'metric_name', 'description', 'verbose_name',
+        'metric_type', 'expression', 'table_id', 'table', 'd3format']
     edit_columns = [
-        'metric_name', 'description', 'verbose_name', 'metric_type',
-        'expression', 'table', 'd3format']
-    show_columns = edit_columns + ['id']
+        'metric_name', 'description', 'verbose_name',
+        'metric_type', 'expression', 'table_id', 'd3format']
     add_columns = edit_columns
     readme_columns = ['expression', 'd3format']
     description_columns = {
