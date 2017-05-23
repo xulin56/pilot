@@ -557,6 +557,14 @@ class SupersetModelView(ModelView):
 
         return query
 
+    def get_available_tables(self):
+        tbs = db.session.query(models.SqlaTable).all()
+        tb_list = []
+        for t in tbs:
+            row = {'id': t.id, 'dataset_name': t.dataset_name}
+            tb_list.append(row)
+        return tb_list
+
     def get_user_id(self):
         try:
             user_id = g.user.get_id()
@@ -677,14 +685,6 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
             logging.error(e)
             return self.build_response(500, False, str(e))
 
-    def get_available_tables(self):
-        tbs = db.session.query(models.SqlaTable).all()
-        tb_list = []
-        for t in tbs:
-            row = {'id': t.id, 'dataset_name': t.dataset_name}
-            tb_list.append(row)
-        return tb_list
-
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
         attributes['available_tables'] = self.get_available_tables()
@@ -701,6 +701,7 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'expression', 'table', 'd3format']
     show_columns = edit_columns + ['id']
     add_columns = edit_columns
+    readme_columns = ['expression', 'd3format']
     description_columns = {
         'expression': utils.markdown(
             "a valid SQL expression as supported by the underlying backend. "
@@ -730,6 +731,17 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     bool_columns = ['is_restricted', ]
     str_columns = ['table', ]
 
+    @expose('/addablechoices/', methods=['GET', ])
+    def addable_choices(self):
+        try:
+            data = {}
+            data['available_tables'] = self.get_available_tables()
+            data['readme'] = self.get_column_readme()
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
+
     def get_object_list_data(self, **kwargs):
         table_id = kwargs.get('table_id')
         if not table_id:
@@ -748,6 +760,11 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
                 line[col] = str(getattr(row, col, None))
             data.append(line)
         return {'data': data}
+
+    def get_show_attributes(self, obj):
+        attributes = super().get_show_attributes(obj)
+        attributes['available_tables'] = self.get_available_tables()
+        return attributes
 
     def post_add(self, metric):
         if metric.is_restricted:
