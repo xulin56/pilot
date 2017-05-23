@@ -3735,31 +3735,35 @@ class Home(BaseSupersetView):
             self.message.append('{}: {},{} ppassed to {}'
                                 .format(ERROR_REQUEST_PARAM, types, limit, 'get_user_actions()'))
             return {}
-
+        
         query = (
-            db.session.query(User.username, Log.action,
-                            Log.obj_type, Log.obj_id, Log.dttm)
-            .filter(
-                and_(Log.action_type.in_(types),
-                    Log.user_id == User.id)
-                )
-            )
-        if user_id > 0:
-            query = query.filter(Log.user_id == user_id)
-        rs = query.order_by(Log.dttm.desc()).limit(limit).all()
-
+            db.session.query(Log, User.username, Dashboard, Slice)
+            .join(User, Log.user_id == User.id)
+            .outerjoin(Dashboard,
+                       and_(
+                           Log.obj_id == Dashboard.id,
+                           Log.obj_type.ilike('dashboard'))
+                       )
+            .outerjoin(Slice,
+                       and_(
+                           Log.obj_id == Slice.id,
+                           Log.obj_type.ilike('slice'))
+                       )
+            .filter(Log.user_id == user_id,
+                    Log.action_type.in_(types))
+            .order_by(Log.dttm.desc())
+            .limit(limit)
+        )
         rows = []
-        for name, action, obj_type, obj_id, dttm in rs:
-            if obj_type == 'dashboard':
-                obj = db.session.query(Dashboard).filter_by(id=obj_id).first()
-                link = obj.url if obj else None
-                title = repr(obj) if obj else None
-            elif obj_type == 'slice':
-                obj = db.session.query(Slice).filter_by(id=obj_id).first()
-                link = obj.slice_url if obj else None
-                title = repr(obj) if obj else None
-            rows.append({'user': name, 'action': action, 'title': title,
-                         'link': link, 'time': str(dttm), 'obj_type': obj_type})
+        for log, username, dash, slice in query.all():
+            line = {}
+            line['user'] = username
+            line['action'] = log.action
+            line['title'] = dash.dashboard_title if dash else slice.slice_name
+            line['link'] = dash.url if dash else slice.slice_url
+            line['obj_type'] = 'dashboard' if dash else 'slice'
+            line['time'] = str(log.dttm)
+            rows.append(line)
         return rows
 
     @expose('/actions/')
