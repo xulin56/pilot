@@ -557,6 +557,14 @@ class SupersetModelView(ModelView):
 
         return query
 
+    def get_available_tables(self):
+        tbs = db.session.query(models.SqlaTable).all()
+        tb_list = []
+        for t in tbs:
+            row = {'id': t.id, 'dataset_name': t.dataset_name}
+            tb_list.append(row)
+        return tb_list
+
     def get_user_id(self):
         try:
             user_id = g.user.get_id()
@@ -664,10 +672,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
             for col in self.list_columns:
                 line[col] = str(getattr(row, col, None))
             data.append(line)
-
-        response = {}
-        response['data'] = data
-        return response
+        return {'data': data}
 
     @expose('/addablechoices/', methods=['GET', ])
     def addable_choices(self):
@@ -680,14 +685,6 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
             logging.error(e)
             return self.build_response(500, False, str(e))
 
-    def get_available_tables(self):
-        tbs = db.session.query(models.SqlaTable).all()
-        tb_list = []
-        for t in tbs:
-            row = {'id': t.id, 'dataset_name': t.dataset_name}
-            tb_list.append(row)
-        return tb_list
-
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
         attributes['available_tables'] = self.get_available_tables()
@@ -699,9 +696,14 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.SqlMetric)
     route_base = '/sqlmetric'
     list_columns = ['id', 'metric_name', 'metric_type', 'expression']
+    show_columns = [
+        'id', 'metric_name', 'description', 'verbose_name',
+        'metric_type', 'expression', 'table_id', 'table', 'd3format']
     edit_columns = [
-        'metric_name', 'description', 'verbose_name', 'metric_type',
-        'expression', 'table', 'd3format', 'is_restricted']
+        'metric_name', 'description', 'verbose_name',
+        'metric_type', 'expression', 'table_id', 'd3format']
+    add_columns = edit_columns
+    readme_columns = ['expression', 'd3format']
     description_columns = {
         'expression': utils.markdown(
             "a valid SQL expression as supported by the underlying backend. "
@@ -718,7 +720,6 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
             "formats", True
         ),
     }
-    add_columns = edit_columns
     page_size = 500
     label_columns = {
         'metric_name': _("Metric"),
@@ -729,6 +730,44 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'table': _("Table"),
     }
 
+    bool_columns = ['is_restricted', ]
+    str_columns = ['table', ]
+
+    @expose('/addablechoices/', methods=['GET', ])
+    def addable_choices(self):
+        try:
+            data = {}
+            data['available_tables'] = self.get_available_tables()
+            data['readme'] = self.get_column_readme()
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
+
+    def get_object_list_data(self, **kwargs):
+        table_id = kwargs.get('table_id')
+        if not table_id:
+            msg = "Need parameter 'table_id' to query metrics"
+            self.handle_exception(404, Exception, msg)
+        rows = (
+            db.session.query(self.model)
+            .filter_by(table_id=table_id)
+            .order_by(self.model.metric_name)
+            .all()
+        )
+        data = []
+        for row in rows:
+            line = {}
+            for col in self.list_columns:
+                line[col] = str(getattr(row, col, None))
+            data.append(line)
+        return {'data': data}
+
+    def get_show_attributes(self, obj):
+        attributes = super().get_show_attributes(obj)
+        attributes['available_tables'] = self.get_available_tables()
+        return attributes
+
     def post_add(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
@@ -736,24 +775,6 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     def post_update(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
-
-    def get_object_list_data(self, **kwargs):
-        table_id = kwargs.get('table_id')
-        if not table_id:
-            msg = "Need parameter 'table_id' to query metrics"
-            self.handle_exception(404, Exception, msg)
-        rows = db.session.query(self.model) \
-            .filter_by(table_id=table_id).all()
-        data = []
-        for row in rows:
-            line = {}
-            for col in self.list_columns:
-                line[col] = str(getattr(row, col, None))
-            data.append(line)
-
-        response = {}
-        response['data'] = data
-        return response
 
 
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
@@ -3737,7 +3758,8 @@ class Home(BaseSupersetView):
                 obj = db.session.query(Slice).filter_by(id=obj_id).first()
                 link = obj.slice_url if obj else None
                 title = repr(obj) if obj else None
-            rows.append({'user': name, 'action': action, 'title': title, 'link': link, 'time': str(dttm)})
+            rows.append({'user': name, 'action': action, 'title': title,
+                         'link': link, 'time': str(dttm), 'obj_type': obj_type})
         return rows
 
     @expose('/actions/')
