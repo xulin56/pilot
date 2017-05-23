@@ -4,49 +4,45 @@ import PropTypes from 'prop-types';
 
 function Line(props) {
 
-  if (!props.statistic) return <p>数据异常</p>;
+    if (!props.statistic) return <p>数据异常</p>;
 
-  const { categories, series } = props.statistic.chart || {
-    categories: [],
-    series: []
-  };
-  series.name = '';
-  const config = {
-    credits: {
-      enabled: false
-    },
-    title: {
-      text: '仪表板数量变化趋势',
-      x: -300
-    },
-    // subtitle: {
-    //   text: '仪表板数量变化趋势',
-    //   x: -20
-    // },
+    const {catagories, series, catagoriesWithOutYear} = props.statistic.chart || {
+        catagories: [],
+        series: []
+    };
+    const title = props.title;
 
-    yAxis: {
-      title: {
-        // text: 'Temperature (°C)'
-      }
-    },
-    tooltip: {
-      valueSuffix: ''
-    },
-    // legend: {
-    //   layout: 'vertical',
-    //   align: 'left',
-    //   verticalAlign: 'top',
-    //   borderWidth: 1
-    // },
+    const config = {
+        chart: {
+            type: 'area'
+        },
+        credits: {
+            enabled: false
+        },
+        title: {
+            text: title + '数量变化趋势',
+            align: "left"
+        },
+        yAxis: {
+            title: {
+                text: ''
+            }
+        },
+        tooltip: {
+            valueSuffix: ''
+        },
+        legend: {
+            enabled: false
+        },
+        xAxis: {
+            categories: catagoriesWithOutYear
+        },
+        series
+    };
 
-    xAxis: {
-      categories
-    },
-    series
-  };
-  return (
-    <ReactHighcharts config={config}/>
-  );
+    return (
+        <ReactHighcharts config={config} />
+    );
 }
 
 Line.propTypes = {

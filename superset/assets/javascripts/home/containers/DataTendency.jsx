@@ -13,14 +13,6 @@ class DataTendency extends Component {
         super();
     }
 
-    componentDidMount() {
-        // console.log(this.props.chartData);
-    }
-
-    componentWillReceiveProps(nextProps) {
-        // console.log(nextProps.lineData, "sss");
-    }
-
     render() {
         let counts = this.props.ChartCounts || {
             dashboard: "",
@@ -31,67 +23,82 @@ class DataTendency extends Component {
 
         let lineChart = {};
         lineChart.statistic = {};
-        let lineData = this.props.lineData || {
-            dashboard: {catagories: [], series: []},
-            database: "",
-            slice: "",
-            table: ""
+        lineChart.statistic.chart = this.props.lineData || {
+            catagories: [],
+            series: []
         };
-        lineChart.statistic.chart = lineData['dashboard'];
 
-
+        const { onChangeCatagory, catagory } = this.props;
+        let chartTitle = "";
+        switch(catagory) {
+            case "dashboard":
+                chartTitle = "仪表板"
+                break;
+            case "database":
+                chartTitle = "连接";
+                break;
+            case "table":
+                chartTitle = "数据集";
+                break;
+            case "slice":
+                chartTitle = "工作表";
+                break;
+            default:
+                chartTitle = "仪表板";
+        }
 
         return (
             <div>
                 <aside className="data-tendency white-bg-and-border-radius">
                     <hgroup className="data-title">
-                        <h2 className="current">
+                        <h2>
                             <dl>
                                 <dt>
-                                    <svg>
-                                        {/*<use xlink:href="#analysis"></use>*/}
-                                    </svg>
-                                    <span>{counts.dashboard}</span>
+                                    <i className="icon dashboard-icon"></i>
                                 </dt>
-                                <dd>仪表盘</dd>
+                                <dd>
+                                    <div className="count">{counts.dashboard}</div>
+                                    <div className={catagory === 'dashboard' ? 'current name' : 'name'} onClick={ () => {onChangeCatagory('dashboard')}}>仪表盘</div>
+                                </dd>
                             </dl>
                         </h2>
                         <h2>
                             <dl>
                                 <dt>
-                                    <svg>
-                                        {/*<use xlink:href="#analysis"></use>*/}
-                                    </svg>
-                                    <span>{counts.database}</span>
+                                    <i className="icon slice-icon"></i>
                                 </dt>
-                                <dd>工作表</dd>
+                                <dd>
+                                    <div className="count">{counts.slice}</div>
+                                    <div className={catagory === 'slice' ? 'current name' : 'name'} onClick={ () => {onChangeCatagory('slice')}}>工作表</div>
+                                </dd>
+
                             </dl>
                         </h2>
                         <h2>
                             <dl>
                                 <dt>
-                                    <svg>
-                                        {/*<use xlink:href="#analysis"></use>*/}
-                                    </svg>
-                                    <span>{counts.slice}</span>
+                                    <i className="icon database-icon"></i>
                                 </dt>
-                                <dd>连接</dd>
+                                <dd>
+                                    <div className="count">{counts.database}</div>
+                                    <div className={catagory === 'database' ? 'current name' : 'name'} onClick={ () => {onChangeCatagory('database')}}>连接</div>
+                                </dd>
                             </dl>
                         </h2>
                         <h2>
                             <dl>
                                 <dt>
-                                    <svg>
-                                        {/*<use xlink:href="#analysis"></use>*/}
-                                    </svg>
-                                    <span>{counts.table}</span>
+                                    <i className="icon table-icon"></i>
                                 </dt>
-                                <dd>数据集</dd>
+                                <dd>
+                                    <div className="count">{counts.table}</div>
+                                    <div className={catagory === 'table' ? 'current name' : 'name'} onClick={ () => {onChangeCatagory('table')}}>数据集</div>
+                                </dd>
                             </dl>
                         </h2>
                     </hgroup>
                     <div className="dashboard-linechart" style={{background:'transparent'}}>
-                        <Line {...lineChart}/>
+                        <Line title={chartTitle} {...lineChart}/>
                     </div>
                 </aside>
             </div>
@@ -103,7 +110,8 @@ class DataTendency extends Component {
 
 const getLineChartData = createSelector(
     state => state.posts.param.trends,
-    (data) => {
+    state => state.switcher.tendencyCatagory,
+    (data, catagory) => {
         if (!data) {
             return "";
         }
@@ -114,7 +122,8 @@ const getLineChartData = createSelector(
         _.forEach(data, (arr, key) => {
             lineData[key] = {
                 catagories: [],
-                series: []
+                series: [],
+                catagoriesWithOutYear: []
             };
 
             chart = lineData[key];
@@ -122,6 +131,7 @@ const getLineChartData = createSelector(
 
             _.forEach(arr, (obj, key) => {
                 chart.catagories.push(obj.date);
+                chart.catagoriesWithOutYear.push(obj.date.substr(5));
                 dataArr.push(obj.count);
             });
             chart.series.push({
@@ -142,16 +152,9 @@ const getLineChartData = createSelector(
             lineData[key] = chart;
         });
 
-        return lineData;
+        return lineData[catagory];
     }
 );
-
-
-// const mapStateToProps = (state, pros) => {
-//     return {
-//         chartData: getVisibleChartData(state, props)
-//     }
-// }
 
 DataTendency.propTypes = {
     ChartCounts: PropTypes.any.isRequired,
@@ -159,19 +162,23 @@ DataTendency.propTypes = {
 }
 
 const mapStateToProps = (state, pros) => {
-    const { posts } = state;
+    const { posts, switcher } = state;
     return {
         ChartCounts: posts.param.counts　|| {},
-        lineData: getLineChartData(state)
+        lineData: getLineChartData(state),
+        catagory: switcher.tendencyCatagory
     }
 }
 
 const mapDispatchToProps = (dispatch) => {
     return {
         onChangeCatagory: (catagory) => {
-            dispatch(changeCatagory(catagory))
+            dispatch({
+                type: "CHANGE_CATAGORY_IN_TENDENCY",
+                catagory: catagory
+            })
         }
     }
 }
 
-export default connect(mapStateToProps)(DataTendency);
+export default connect(mapStateToProps, mapDispatchToProps)(DataTendency);

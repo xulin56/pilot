@@ -1,3 +1,24 @@
+
+.dashboard-icon {
+    background-position: -250px -50px;
+}
+
+.database-icon {
+    background-position: -8px -90px;
+}
+
+.table-icon {
+    background-position: -47px -90px;
+}
+
+.slice-icon {
+    background-position: -290px -50px;
+}
+
+.user-icon {
+    background-position: -130px -90px;
+}
+
 .data-tendency{
     border-radius: 4px;
     padding:0 20px;
@@ -10,25 +31,34 @@
             border-right:1px solid #edf1f5;
             padding:0 45px;
             text-align:center;
+            dl {
+                display: flex;
+                align-items: center;
+            }
             dt{
-                svg{
-                    width:22px;
-                    height:22px;
-                    fill:orange;
-                }
-                span{
-                    font-size:36px;
-                    color:#1d2531;
+                i{
+                    width: 26px;
+                    height: 22px;;
+                    margin-bottom: 16px;
+                    margin-right: 8px;
                 }
             }
             dd{
-                color:#9fa9ba;
-            }
-        }
-        .current{
-            dl{
-                dd{
-                    color:#0083f8;
+                user-select: none;
+                .count {
+                    font-size:36px;
+                    color:#1d2531;
+                    text-align: left;
+                }
+
+                .name {
+                    color: #9fa9ba;
+                    cursor: pointer;
+                    text-align: left;
+                }
+
+                .current {
+                    color: #0083f8;
                 }
             }
         }
@@ -63,59 +93,83 @@
 .recentedit-and-event{
     margin:20px 0;
     display:flex;
+
+    .more-icon {
+        width: 10px;
+        height: 18px;
+        text-align: center;
+        background-position: -92px -90px;
+        margin-left: auto;
+        margin-right: auto;
+    }
     .recentedit{
         flex:1;
         margin-right:18px;
         .edit-list{
-            ul{
-                display:flex;
-                border-bottom:$borderStyle;
-                height:31px;
-                background-color:#f5f8fa;
-                align-items:center;
-                li{
-                    flex:1;
-                    cursor:pointer;
-                    svg{
-                        width:6px;
-                        height:7px;
-                        fill:#8492b6；
+            .ant-table table {
+                border-collapse: collapse !important;
+                .ant-table-row {
+                    border-left: 4px solid #ffffff;
+                    &:hover {
+                        border-left: 4px solid #289df5;
+                    }
+
+                    td {
+                        text-overflow: ellipsis;
+                        overflow: hidden;
+                        white-space: nowrap;
+
+                        a {
+                            display: block;
+                            text-overflow: ellipsis;
+                            overflow: hidden;
+                            white-space: nowrap;
+                        }
                     }
                 }
-                li:first-child{
-                    padding-left:20px;
-                }
-
-            }
-            dl{
-                display: flex;
-                height:40px;
-                align-items:center;
-                border-bottom:$borderStyle;
-                border-left:2px solid transparent;
-                font-size:14px;
-                dt{
-                    flex:1;
-                    padding-left:20px;
-                    color:#2499f2;
-                }
-                dd{
-                    flex:1;
-                    color:#333c48;
-                }
-
-            }
-            dl:hover{
-                border-left:2px solid #289df5;
-            }
-            dl:last-child{
-                border-bottom:0;
             }
         }
     }
     .event{
         flex:1;
         .event-list{
+            .ant-table table {
+                border-collapse: collapse !important;
+                .ant-table-row {
+                    border-left: 4px solid #ffffff;
+                    &:hover {
+                        border-left: 4px solid #289df5;
+                    }
+
+                    .user-td {
+                        display: flex;
+                        align-items: center;
+
+                        .user-icon {
+                            margin-right: 6px;
+                        }
+                    }
+
+                    .action-text {
+                        margin-left: 22px;
+                    }
+
+                    .action-title {
+                        display: flex;
+                        align-items: center;
+                    }
+
+                    .action-title-icon {
+                        margin-right: 4px;
+                    }
+
+                    .icon {
+                        width: 18px;
+                        height: 18px;
+                    }
+                }
+            }
+
             ul{
                 display:flex;
                 height:53px;

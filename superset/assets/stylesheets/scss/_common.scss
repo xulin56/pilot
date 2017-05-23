@@ -1,6 +1,6 @@
 body{
     height:100vh;
-    background-color:#edf0f5;
+    background-color: #edf0f5 !important;
 }
 @mixin border() {
     border:$borderStyle;
@@ -127,6 +127,7 @@ $borderStyle :1px solid #e7e9ed;
     justify-content:space-between;
     align-items:center;
     height:50px;
+    border-bottom: 1px solid #edf0f5;
     h3{
         font-size:18px;
         color:#1d2531;
@@ -149,6 +150,7 @@ $borderStyle :1px solid #e7e9ed;
             padding:6px 14px;
             color:#00050d;
             cursor:pointer;
+            user-select: none;
         }
         .current{
             background-image: -moz-linear-gradient(#1991eb, #2ea1f8);
