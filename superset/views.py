@@ -731,8 +731,12 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         if not table_id:
             msg = "Need parameter 'table_id' to query metrics"
             self.handle_exception(404, Exception, msg)
-        rows = db.session.query(self.model) \
-            .filter_by(table_id=table_id).all()
+        rows = (
+            db.session.query(self.model)
+            .filter_by(table_id=table_id)
+            .order_by(self.model.metric_name)
+            .all()
+        )
         data = []
         for row in rows:
             line = {}
