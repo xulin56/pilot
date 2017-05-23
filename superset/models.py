@@ -13,6 +13,7 @@ import re
 import textwrap
 from copy import deepcopy, copy
 from datetime import timedelta, datetime, date
+from itertools import groupby
 
 import humanize
 import pandas as pd
@@ -865,9 +866,12 @@ class Database(Model, AuditMixinNullable):
 
     def all_schema_table_names(self):
         st = {}
-        schemas = self.all_schema_names()
-        for schema in schemas:
-            tables = self.all_table_names(schema)
+        st_list = self.inspector.get_schema_and_table_names()
+        st_group = groupby(st_list, lambda item: item[0])
+        for schema, tb_group in st_group:
+            tables = []
+            for i in list(tb_group):
+                tables.append(i[1])
             st[schema] = tables
         return OrderedDict(sorted(st.items(), key=lambda s: s[0]))
 
@@ -1150,7 +1154,7 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
 
     __tablename__ = 'tables'
     id = Column(Integer, primary_key=True)
-    table_name = Column(String(250))
+    dataset_name = Column(String(250))
     main_dttm_col = Column(String(250))
     description = Column(Text)
     default_endpoint = Column(Text)
@@ -1165,10 +1169,12 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
         foreign_keys=[database_id])
     offset = Column(Integer, default=0)
     cache_timeout = Column(Integer)
+    table_name = Column(String(250))
     schema = Column(String(255))
     sql = Column(Text)
     params = Column(Text)
     perm = Column(String(1000))
+    table_type = Column(String(250))
 
     baselink = "tablemodelview"
     column_cls = TableColumn
@@ -1185,8 +1191,24 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
             'database_id', 'schema', 'table_name',
             name='_customer_location_uc'),)
 
+    table_type_dict = {
+        'database': 'Database',
+        'inceptor': 'Database',
+        'mysql': 'Database',
+        'hdfs': 'HDFS',
+        'upload': 'UploadFile'
+    }
+
     def __repr__(self):
         return self.name
+
+    @property
+    def backend(self):
+        if self.table_type.lower() == 'database':
+            return self.database.backend
+        else:
+            # TODO get hdfs backend
+            return 'Unknown backend'
 
     @property
     def columns(self):
