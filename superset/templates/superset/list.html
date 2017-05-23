@@ -12,8 +12,10 @@
 
 {{ lib.panel_end() }}
 
+<div id="slice-list-content" style="width:100%; height:500px;"></div>
+
 {% set VERSION_STRING = appbuilder.get_app.config.get("VERSION_STRING") %}
-<script src="/static/assets/dist/list.{{VERSION_STRING}}.entry.js"></script>
+<script src="/static/assets/dist/sliceList.{{VERSION_STRING}}.entry.js"></script>
 
 {% endblock %}
 

@@ -88,6 +88,7 @@
     "redux-amrc": "^1.0.4",
     "redux-localstorage": "^0.4.1",
     "redux-thunk": "^2.1.0",
+    "react-router": "^2.4.1",
     "sass-loader": "^3.2.0",
     "select2": "3.5",
     "select2-bootstrap-css": "^1.4.6",

@@ -1203,7 +1203,8 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         'datasource_type': _("Datasource Type"),
     }
 
-    list_template = "superset/partials/slice/slice.html"
+    # list_template = "superset/partials/slice/slice.html"
+    list_template = "superset/list.html"
 
     str_to_column = {
         'title': Slice.slice_name,

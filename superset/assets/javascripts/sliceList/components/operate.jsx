@@ -57,6 +57,10 @@ class Operate {
         console.log('show fav');
     }
 
+    render() {
+        return `Operate`;
+    }
+
 }
 
 export default Operate;
