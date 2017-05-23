@@ -6,12 +6,13 @@ import { EditList, EventList } from "../components";
 
 const _ = require('lodash');
 
-class EditAndEvent extends Component {
+class EditAndEventPanel extends Component {
     constructor(props) {
         super();
     }
 
     render() {
+
         let selected = this.props.currentCatagory || "dashboard";
         const { onChangeCatagory, editList, eventList } = this.props;
 
@@ -27,29 +28,10 @@ class EditAndEvent extends Component {
                             </ul>
                         </div>
                         <div className="more">
-                            <svg>
-                                {/*<use xlink:href="#search"></use>*/}
-                            </svg>
+                            <i className="icon more-icon"></i>
                         </div>
                     </div>
                     <div className="edit-list">
-                        <ul>
-                            <li>
-                                <span>名称</span>
-                            </li>
-                            <li>
-                                <span>操作</span>
-                                <svg>
-                                    {/*<use xlink:href="#sort"></use>*/}
-                                </svg>
-                            </li>
-                            <li>
-                                <span>编辑时间</span>
-                                <svg>
-                                    {/*<use xlink:href="#sort"></use>*/}
-                                </svg>
-                            </li>
-                        </ul>
                         {<EditList {...editList} catagory={selected} />}
                     </div>
                 </div>
@@ -57,13 +39,11 @@ class EditAndEvent extends Component {
                     <div className="index-title-module">
                         <h3>事件</h3>
                         <div className="more">
-                            <svg>
-                              {/*<use xlink:href="#search"></use>*/}
-                            </svg>
+                            <i className="icon more-icon"></i>
                         </div>
                     </div>
                     <div className="event-list">
-                        {<EventList {...eventList} />}
+                        {<EventList eventList={eventList} />}
                     </div>
                 </div>
             </aside>
@@ -75,7 +55,7 @@ const getEidtListData = createSelector(
     state => state.posts.param.edits,
     (data) => {
         if (!data) {
-            return "";
+            return {};
         }
 
         let result = {};
@@ -83,11 +63,14 @@ const getEidtListData = createSelector(
         let dataArr = [];
         _.forEach(data, (arr, key) => {
             result[key] = {};
-
+            dataArr = [];
             _.forEach( arr, (obj, key) => {
                 item = {
-                    'name': obj.link,
-                    'time': obj.time
+                    'key': key + 1,
+                    'name': obj.name,
+                    'action': obj.action,
+                    'time': obj.time,
+                    'link': obj.link
                 };
                 dataArr.push(item);
             });
@@ -98,10 +81,36 @@ const getEidtListData = createSelector(
     }
 );
 
-EditAndEvent.propTypes = {
-    currentCatagory: PropTypes.any.isRequired,
-    editList: PropTypes.any.isRequired,
-    eventList: PropTypes.any.isRequired
+const getEventListData = createSelector(
+    state => state.posts.param.actions,
+    (data) => {
+        if (!data) {
+            return [];
+        }
+
+        let result = [];
+        let item = {};
+        _.forEach(data, (obj, key) => {
+            item = {
+                'key': key + 1,
+                'user': obj.user,
+                'action': obj.action,
+                'time': obj.time,
+                'link': obj.link,
+                'title': obj.title,
+                'type': obj.type
+            };
+            result.push(item);
+        });
+
+        return result;
+    }
+);
+
+EditAndEventPanel.propTypes = {
+    currentCatagory: PropTypes.string.isRequired,
+    editList: PropTypes.object,
+    eventList: PropTypes.array
 }
 
 
@@ -110,7 +119,7 @@ const mapStateToProps = (state) => {
     return {
         currentCatagory: switcher.editPanelCatagory,
         editList: getEidtListData(state),
-        eventList: posts.param.actions || []
+        eventList: getEventListData(state)
     }
 }
 
@@ -125,4 +134,4 @@ const mapDispatchToProps = (dispatch) => {
     }
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(EditAndEvent);
+export default connect(mapStateToProps, mapDispatchToProps)(EditAndEventPanel);
