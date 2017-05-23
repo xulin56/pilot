@@ -3758,7 +3758,8 @@ class Home(BaseSupersetView):
                 obj = db.session.query(Slice).filter_by(id=obj_id).first()
                 link = obj.slice_url if obj else None
                 title = repr(obj) if obj else None
-            rows.append({'user': name, 'action': action, 'title': title, 'link': link, 'time': str(dttm)})
+            rows.append({'user': name, 'action': action, 'title': title,
+                         'link': link, 'time': str(dttm), 'obj_type': obj_type})
         return rows
 
     @expose('/actions/')
