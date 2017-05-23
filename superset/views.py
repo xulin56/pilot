@@ -599,15 +599,16 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     route_base = '/tablecolumn'
     can_delete = False
     list_widget = ListWidgetWithCheckboxes
+    list_columns = [
+        'id', 'column_name', 'type', 'groupby', 'filterable',
+        'count_distinct', 'sum', 'min', 'max', 'is_dttm']
+    _list_columns = list_columns
     edit_columns = [
         'column_name', 'verbose_name', 'groupby', 'filterable',
         'table_id', 'count_distinct', 'sum', 'min', 'max', 'expression',
         'is_dttm', 'python_date_format', 'database_expression']
     show_columns = edit_columns + ['id']
     add_columns = edit_columns
-    list_columns = [
-        'id', 'column_name', 'type', 'groupby', 'filterable',
-        'count_distinct', 'sum', 'min', 'max', 'is_dttm']
     # TODO can't json.dumps lazy_gettext()
     readme_columns = ['expression', ]
     description_columns = {
@@ -669,7 +670,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         data = []
         for row in rows:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 line[col] = str(getattr(row, col, None))
             data.append(line)
         return {'data': data}
@@ -696,6 +697,7 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     datamodel = SQLAInterface(models.SqlMetric)
     route_base = '/sqlmetric'
     list_columns = ['id', 'metric_name', 'metric_type', 'expression']
+    _list_columns = list_columns
     show_columns = [
         'id', 'metric_name', 'description', 'verbose_name',
         'metric_type', 'expression', 'table_id', 'table', 'd3format']
@@ -758,7 +760,7 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         data = []
         for row in rows:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 line[col] = str(getattr(row, col, None))
             data.append(line)
         return {'data': data}
@@ -782,6 +784,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Database)
     route_base = '/database'
     list_columns = ['id', 'database_name', 'backend', 'changed_on']
+    _list_columns = list_columns
     show_columns = ['id', 'database_name', 'sqlalchemy_uri',
                     'backend',  'created_on', 'changed_on']
     add_columns = ['database_name', 'sqlalchemy_uri']
@@ -928,7 +931,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         data = []
         for obj, user in rs:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 if col in self.str_columns:
                     line[col] = str(getattr(obj, col, None))
                 else:
@@ -973,10 +976,11 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.SqlaTable)
     route_base = '/table'
     list_columns = ['id', 'dataset_name', 'table_type', 'explore_url', 'backend', 'changed_on']
-    order_columns = ['link', 'database', 'changed_on_']
+    _list_columns = list_columns
     add_columns = ['dataset_name', 'schema', 'table_name', 'sql', 'database_id', 'description']
     show_columns = add_columns + ['id']
     edit_columns = add_columns
+    order_columns = ['link', 'database', 'changed_on_']
     related_views = [TableColumnInlineView, SqlMetricInlineView]
     description_columns = {
         'offset': _("Timezone offset (in hours) for this datasource"),
@@ -1087,7 +1091,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         data = []
         for obj, user in rs:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 if col in self.str_columns:
                     line[col] = str(getattr(obj, col, None))
                 else:
@@ -1182,6 +1186,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     can_add = False
     list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
                     'viz_type', 'online', 'changed_on']
+    _list_columns = list_columns
     edit_columns = ['slice_name', 'description']
     show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
@@ -1368,7 +1373,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         data = []
         for obj, username, fav_id in rs:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 if col in self.str_columns:
                     line[col] = str(getattr(obj, col, None))
                 else:
@@ -1427,9 +1432,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
 
 
 class SliceAsync(SliceModelView):  # noqa
-    list_columns = [
-        'slice_link', 'viz_type',
-        'creator', 'modified', 'icons']
+    list_columns = ['slice_link', 'viz_type', 'modified', 'icons']
     label_columns = {
         'icons': ' ',
         'slice_link': _('Slice'),
@@ -1448,6 +1451,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     route_base = '/dashboard'
     list_columns = ['id', 'dashboard_title', 'url', 'description',
                     'online',  'changed_on']
+    _list_columns = list_columns
     edit_columns = ['dashboard_title', 'description']
     show_columns = ['id', 'dashboard_title', 'description', 'table_names']
     add_columns = edit_columns
@@ -1637,7 +1641,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         data = []
         for obj, username, fav_id in rs:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 if col in self.str_columns:
                     line[col] = str(getattr(obj, col, None))
                 else:
@@ -1733,7 +1737,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
-    # list_columns = ['dashboard_link', 'creator', 'modified', 'dashboard_title']
+    list_columns = ['dashboard_link', 'creator', 'modified', 'dashboard_title']
     label_columns = {
         'dashboard_link': 'Dashboard',
     }
