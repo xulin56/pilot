@@ -1303,12 +1303,37 @@ class SqlaTable(Model, Queryable, AuditMixinNullable, ImportMixin):
                 return col
 
     def preview_data(self, limit=100):
-        sql = "SELECT * FROM {} LIMIT {}".format(self.name, limit)
+        tbl = table(self.table_name)
+        if self.schema:
+            tbl.schema = self.schema
+        if self.sql:
+            tbl = TextAsFrom(sqla.text(self.sql), []).alias('expr_qry')
+        qry = select("*").select_from(tbl).limit(limit)
         engine = self.database.get_sqla_engine()
-        return pd.read_sql_query(
-            sql=sql,
-            con=engine
+        sql = "{}".format(
+            qry.compile(
+                engine, compile_kwargs={"literal_binds": True},),
         )
+
+        try:
+            tb = self.get_sqla_table_object()
+        except Exception:
+            raise Exception(
+                "Table doesn't seem to exist in the specified database, "
+                "couldn't fetch column information")
+        col_types = {}
+        for col in tb.columns:
+            col_types[col.name] = col.type
+
+        df = None
+        try:
+            df = pd.read_sql_query(sql, con=engine)
+        except Exception as e:
+            raise e
+        columns = list(df.keys().values)
+        types = [str(col_types.get(c)) for c in columns]
+        data = json.loads(df.to_json())
+        return json.dumps({'columns': columns, 'types': types, 'data': data})
 
     def values_for_column(self,
                           column_name,
