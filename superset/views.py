@@ -698,7 +698,9 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     list_columns = ['id', 'metric_name', 'metric_type', 'expression']
     edit_columns = [
         'metric_name', 'description', 'verbose_name', 'metric_type',
-        'expression', 'table', 'd3format', 'is_restricted']
+        'expression', 'table', 'd3format']
+    show_columns = edit_columns + ['id']
+    add_columns = edit_columns
     description_columns = {
         'expression': utils.markdown(
             "a valid SQL expression as supported by the underlying backend. "
@@ -715,7 +717,6 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
             "formats", True
         ),
     }
-    add_columns = edit_columns
     page_size = 500
     label_columns = {
         'metric_name': _("Metric"),
@@ -725,6 +726,9 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'expression': _("SQL Expression"),
         'table': _("Table"),
     }
+
+    bool_columns = ['is_restricted', ]
+    str_columns = ['table', ]
 
     def get_object_list_data(self, **kwargs):
         table_id = kwargs.get('table_id')
