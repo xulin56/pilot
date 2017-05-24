@@ -41,6 +41,14 @@ function receivePosts(json) {
     }
 }
 
+function receiveData(json) {
+    return {
+        type: RECEIVE_POSTS,
+        posts: json,
+        receivedAt: Date.now()
+    }
+}
+
 export function fetchPosts() {
     const URL = "/home";
     return dispatch => {
@@ -50,6 +58,30 @@ export function fetchPosts() {
         })
         .then(response => response.json())
         .then(json => dispatch(receivePosts(json)));
+    };
+}
+
+export function fetchEditDetail() {
+    const URL = "/home/edits";
+    return dispatch => {
+        dispatch(reuqestPosts());
+        return fetch(URL, {
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(json => dispatch(receiveData(json)));
+    };
+}
+
+export function fetchEventDetail() {
+    const URL = "/home/actions";
+    return dispatch => {
+        dispatch(reuqestPosts());
+        return fetch(URL, {
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(json => dispatch(receiveData(json)));
     };
 }
 
