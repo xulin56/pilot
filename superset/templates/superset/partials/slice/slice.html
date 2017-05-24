@@ -1,0 +1,32 @@
+{% extends "superset/basic.html" %}
+
+{% block body %}
+<div id="slice" class="slice-list">
+    <div class="operation">
+        <div>
+            <i class="glyphicon glyphicon-modal-window"></i>
+            <span>工作表</span>
+            <span>记录条目</span>
+            <span>20</span>
+        </div>
+        <div>
+            <button id="add" class="btn btn-default">+</button>
+            <button id="delete" class="btn btn-default">-</button>
+            <button id="showAll" class="btn btn-default">全部</button>
+            <button id="showFavorite" class="btn btn-default">收藏</button>
+            <input id="searchInput" placeholder="search..." />
+        </div>
+    </div>
+    <div id="slice-list-content" class="list-content"></div>
+    <div id="slice-list-paging" class="list-paging"></div>
+
+</div>
+{% endblock %}
+
+{% block head_js %}
+    {{ super() }}
+    {% with filename="sliceList" %}
+        {% include "superset/partials/_script_tag.html" %}
+    {% endwith %}
+{% endblock %}
+

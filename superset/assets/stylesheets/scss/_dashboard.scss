@@ -1,0 +1,22 @@
+.dashboard-panel {
+  margin: 0 20px;
+  .panel-top {
+    display: flex;
+    justify-content: space-between;
+    .left {
+
+    }
+    .right {
+
+    }
+  }
+  .panel-middle {
+    display: flex;
+    justify-content: center;
+  }
+  .panel-bottom {
+    display: flex;
+    justify-content: center;
+    margin-top: 50px;
+  }
+}

@@ -79,6 +79,7 @@ setup(
         'mock',
         'nose',
     ],
+    data_files=[('/usr/local/lib/', ['pilot-license.jar'])],
     author='Maxime Beauchemin',
     author_email='maximebeauchemin@gmail.com',
     url='https://github.com/airbnb/superset',

@@ -37,6 +37,7 @@
   },
   "homepage": "https://github.com/airbnb/superset#readme",
   "dependencies": {
+    "antd": "^2.10.0",
     "redux-form": "^6.0.5",
     "autobind-decorator": "^1.3.3",
     "babel-plugin-transform-decorators-legacy": "^1.3.4",
@@ -98,7 +99,8 @@
     "viewport-mercator-project": "^2.1.0",
     "prop-types": "^15.5.7",
 
-    "lodash": "^4.17.4"
+    "lodash": "^4.17.4",
+    "redux-logger": "^3.0.1"
   },
   "devDependencies": {
     "babel": "^6.3.26",

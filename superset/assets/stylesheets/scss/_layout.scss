@@ -1,0 +1,16 @@
+#dashboard, #slice {
+
+  .operation {
+     display: flex;
+     justify-content: space-between;
+  }
+
+  .list-content {
+
+  }
+
+  .list-paging {
+      display: flex;
+      justify-content: center;
+  }
+}
