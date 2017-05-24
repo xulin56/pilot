@@ -610,33 +610,28 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     show_columns = edit_columns + ['id']
     add_columns = edit_columns
     # TODO can't json.dumps lazy_gettext()
-    readme_columns = ['expression', ]
+    readme_columns = ['is_dttm', 'expression']
     description_columns = {
-        'is_dttm': (_(
-            "Whether to make this column available as a "
-            "[Time Granularity] option, column has to be DATETIME or "
-            "DATETIME-like")),
-        'expression': utils.markdown(
-            "a valid SQL expression as supported by the underlying backend. "
-            "Example: `substr(name, 1, 1)`", True),
-        'python_date_format': utils.markdown(Markup(
-            "The pattern of timestamp format, use "
-            "<a href='https://docs.python.org/2/library/"
-            "datetime.html#strftime-strptime-behavior' target='_blank'>"
-            "python datetime string pattern</a> "
-            "expression. If time is stored in epoch "
+        'is_dttm': "Whether to make this column available as a "
+                   "[Time Granularity] option, column has to be DATETIME or "
+                   "DATETIME-like",
+        'expression': "a valid SQL expression as supported by the "
+                      "underlying backend. Example: `substr(name, 1, 1)`",
+        'python_date_format':
+            "The pattern of timestamp format, use python datetime string "
+            "pattern expression. If time is stored in epoch "
             "format, put `epoch_s` or `epoch_ms`. Leave `Database Expression` "
             "below empty if timestamp is stored in "
-            "String or Integer(epoch) type"), True),
-        'database_expression': utils.markdown(
+            "String or Integer(epoch) type",
+        'database_expression':
             "The database expression to cast internal datetime "
             "constants to database date/timestamp type according to the DBAPI. "
             "The expression should follow the pattern of "
             "%Y-%m-%d %H:%M:%S, based on different DBAPI. "
-            "The string should be a python string formatter \n"
+            "The string should be a python string formatter "
             "`Ex: TO_DATE('{}', 'YYYY-MM-DD HH24:MI:SS')` for Oracle"
             "Superset uses default expression based on DB URI if this "
-            "field is blank.", True),
+            "field is blank.",
     }
     label_columns = {
         'column_name': _("Column"),
@@ -707,20 +702,19 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
     add_columns = edit_columns
     readme_columns = ['expression', 'd3format']
     description_columns = {
-        'expression': utils.markdown(
+        'expression':
             "a valid SQL expression as supported by the underlying backend. "
-            "Example: `count(DISTINCT userid)`", True),
-        'is_restricted': _("Whether the access to this metric is restricted "
-                           "to certain roles. Only roles with the permission "
-                           "'metric access on XXX (the name of this metric)' "
-                           "are allowed to access this metric"),
-        'd3format': utils.markdown(
+            "Example: `count(DISTINCT userid)`",
+        'is_restricted':
+            "Whether the access to this metric is restricted to certain roles. "
+            "Only roles with the permission 'metric access on XXX (the name of "
+            "this metric)' are allowed to access this metric",
+        'd3format':
             "d3 formatting string as defined [here]"
             "(https://github.com/d3/d3-format/blob/master/README.md#format). "
             "For instance, this default formatting applies in the Table "
             "visualization and allow for different metric to use different "
-            "formats", True
-        ),
+            "formats"
     }
     page_size = 500
     label_columns = {
@@ -794,18 +788,11 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     edit_template = "superset/models/database/edit.html"
     base_order = ('changed_on', 'desc')
     description_columns = {
-        'sqlalchemy_uri': utils.markdown(
-            "Refer to the "
-            "[SqlAlchemy docs]"
-            "(http://docs.sqlalchemy.org/en/rel_1_0/core/engines.html#"
-            "database-urls) "
-            "for more information on how to structure your URI.", True),
-        'expose_in_sqllab': _("Expose this DB in SQL Lab"),
-        'allow_dml': _(
-            "Allow users to run non-SELECT statements "
-            "(UPDATE, DELETE, CREATE, ...) "
-            "in SQL Lab"),
-        'extra': utils.markdown(
+        'sqlalchemy_uri':
+            "Refer to the [SqlAlchemy docs]"
+            "(http://docs.sqlalchemy.org/en/rel_1_0/core/engines.html#database-urls) "
+            "for more information on how to structure your URI.",
+        'extra':
             "JSON string containing extra configuration elements. "
             "The ``engine_params`` object gets unpacked into the "
             "[sqlalchemy.create_engine]"
@@ -813,7 +800,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             "sqlalchemy.create_engine) call, while the ``metadata_params`` "
             "gets unpacked into the [sqlalchemy.MetaData]"
             "(http://docs.sqlalchemy.org/en/rel_1_0/core/metadata.html"
-            "#sqlalchemy.schema.MetaData) call. ", True),
+            "#sqlalchemy.schema.MetaData) call. ",
     }
     label_columns = {
         'tables': _("Tables"),
@@ -983,19 +970,17 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     order_columns = ['link', 'database', 'changed_on_']
     related_views = [TableColumnInlineView, SqlMetricInlineView]
     description_columns = {
-        'offset': _("Timezone offset (in hours) for this datasource"),
-        'table_name': _(
-            "Name of the table that exists in the source database"),
-        'schema': _(
+        'offset': "Timezone offset (in hours) for this datasource",
+        'table_name': "Name of the table that exists in the source database",
+        'schema':
             "Schema, as used only in some databases like Postgres, Redshift "
-            "and DB2"),
-        'description': Markup(
+            "and DB2",
+        'description':
             "Supports <a href='https://daringfireball.net/projects/markdown/' target='_blank'>"
-            "markdown</a>"),
-        'sql': _(
+            "markdown</a>",
+        'sql':
             "This fields acts a Superset view, meaning that Superset will "
             "run a query against this string as a subquery."
-        ),
     }
     base_filters = [['id', DatasourceFilter, lambda: []]]
     label_columns = {
@@ -1191,19 +1176,19 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
-        'description': Markup(
+        'description':
             "The content here can be displayed as widget headers in the "
             "dashboard view. Supports "
             "<a href='https://daringfireball.net/projects/markdown/' target='_blank'>"
-            "markdown</a>"),
-        'params': _(
+            "markdown</a>",
+        'params':
             "These parameters are generated dynamically when clicking "
             "the save or overwrite button in the explore view. This JSON "
             "object is exposed here for reference and for power users who may "
-            "want to alter specific parameters."),
-        'cache_timeout': _(
+            "want to alter specific parameters.",
+        'cache_timeout':
             "Duration (in seconds) of the caching timeout for this slice."
-        ),
+        ,
     }
     base_filters = [['id', SliceFilter, lambda: []]]
     label_columns = {
@@ -1457,22 +1442,22 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
     description_columns = {
-        'position_json': _(
+        'position_json':
             "This json object describes the positioning of the widgets in "
             "the dashboard. It is dynamically generated when adjusting "
             "the widgets size and positions by using drag & drop in "
-            "the dashboard view"),
-        'css': _(
+            "the dashboard view",
+        'css':
             "The css for individual dashboards can be altered here, or "
             "in the dashboard view where changes are immediately "
-            "visible"),
-        'slug': _("To get a readable URL for your dashboard"),
-        'json_metadata': _(
+            "visible",
+        'slug': "To get a readable URL for your dashboard",
+        'json_metadata':
             "This JSON object is generated dynamically when clicking "
             "the save or overwrite button in the dashboard view. It "
             "is exposed here for reference and for power users who may "
-            "want to alter specific parameters."),
-        'owners': _("Owners is a list of users who can alter the dashboard."),
+            "want to alter specific parameters.",
+        'owners': "Owners is a list of users who can alter the dashboard.",
     }
     base_filters = [['slice', DashboardFilter, lambda: []]]
     add_form_query_rel_fields = {
