@@ -1,54 +1,47 @@
-import React, { Component } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
+import { Table } from 'antd';
+import 'antd/lib/table/style/css';
 
-function Event(props) {
+function EventList(props) {
+    const dataSource = props.eventList || [];
+    const columns = [{
+        title: '用户',
+        dataIndex: 'user',
+        key: 'user',
+        width: '33%',
+        sorter: (a, b) => a.user.localeCompare(b.user),
+        render: (text, record) => (<a className="user-td" href={record.link}><i className="icon user-icon"></i>{text}</a>)
+    }, {
+        title: '操作',
+        dataIndex: 'action',
+        key: 'action',
+        sorter: (a, b) => a.action.localeCompare(b.action),
+        width: '33%',
+        render: (text, record) => {
+                    const classes = "icon action-title-icon " + record.type + "-icon";
+                    return (
+                        <div>
+                            <div className="action-text">{text}</div>
+                            <div className="action-title"><i className={classes}></i>{record.title}</div>
+                        </div>
+                    );
+                }
+    }, {
+        title: '编辑时间',
+        dataIndex: 'time',
+        key: 'time',
+        sorter: (a, b) => { return a.time > b.time　? 1 : -1;},
+        width: '30%'
+    }];
+
     return (
-        <ul>
-            <li>
-                <figure className="round-bg">
-                    <svg></svg>
-                </figure>
-                <span>{props.user}</span>
-            </li>
-            <li>
-                <div className="explore_json-type">
-                    <dl>
-                        <dt>{props.action}</dt>
-                        <dd><svg></svg><strong>
-                        <a href="http://www.baidu.com/">'props.link'</a>
-                        {/* <a href="http://www.baidu.com/">{props.link}</a> */}
-                    </strong></dd>
-                    </dl>
-                </div>
-            </li>
-            <li>{props.time}</li>
-        </ul>
+        <Table dataSource={dataSource} columns={columns} />
     );
 }
 
-Event.propTypes = {
-    user: PropTypes.string.isRequired,
-    action: PropTypes.string.isRequired,
-    //href: PropTypes.string.isRequired,
-    time: PropTypes.string.isRequired,
-    //manipulate: PropTypes.string.isRequired
-    //link: PropTypes.string.isRequired
+EventList.propTypes = {
+    eventList: PropTypes.array.isRequired,
 };
 
-export default class EventList extends Component {
-
-    render() {
-
-        const actions = this.props.actions || [];
-
-        const children = actions.map((action, key) =>
-            <Event key={key} {...action} />
-        );
-
-        return (
-            <div className="">
-                {children}
-            </div>
-        );
-    }
-}
+export default EventList;
