@@ -593,7 +593,7 @@ class SupersetModelView(ModelView):
         raise exception(msg)
 
 
-class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
+class TableColumnInlineView(SupersetModelView):  # noqa
     model = models.TableColumn
     datamodel = SQLAInterface(models.TableColumn)
     route_base = '/tablecolumn'
@@ -687,7 +687,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         return attributes
 
 
-class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
+class SqlMetricInlineView(SupersetModelView):  # noqa
     model = models.SqlMetric
     datamodel = SQLAInterface(models.SqlMetric)
     route_base = '/sqlmetric'
