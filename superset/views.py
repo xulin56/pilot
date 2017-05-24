@@ -557,6 +557,14 @@ class SupersetModelView(ModelView):
 
         return query
 
+    def get_available_tables(self):
+        tbs = db.session.query(models.SqlaTable).all()
+        tb_list = []
+        for t in tbs:
+            row = {'id': t.id, 'dataset_name': t.dataset_name}
+            tb_list.append(row)
+        return tb_list
+
     def get_user_id(self):
         try:
             user_id = g.user.get_id()
@@ -585,49 +593,45 @@ class SupersetModelView(ModelView):
         raise exception(msg)
 
 
-class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
+class TableColumnInlineView(SupersetModelView):  # noqa
     model = models.TableColumn
     datamodel = SQLAInterface(models.TableColumn)
     route_base = '/tablecolumn'
     can_delete = False
     list_widget = ListWidgetWithCheckboxes
+    list_columns = [
+        'id', 'column_name', 'type', 'groupby', 'filterable',
+        'count_distinct', 'sum', 'min', 'max', 'is_dttm']
+    _list_columns = list_columns
     edit_columns = [
         'column_name', 'verbose_name', 'groupby', 'filterable',
         'table_id', 'count_distinct', 'sum', 'min', 'max', 'expression',
         'is_dttm', 'python_date_format', 'database_expression']
     show_columns = edit_columns + ['id']
     add_columns = edit_columns
-    list_columns = [
-        'id', 'column_name', 'type', 'groupby', 'filterable',
-        'count_distinct', 'sum', 'min', 'max', 'is_dttm']
     # TODO can't json.dumps lazy_gettext()
-    readme_columns = ['expression', ]
+    readme_columns = ['is_dttm', 'expression']
     description_columns = {
-        'is_dttm': (_(
-            "Whether to make this column available as a "
-            "[Time Granularity] option, column has to be DATETIME or "
-            "DATETIME-like")),
-        'expression': utils.markdown(
-            "a valid SQL expression as supported by the underlying backend. "
-            "Example: `substr(name, 1, 1)`", True),
-        'python_date_format': utils.markdown(Markup(
-            "The pattern of timestamp format, use "
-            "<a href='https://docs.python.org/2/library/"
-            "datetime.html#strftime-strptime-behavior' target='_blank'>"
-            "python datetime string pattern</a> "
-            "expression. If time is stored in epoch "
+        'is_dttm': "Whether to make this column available as a "
+                   "[Time Granularity] option, column has to be DATETIME or "
+                   "DATETIME-like",
+        'expression': "a valid SQL expression as supported by the "
+                      "underlying backend. Example: `substr(name, 1, 1)`",
+        'python_date_format':
+            "The pattern of timestamp format, use python datetime string "
+            "pattern expression. If time is stored in epoch "
             "format, put `epoch_s` or `epoch_ms`. Leave `Database Expression` "
             "below empty if timestamp is stored in "
-            "String or Integer(epoch) type"), True),
-        'database_expression': utils.markdown(
+            "String or Integer(epoch) type",
+        'database_expression':
             "The database expression to cast internal datetime "
             "constants to database date/timestamp type according to the DBAPI. "
             "The expression should follow the pattern of "
             "%Y-%m-%d %H:%M:%S, based on different DBAPI. "
-            "The string should be a python string formatter \n"
+            "The string should be a python string formatter "
             "`Ex: TO_DATE('{}', 'YYYY-MM-DD HH24:MI:SS')` for Oracle"
             "Superset uses default expression based on DB URI if this "
-            "field is blank.", True),
+            "field is blank.",
     }
     label_columns = {
         'column_name': _("Column"),
@@ -661,13 +665,10 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         data = []
         for row in rows:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 line[col] = str(getattr(row, col, None))
             data.append(line)
-
-        response = {}
-        response['data'] = data
-        return response
+        return {'data': data}
 
     @expose('/addablechoices/', methods=['GET', ])
     def addable_choices(self):
@@ -680,45 +681,41 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
             logging.error(e)
             return self.build_response(500, False, str(e))
 
-    def get_available_tables(self):
-        tbs = db.session.query(models.SqlaTable).all()
-        tb_list = []
-        for t in tbs:
-            row = {'id': t.id, 'dataset_name': t.dataset_name}
-            tb_list.append(row)
-        return tb_list
-
     def get_show_attributes(self, obj):
         attributes = super().get_show_attributes(obj)
         attributes['available_tables'] = self.get_available_tables()
         return attributes
 
 
-class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
+class SqlMetricInlineView(SupersetModelView):  # noqa
     model = models.SqlMetric
     datamodel = SQLAInterface(models.SqlMetric)
     route_base = '/sqlmetric'
     list_columns = ['id', 'metric_name', 'metric_type', 'expression']
+    _list_columns = list_columns
+    show_columns = [
+        'id', 'metric_name', 'description', 'verbose_name',
+        'metric_type', 'expression', 'table_id', 'table', 'd3format']
     edit_columns = [
-        'metric_name', 'description', 'verbose_name', 'metric_type',
-        'expression', 'table', 'd3format', 'is_restricted']
+        'metric_name', 'description', 'verbose_name',
+        'metric_type', 'expression', 'table_id', 'd3format']
+    add_columns = edit_columns
+    readme_columns = ['expression', 'd3format']
     description_columns = {
-        'expression': utils.markdown(
+        'expression':
             "a valid SQL expression as supported by the underlying backend. "
-            "Example: `count(DISTINCT userid)`", True),
-        'is_restricted': _("Whether the access to this metric is restricted "
-                           "to certain roles. Only roles with the permission "
-                           "'metric access on XXX (the name of this metric)' "
-                           "are allowed to access this metric"),
-        'd3format': utils.markdown(
+            "Example: `count(DISTINCT userid)`",
+        'is_restricted':
+            "Whether the access to this metric is restricted to certain roles. "
+            "Only roles with the permission 'metric access on XXX (the name of "
+            "this metric)' are allowed to access this metric",
+        'd3format':
             "d3 formatting string as defined [here]"
             "(https://github.com/d3/d3-format/blob/master/README.md#format). "
             "For instance, this default formatting applies in the Table "
             "visualization and allow for different metric to use different "
-            "formats", True
-        ),
+            "formats"
     }
-    add_columns = edit_columns
     page_size = 500
     label_columns = {
         'metric_name': _("Metric"),
@@ -729,6 +726,44 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         'table': _("Table"),
     }
 
+    bool_columns = ['is_restricted', ]
+    str_columns = ['table', ]
+
+    @expose('/addablechoices/', methods=['GET', ])
+    def addable_choices(self):
+        try:
+            data = {}
+            data['available_tables'] = self.get_available_tables()
+            data['readme'] = self.get_column_readme()
+            return json.dumps({'data': data})
+        except Exception as e:
+            logging.error(e)
+            return self.build_response(500, False, str(e))
+
+    def get_object_list_data(self, **kwargs):
+        table_id = kwargs.get('table_id')
+        if not table_id:
+            msg = "Need parameter 'table_id' to query metrics"
+            self.handle_exception(404, Exception, msg)
+        rows = (
+            db.session.query(self.model)
+            .filter_by(table_id=table_id)
+            .order_by(self.model.metric_name)
+            .all()
+        )
+        data = []
+        for row in rows:
+            line = {}
+            for col in self._list_columns:
+                line[col] = str(getattr(row, col, None))
+            data.append(line)
+        return {'data': data}
+
+    def get_show_attributes(self, obj):
+        attributes = super().get_show_attributes(obj)
+        attributes['available_tables'] = self.get_available_tables()
+        return attributes
+
     def post_add(self, metric):
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
@@ -737,30 +772,13 @@ class SqlMetricInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
         if metric.is_restricted:
             security.merge_perm(sm, 'metric_access', metric.get_perm())
 
-    def get_object_list_data(self, **kwargs):
-        table_id = kwargs.get('table_id')
-        if not table_id:
-            msg = "Need parameter 'table_id' to query metrics"
-            self.handle_exception(404, Exception, msg)
-        rows = db.session.query(self.model) \
-            .filter_by(table_id=table_id).all()
-        data = []
-        for row in rows:
-            line = {}
-            for col in self.list_columns:
-                line[col] = str(getattr(row, col, None))
-            data.append(line)
-
-        response = {}
-        response['data'] = data
-        return response
-
 
 class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     model = models.Database
     datamodel = SQLAInterface(models.Database)
     route_base = '/database'
     list_columns = ['id', 'database_name', 'backend', 'changed_on']
+    _list_columns = list_columns
     show_columns = ['id', 'database_name', 'sqlalchemy_uri',
                     'backend',  'created_on', 'changed_on']
     add_columns = ['database_name', 'sqlalchemy_uri']
@@ -770,18 +788,11 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
     edit_template = "superset/models/database/edit.html"
     base_order = ('changed_on', 'desc')
     description_columns = {
-        'sqlalchemy_uri': utils.markdown(
-            "Refer to the "
-            "[SqlAlchemy docs]"
-            "(http://docs.sqlalchemy.org/en/rel_1_0/core/engines.html#"
-            "database-urls) "
-            "for more information on how to structure your URI.", True),
-        'expose_in_sqllab': _("Expose this DB in SQL Lab"),
-        'allow_dml': _(
-            "Allow users to run non-SELECT statements "
-            "(UPDATE, DELETE, CREATE, ...) "
-            "in SQL Lab"),
-        'extra': utils.markdown(
+        'sqlalchemy_uri':
+            "Refer to the [SqlAlchemy docs]"
+            "(http://docs.sqlalchemy.org/en/rel_1_0/core/engines.html#database-urls) "
+            "for more information on how to structure your URI.",
+        'extra':
             "JSON string containing extra configuration elements. "
             "The ``engine_params`` object gets unpacked into the "
             "[sqlalchemy.create_engine]"
@@ -789,7 +800,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
             "sqlalchemy.create_engine) call, while the ``metadata_params`` "
             "gets unpacked into the [sqlalchemy.MetaData]"
             "(http://docs.sqlalchemy.org/en/rel_1_0/core/metadata.html"
-            "#sqlalchemy.schema.MetaData) call. ", True),
+            "#sqlalchemy.schema.MetaData) call. ",
     }
     label_columns = {
         'tables': _("Tables"),
@@ -907,7 +918,7 @@ class DatabaseView(SupersetModelView, DeleteMixin):  # noqa
         data = []
         for obj, user in rs:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 if col in self.str_columns:
                     line[col] = str(getattr(obj, col, None))
                 else:
@@ -952,25 +963,24 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.SqlaTable)
     route_base = '/table'
     list_columns = ['id', 'dataset_name', 'table_type', 'explore_url', 'backend', 'changed_on']
-    order_columns = ['link', 'database', 'changed_on_']
+    _list_columns = list_columns
     add_columns = ['dataset_name', 'schema', 'table_name', 'sql', 'database_id', 'description']
     show_columns = add_columns + ['id']
     edit_columns = add_columns
+    order_columns = ['link', 'database', 'changed_on_']
     related_views = [TableColumnInlineView, SqlMetricInlineView]
     description_columns = {
-        'offset': _("Timezone offset (in hours) for this datasource"),
-        'table_name': _(
-            "Name of the table that exists in the source database"),
-        'schema': _(
+        'offset': "Timezone offset (in hours) for this datasource",
+        'table_name': "Name of the table that exists in the source database",
+        'schema':
             "Schema, as used only in some databases like Postgres, Redshift "
-            "and DB2"),
-        'description': Markup(
+            "and DB2",
+        'description':
             "Supports <a href='https://daringfireball.net/projects/markdown/' target='_blank'>"
-            "markdown</a>"),
-        'sql': _(
+            "markdown</a>",
+        'sql':
             "This fields acts a Superset view, meaning that Superset will "
             "run a query against this string as a subquery."
-        ),
     }
     base_filters = [['id', DatasourceFilter, lambda: []]]
     label_columns = {
@@ -1066,7 +1076,7 @@ class TableModelView(SupersetModelView, DeleteMixin):  # noqa
         data = []
         for obj, user in rs:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 if col in self.str_columns:
                     line[col] = str(getattr(obj, col, None))
                 else:
@@ -1161,23 +1171,24 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
     can_add = False
     list_columns = ['id', 'slice_name', 'description', 'slice_url', 'datasource',
                     'viz_type', 'online', 'changed_on']
+    _list_columns = list_columns
     edit_columns = ['slice_name', 'description']
     show_columns = ['id', 'slice_name', 'description', 'created_on', 'changed_on']
     base_order = ('changed_on', 'desc')
     description_columns = {
-        'description': Markup(
+        'description':
             "The content here can be displayed as widget headers in the "
             "dashboard view. Supports "
             "<a href='https://daringfireball.net/projects/markdown/' target='_blank'>"
-            "markdown</a>"),
-        'params': _(
+            "markdown</a>",
+        'params':
             "These parameters are generated dynamically when clicking "
             "the save or overwrite button in the explore view. This JSON "
             "object is exposed here for reference and for power users who may "
-            "want to alter specific parameters."),
-        'cache_timeout': _(
+            "want to alter specific parameters.",
+        'cache_timeout':
             "Duration (in seconds) of the caching timeout for this slice."
-        ),
+        ,
     }
     base_filters = [['id', SliceFilter, lambda: []]]
     label_columns = {
@@ -1347,7 +1358,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
         data = []
         for obj, username, fav_id in rs:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 if col in self.str_columns:
                     line[col] = str(getattr(obj, col, None))
                 else:
@@ -1406,9 +1417,7 @@ class SliceModelView(SupersetModelView, DeleteMixin):  # noqa
 
 
 class SliceAsync(SliceModelView):  # noqa
-    list_columns = [
-        'slice_link', 'viz_type',
-        'creator', 'modified', 'icons']
+    list_columns = ['slice_link', 'viz_type', 'modified', 'icons']
     label_columns = {
         'icons': ' ',
         'slice_link': _('Slice'),
@@ -1427,27 +1436,28 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     route_base = '/dashboard'
     list_columns = ['id', 'dashboard_title', 'url', 'description',
                     'online',  'changed_on']
+    _list_columns = list_columns
     edit_columns = ['dashboard_title', 'description']
     show_columns = ['id', 'dashboard_title', 'description', 'table_names']
     add_columns = edit_columns
     base_order = ('changed_on', 'desc')
     description_columns = {
-        'position_json': _(
+        'position_json':
             "This json object describes the positioning of the widgets in "
             "the dashboard. It is dynamically generated when adjusting "
             "the widgets size and positions by using drag & drop in "
-            "the dashboard view"),
-        'css': _(
+            "the dashboard view",
+        'css':
             "The css for individual dashboards can be altered here, or "
             "in the dashboard view where changes are immediately "
-            "visible"),
-        'slug': _("To get a readable URL for your dashboard"),
-        'json_metadata': _(
+            "visible",
+        'slug': "To get a readable URL for your dashboard",
+        'json_metadata':
             "This JSON object is generated dynamically when clicking "
             "the save or overwrite button in the dashboard view. It "
             "is exposed here for reference and for power users who may "
-            "want to alter specific parameters."),
-        'owners': _("Owners is a list of users who can alter the dashboard."),
+            "want to alter specific parameters.",
+        'owners': "Owners is a list of users who can alter the dashboard.",
     }
     base_filters = [['slice', DashboardFilter, lambda: []]]
     add_form_query_rel_fields = {
@@ -1616,7 +1626,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
         data = []
         for obj, username, fav_id in rs:
             line = {}
-            for col in self.list_columns:
+            for col in self._list_columns:
                 if col in self.str_columns:
                     line[col] = str(getattr(obj, col, None))
                 else:
@@ -1712,7 +1722,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
 
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
-    # list_columns = ['dashboard_link', 'creator', 'modified', 'dashboard_title']
+    list_columns = ['dashboard_link', 'creator', 'modified', 'dashboard_title']
     label_columns = {
         'dashboard_link': 'Dashboard',
     }
@@ -3711,33 +3721,38 @@ class Home(BaseSupersetView):
         """The actions of user"""
         if len(types) < 1 or limit < 0:
             self.status = 401 if str(self.status)[0] < '4' else self.status
-            self.message.append('{}: {},{} ppassed to {}'
+            self.message.append('{}: {},{} are passed to {}'
                                 .format(ERROR_REQUEST_PARAM, types, limit, 'get_user_actions()'))
             return {}
-
+        
         query = (
-            db.session.query(User.username, Log.action,
-                            Log.obj_type, Log.obj_id, Log.dttm)
-            .filter(
-                and_(Log.action_type.in_(types),
-                    Log.user_id == User.id)
-                )
-            )
-        if user_id > 0:
-            query = query.filter(Log.user_id == user_id)
-        rs = query.order_by(Log.dttm.desc()).limit(limit).all()
-
+            db.session.query(Log, User.username, Dashboard, Slice)
+            .join(User, Log.user_id == User.id)
+            .outerjoin(Dashboard,
+                       and_(
+                           Log.obj_id == Dashboard.id,
+                           Log.obj_type.ilike('dashboard'))
+                       )
+            .outerjoin(Slice,
+                       and_(
+                           Log.obj_id == Slice.id,
+                           Log.obj_type.ilike('slice'))
+                       )
+            .filter(Log.user_id == user_id,
+                    Log.action_type.in_(types))
+            .order_by(Log.dttm.desc())
+            .limit(limit)
+        )
         rows = []
-        for name, action, obj_type, obj_id, dttm in rs:
-            if obj_type == 'dashboard':
-                obj = db.session.query(Dashboard).filter_by(id=obj_id).first()
-                link = obj.url if obj else None
-                title = repr(obj) if obj else None
-            elif obj_type == 'slice':
-                obj = db.session.query(Slice).filter_by(id=obj_id).first()
-                link = obj.slice_url if obj else None
-                title = repr(obj) if obj else None
-            rows.append({'user': name, 'action': action, 'title': title, 'link': link, 'time': str(dttm)})
+        for log, username, dash, slice in query.all():
+            line = {}
+            line['user'] = username
+            line['action'] = log.action
+            line['title'] = dash.dashboard_title if dash else slice.slice_name
+            line['link'] = dash.url if dash else slice.slice_url
+            line['obj_type'] = 'dashboard' if dash else 'slice'
+            line['time'] = str(log.dttm)
+            rows.append(line)
         return rows
 
     @expose('/actions/')
