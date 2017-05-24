@@ -1,3 +1,3 @@
-export Operate from './operate';
-export Table from './table';
-export Pagination from './pagination';
+export Operate from './Operate';
+export Table from './Table';
+export Pagination from './Pagination';

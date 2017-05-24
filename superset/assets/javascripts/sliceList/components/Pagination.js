@@ -10,7 +10,7 @@ class SlicePagination extends React.Component {
   constructor(props) {
     super(props);
 
-    console.log( 'props', props );
+    // console.log( 'props', props );
 
     this.state = {
     	'defaultCurrent': props.defaultCurrent,
@@ -45,13 +45,14 @@ class SlicePagination extends React.Component {
         	showQuickJumper
         	showSizeChanger
 
-          pageSizeOptions={[ '10', '20', '30' ]}
+          pageSizeOptions={['20', '30', '40', '50']}
           // showTotal={total => `Total ${total} items`}
         	onShowSizeChange={onShowSizeChange}
           onChange={onChange}
           showTotal={showTotal}
         	defaultCurrent={defaultCurrent}
-        	total={50} />
+        	total={50}
+          pagination={false} />
     );
   }
 }

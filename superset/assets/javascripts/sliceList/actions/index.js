@@ -23,7 +23,7 @@ function receivePosts(pageNumber, json) {
   return {
     type: RECEIVE_POSTS,
     pageNumber,
-    dataSource: json, //.data.children.map(child => child.data),
+    posts: json, //.data.children.map(child => child.data),
     receivedAt: Date.now()
   };
 }
@@ -31,7 +31,8 @@ function receivePosts(pageNumber, json) {
 function fetchPosts(pageNumber) {
   return dispatch => {
     dispatch(requestPosts(pageNumber));
-    const url = window.location.origin + "/slicemodelview/listdata/";
+    const url = window.location.origin + "/slice/listdata/";
+    // const url = '/javascripts/sliceList/mock/data.json';
 
     return fetch(url, {
         credentials: 'include',
@@ -45,7 +46,7 @@ function fetchPosts(pageNumber) {
       })
       .then(response => {
 
-        let dataSource = [];
+        /*let dataSource = [];
         response.data.forEach(function(slice, index) {
           let obj = {};
           obj.key = index + 1;
@@ -56,9 +57,11 @@ function fetchPosts(pageNumber) {
           obj.state = slice.online;
           obj.time = slice.changed_on;
           dataSource.push(obj);
-        });
+        });*/
         
-        dispatch(receivePosts(pageNumber, dataSource ));
+        dispatch(receivePosts(pageNumber, response.data ));
+      }).catch( argus => {
+        console.log(argus);
       });
   };
 

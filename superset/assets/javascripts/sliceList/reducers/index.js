@@ -5,13 +5,28 @@ import {
 } from '../actions';
 
 function selectedReddit(state = {
-  pageNumber: 1
+  pageNumber: 1,    //page=0
+  pageSize: 20,     //page_size=20
+  // defaultPageSize: 20,    //only used default
+  // // orderColumn: //TODO
+  orderDirection: 'desc',
+  // filter: '',
+  onlyFavorite: 0
+
+  // listData params :
+  // page=0&page_size=10 &order_column=changed_on&order_direction=desc 
+  // &filter=hive&only_favorite=0
 }, action) {
   switch (action.type) {
     case NAVIGATE_TO:
       return Object.assign({}, state, {
         pageNumber: action.pageNumber
       });
+      
+    // case FILTER:
+    //   return Object.assign({}, state, {
+    //     pageNumber: action.pageNumber
+    //   }); 
     default:
       return state;
   }
