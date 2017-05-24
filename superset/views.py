@@ -394,19 +394,19 @@ class SupersetModelView(ModelView):
             logging.error(str(e))
             return self.build_response(500, False, str(e))
 
-    # @expose('/add', methods=['GET', 'POST'])
-    # def add(self):
-    #     try:
-    #         user_id = self.get_user_id()
-    #         json_data = self.get_request_data()
-    #         obj = self.populate_object(None, user_id, json_data)
-    #         self.pre_add(obj)
-    #         self.datamodel.add(obj)
-    #         self.post_add(obj)
-    #     except Exception as e:
-    #         return self.build_response(500, False, str(e))
-    #     else:
-    #         return self.build_response(200, True, ADD_SUCCESS)
+    @expose('/add', methods=['GET', 'POST'])
+    def add(self):
+        try:
+            user_id = self.get_user_id()
+            json_data = self.get_request_data()
+            obj = self.populate_object(None, user_id, json_data)
+            self.pre_add(obj)
+            self.datamodel.add(obj)
+            self.post_add(obj)
+        except Exception as e:
+            return self.build_response(500, False, str(e))
+        else:
+            return self.build_response(200, True, ADD_SUCCESS)
 
     @expose('/show/<pk>', methods=['GET'])
     def show(self, pk):
@@ -417,19 +417,19 @@ class SupersetModelView(ModelView):
         except Exception as e:
             return self.build_response(self.status, False, str(e))
 
-    # @expose('/edit/<pk>', methods=['GET', 'POST'])
-    # def edit(self, pk):
-    #     try:
-    #         user_id = self.get_user_id()
-    #         json_data = self.get_request_data()
-    #         obj = self.populate_object(pk, user_id, json_data)
-    #         self.pre_update(obj)
-    #         self.datamodel.edit(obj)
-    #         self.post_update(obj)
-    #     except Exception as e:
-    #         return self.build_response(self.status, False, str(e))
-    #     else:
-    #         return self.build_response(200, True, UPDATE_SUCCESS)
+    @expose('/edit/<pk>', methods=['GET', 'POST'])
+    def edit(self, pk):
+        try:
+            user_id = self.get_user_id()
+            json_data = self.get_request_data()
+            obj = self.populate_object(pk, user_id, json_data)
+            self.pre_update(obj)
+            self.datamodel.edit(obj)
+            self.post_update(obj)
+        except Exception as e:
+            return self.build_response(self.status, False, str(e))
+        else:
+            return self.build_response(200, True, UPDATE_SUCCESS)
 
     @expose('/delete/<pk>')
     def delete(self, pk):
@@ -3721,7 +3721,7 @@ class Home(BaseSupersetView):
         """The actions of user"""
         if len(types) < 1 or limit < 0:
             self.status = 401 if str(self.status)[0] < '4' else self.status
-            self.message.append('{}: {},{} ppassed to {}'
+            self.message.append('{}: {},{} are passed to {}'
                                 .format(ERROR_REQUEST_PARAM, types, limit, 'get_user_actions()'))
             return {}
         
