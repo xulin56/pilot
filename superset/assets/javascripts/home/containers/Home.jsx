@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { DataTendency, FavouritePanel, EditAndEvent} from './';
+import { DataTendency, FavouriteAndCountPanel, EditAndEventPanel} from './';
 import PropTypes from 'prop-types';
 import { fetchPosts } from "../actions";
 import { connect } from 'react-redux';
@@ -26,8 +26,8 @@ class Home extends Component {
         return (
           <div>
                 <DataTendency></DataTendency>
-                <FavouritePanel></FavouritePanel>
-                <EditAndEvent></EditAndEvent>
+                <FavouriteAndCountPanel></FavouriteAndCountPanel>
+                <EditAndEventPanel></EditAndEventPanel>
           </div>
         );
     }
