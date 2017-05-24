@@ -374,9 +374,9 @@ class SupersetModelView(ModelView):
             if args.get('table_id') else None
         return kwargs
 
-    # @expose('/list/')
-    # def list(self):
-    #      return self.render_template(self.list_template)
+    @expose('/list/')
+    def list(self):
+         return self.render_template(self.list_template)
 
     @expose('/listdata/')
     def get_list_data(self):
