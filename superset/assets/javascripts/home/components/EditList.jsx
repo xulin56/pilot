@@ -42,7 +42,8 @@ export default class EditList extends Component {
             dataIndex: 'time',
             key: 'time',
             sorter: (a, b) => { return a.time > b.time　? 1 : -1;},
-            width: '30%'
+            width: '30%',
+            className: 'time-col'
         }];
 
         return (

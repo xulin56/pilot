@@ -114,10 +114,16 @@
                         border-left: 4px solid #289df5;
                     }
 
+                    .time-col {
+                        font-size: 14px;
+                        color: #7f8fa4;
+                    }
+
                     td {
                         text-overflow: ellipsis;
                         overflow: hidden;
                         white-space: nowrap;
+                        font-size: 14px;
 
                         a {
                             display: block;
@@ -150,13 +156,22 @@
                         }
                     }
 
+                    .time-col {
+                        font-size: 14px;
+                        color: #7f8fa4;
+                    }
+
                     .action-text {
                         margin-left: 22px;
+                        color: #333c48;
+                        font-size: 14px;
                     }
 
                     .action-title {
                         display: flex;
                         align-items: center;
+                        font-size: 12px;
+                        color: #7f8fa4;
                     }
 
                     .action-title-icon {
@@ -164,8 +179,8 @@
                     }
 
                     .icon {
-                        width: 18px;
-                        height: 18px;
+                        width: 20px;
+                        height: 20px;
                     }
                 }
             }
@@ -245,3 +260,142 @@
 .times-barchart{
     height:410px;
 }
+
+.edit-detail-page {
+    .edit-detail-page-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+
+        .left {
+            .title {
+                color: #354052;
+                font-size: 18px;
+            }
+
+            .count-title {
+                color: #7f8fa4;
+                font-size: 14px;
+                margin-left: 10px;
+                margin-right: 8px;
+            }
+
+            .count-value {
+                color: #ccd3da;
+                font-size: 14px;
+            }
+        }
+
+        .right {
+            display: flex;
+            align-items: center;
+
+            .back-button {
+                margin-left: 20px;
+                color: #2ccc26;
+                width: 70px;
+                height: 30px;
+            }
+
+            .title-tab {
+                li {
+                    background-color: #ffffff;
+                }
+            }
+        }
+    }
+
+    .edit-table {
+        background-color: #ffffff;
+
+        .ant-table table {
+            border-collapse: collapse !important;
+            .ant-table-row {
+                border-left: 4px solid #ffffff;
+                &:hover {
+                    border-left: 4px solid #289df5;
+                }
+
+                td {
+                    font-size: 14px;
+                }
+
+                .time-col {
+                    color: #7f8fa4;
+                }
+            }
+        }
+    }
+}
+
+.event-detail-page {
+    .event-detail-page-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+
+        .title {
+            color: #354052;
+            font-size: 18px;
+        }
+
+        .back-button {
+            margin-left: 20px;
+            color: #2ccc26;
+            width: 70px;
+            height: 30px;
+        }
+    }
+
+    .event-table {
+        background-color: #ffffff;
+
+        .ant-table table {
+            border-collapse: collapse !important;
+            .ant-table-row {
+                border-left: 4px solid #ffffff;
+                &:hover {
+                    border-left: 4px solid #289df5;
+                }
+
+                .time-col {
+                    color: #7f8fa4;
+                }
+
+                .user-td {
+                    display: flex;
+                    align-items: center;
+
+                    .user-icon {
+                        margin-right: 6px;
+                    }
+                }
+
+                .action-text {
+                    margin-left: 22px;
+                    color: #333c48;
+                    font-size: 14px;
+                }
+
+                .action-title {
+                    display: flex;
+                    align-items: center;
+                    font-size: 12px;
+                    color: #7f8fa4;
+                }
+
+                .action-title-icon {
+                    margin-right: 4px;
+                }
+
+                .icon {
+                    width: 20px;
+                    height: 20px;
+                }
+            }
+        }
+    }
+}
+

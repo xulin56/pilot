@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import {connect} from "react-redux";
 import { createSelector } from 'reselect';
+import { Link } from 'react-router-dom';
 import { EditList, EventList } from "../components";
 
 const _ = require('lodash');
@@ -28,7 +29,9 @@ class EditAndEventPanel extends Component {
                             </ul>
                         </div>
                         <div className="more">
-                            <i className="icon more-icon"></i>
+                            <Link to="/editDetail">
+                                <i className="icon more-icon"></i>
+                            </Link>
                         </div>
                     </div>
                     <div className="edit-list">
@@ -39,7 +42,9 @@ class EditAndEventPanel extends Component {
                     <div className="index-title-module">
                         <h3>事件</h3>
                         <div className="more">
-                            <i className="icon more-icon"></i>
+                            <Link to="/eventDetail">
+                                <i className="icon more-icon"></i>
+                            </Link>
                         </div>
                     </div>
                     <div className="event-list">
@@ -98,7 +103,7 @@ const getEventListData = createSelector(
                 'time': obj.time,
                 'link': obj.link,
                 'title': obj.title,
-                'type': obj.type
+                'type': obj.obj_type
             };
             result.push(item);
         });
