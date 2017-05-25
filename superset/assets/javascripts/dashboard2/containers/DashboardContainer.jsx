@@ -26,7 +26,7 @@ class DashboardContent extends React.Component {
             <div className="dashboard-panel">
                 <div className="panel-top">
                     <div className="left">
-                        <i className="glyphicon glyphicon-dashboard"></i>
+                        <i className="icon"></i>
                         <span>仪表盘</span>
                         <span>记录条目</span>
                         <span>07</span>
