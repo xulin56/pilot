@@ -2,19 +2,13 @@
 {% import 'appbuilder/general/lib.html' as lib %}
 
 {% block content %}
-{{ lib.panel_begin(title) }}
 
-    {% block list_list scoped %}
-        <div>
-        {{ widgets.get('list')()|safe }}
-        </div>
-    {% endblock %}
-
-{{ lib.panel_end() }}
-
-{% set VERSION_STRING = appbuilder.get_app.config.get("VERSION_STRING") %}
-<script src="/static/assets/dist/list.{{VERSION_STRING}}.entry.js"></script>
+<div id="slices" style="width:100%; height:500px;"></div>
 
 {% endblock %}
 
-
+{% block tail_js %}
+    {{ super() }}
+	{% set VERSION_STRING = appbuilder.get_app.config.get("VERSION_STRING") %}
+	<script src="/static/assets/dist/sliceList.{{VERSION_STRING}}.entry.js"></script>
+{% endblock %}

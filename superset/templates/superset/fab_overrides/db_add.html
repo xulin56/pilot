@@ -1,0 +1,20 @@
+{% import 'appbuilder/general/lib.html' as lib %}
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+{{ lib.panel_begin(title) }}
+
+
+{% block radio_box %}
+
+<input type="radio" name="types" />
+<input type="radio" name="types" />
+
+{% endblock %}
+
+{% block add_form %}
+    {{ widgets.get('add')(form_action=form_action)|safe }}
+{% endblock %}
+
+{{ lib.panel_end() }}
+{% endblock %}
