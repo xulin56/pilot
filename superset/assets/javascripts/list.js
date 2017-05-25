@@ -3,7 +3,7 @@ import { render } from 'react-dom';
 import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
 import thunk from 'redux-thunk';
-import { Operate } from './components/Slice';
+// import { Operate } from './components/slice';
 import { DashboardEdit, SliceEdit } from './components/popup';
 
 const $ = window.$ = require('jquery');
@@ -28,11 +28,11 @@ $(function(){
 //    const $fav = $('#j_fav')
 //    const $search = $('#j_search');
 
-    const operate = new Operate({
-        btnAll: '.j_all',
-        btnFav: '.j_fav',
-        form: '.j_searchForm'
-    });
+    // const operate = new Operate({
+    //     btnAll: '.j_all',
+    //     btnFav: '.j_fav',
+    //     form: '.j_searchForm'
+    // });
 
 
 //    $.getJSON(url, function (response) {
