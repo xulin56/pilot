@@ -40,11 +40,7 @@ const defaultProps = {
         width: '5%',
         render: (text, record) => {
             return (
-                <div>
-                    <button className="btn btn-default" onClick={() => favoriteSlice(record)}>
-                        收藏
-                    </button>
-                </div>
+                <i className="star icon" onClick={() => favoriteSlice(record)}></i>
             )
         }
     }, {
@@ -77,10 +73,10 @@ const defaultProps = {
         width: '20%',
         render: (text, record, index) => {
             return (
-                <div>
-                    <button className="btn btn-default" onClick={() => editSlice(record)}>编辑</button>&nbsp;
-                    <button className="btn btn-default" onClick={() => publishSlice(record)}>发布</button>&nbsp;
-                    <button className="btn btn-default" onClick={() => deleteSlice(record)}>删除</button>
+                <div className="icon-group">
+                    <i className="icon" onClick={() => editSlice(record)}></i>&nbsp;
+                    <i className="icon" onClick={() => publishSlice(record)}></i>&nbsp;
+                    <i className="icon" onClick={() => deleteSlice(record)}></i>
                 </div>
             )
         }

@@ -48,15 +48,24 @@ class Operations extends React.Component {
     render() {
         return (
             <div className="dashboard-operation">
-                <button id="add" className="btn btn-default" onClick={this.addSlice}>+</button>
-                <button id="delete" className="btn btn-default" onClick={this.deleteSlices}>-</button>
-                <button id="upload" className="btn btn-default" onClick={this.importDashboard}>import</button>
-                <button id="download" className="btn btn-default" onClick={this.exportDashboard}>export</button>
-                <button id="showAll" className="btn btn-default" onClick={this.showAll}>全部</button>
-                <button id="showFavorite" className="btn btn-default" onClick={this.showFavorite}>收藏</button>
-                <input id="searchInput" placeholder="search..." />
-                <button id="shrink" className="btn btn-default">shrink</button>
-                <button id="enlarge" className="btn btn-default">enlarge</button>
+                <ul className="icon-list">
+                    <li id="add" onClick={this.addSlice}><i className="icon"></i></li>
+                    <li id="delete" onClick={this.deleteSlices}><i className="icon"></i></li>
+                    <li id="upload" onClick={this.importDashboard}><i className="icon"></i></li>
+                    <li id="download" onClick={this.exportDashboard}><i className="icon"></i></li>
+                </ul>
+                <div className="tab-btn">
+                    <button id="showAll" className="active" onClick={this.showAll}>全部</button>
+                    <button id="showFavorite" onClick={this.showFavorite}><i className="icon"></i>收藏</button>
+                </div>
+                <div className="search-input">
+                    <input id="searchInput" placeholder="search..." />
+                    <i className="icon"></i>
+                </div>
+                <div className="operation-btn">
+                    <button id="shrink"><i className="icon active"></i></button>
+                    <button id="enlarge"><i className="icon active"></i></button>
+                </div>
             </div>
         );
     }
