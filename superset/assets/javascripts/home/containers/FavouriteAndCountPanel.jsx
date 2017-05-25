@@ -11,9 +11,6 @@ class FavouriteAndCountPanel extends Component {
         super();
     }
 
-    componentWillReceiveProps(nextProps) {
-    }
-
     render() {
         let selected = this.props.currentCatagory || "dashboard";
         const { onChangeCatagory, favbarData, refBarData } = this.props;
